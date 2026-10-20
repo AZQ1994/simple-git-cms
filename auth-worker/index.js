@@ -426,8 +426,11 @@ const handleCallback = async (request, env) => {
     });
   }
 
+  // [simple-git-cms] GitHub App 的令牌会过期，同时返回 refresh_token，一起交给编辑器
+  let refreshToken = '';
+
   try {
-    ({ access_token: token, error } = await response.json());
+    ({ access_token: token, refresh_token: refreshToken = '', error } = await response.json());
   } catch {
     return outputHTML({
       env,
@@ -440,7 +443,11 @@ const handleCallback = async (request, env) => {
   const returnTo = decodeURIComponent(headers.get('Cookie')?.match(/\breturn-to=([^;]+)/)?.[1] ?? '');
 
   if (returnTo) {
-    const hash = new URLSearchParams(token ? { access_token: token } : { error: error || 'unknown' });
+    const hash = new URLSearchParams(
+      token
+        ? { access_token: token, ...(refreshToken ? { refresh_token: refreshToken } : {}) }
+        : { error: error || 'unknown' },
+    );
 
     const backHeaders = new Headers({
       Location: `${returnTo.split('#')[0]}#${hash.toString()}`,
@@ -454,6 +461,82 @@ const handleCallback = async (request, env) => {
   }
 
   return outputHTML({ env, provider, token, error });
+};
+
+/**
+ * [simple-git-cms] 用 refresh_token 换新的访问令牌（GitHub App 的令牌 8 小时过期）。
+ * 只接受来自 ALLOWED_DOMAINS 的网页的请求（CORS）。
+ * @param {Request} request - HTTP request.
+ * @param {{ [key: string]: string }} env - Environment variables.
+ * @returns {Promise<Response>} HTTP response.
+ */
+const handleRefresh = async (request, env) => {
+  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_HOSTNAME = 'github.com' } = env;
+  const domainPatterns = getDomainPatterns(env.ALLOWED_DOMAINS);
+  const origin = request.headers.get('Origin') ?? '';
+  let originHost = '';
+
+  try {
+    const originURL = new URL(origin);
+
+    originHost = originURL.protocol === 'https:' ? originURL.hostname : '';
+  } catch {
+    //
+  }
+
+  if (!originHost || !domainPatterns.some((pattern) => new RegExp(pattern).test(originHost))) {
+    return new Response('origin is not allowed', { status: 403 });
+  }
+
+  const cors = {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+    'Cache-Control': 'no-store',
+  };
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: cors });
+  }
+
+  const json = (body, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    });
+
+  const { refresh_token: refreshToken } = await request.json().catch(() => ({}));
+
+  if (!refreshToken || !GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    return json({ error: 'bad_request' }, 400);
+  }
+
+  let data;
+
+  try {
+    const response = await fetch(`https://${GITHUB_HOSTNAME}/login/oauth/access_token`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        client_secret: GITHUB_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }),
+    });
+
+    data = await response.json();
+  } catch {
+    return json({ error: 'token_request_failed' }, 502);
+  }
+
+  if (!data?.access_token) {
+    return json({ error: data?.error || 'unknown' }, 401);
+  }
+
+  return json({ access_token: data.access_token, refresh_token: data.refresh_token ?? '' });
 };
 
 export default {
@@ -476,6 +559,10 @@ export default {
 
     if (method === 'GET' && ['/callback', '/oauth/redirect'].includes(pathname)) {
       return handleCallback(request, env);
+    }
+
+    if (['POST', 'OPTIONS'].includes(method) && pathname === '/refresh') {
+      return handleRefresh(request, env);
     }
 
     return new Response('', { status: 404 });

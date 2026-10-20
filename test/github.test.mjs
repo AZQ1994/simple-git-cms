@@ -101,3 +101,22 @@ test('删除文章', async () => {
   await s.saveArticle(a, { baseSha: a.sha, deleteArticle: true });
   assert.equal(files.has('site/news/1.md'), false);
 });
+
+test('令牌过期（401）时换新令牌重试一次；换不到则报登录失效', async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (url, opts) =>
+    opts?.headers?.Authorization === 'Bearer old'
+      ? Promise.resolve(new Response('{"message":"Bad credentials"}', { status: 401 }))
+      : realFetch(url, opts);
+  let calls = 0;
+  const store = new GitHubStore({
+    token: 'old', repo: 'o/r', contentDir: 'site/news',
+    refresh: async () => (calls++, 'new'),
+  });
+  assert.equal((await store.req('/user')).login, 'tester');
+  assert.equal(store.token, 'new');
+  assert.equal(calls, 1);
+
+  const dead = new GitHubStore({ token: 'old', repo: 'o/r', contentDir: 'site/news', refresh: async () => null });
+  await assert.rejects(dead.req('/user'), /登录已失效/);
+});

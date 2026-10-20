@@ -28,13 +28,14 @@ export class GitHubStore {
    * @param {string} [o.branch]
    * @param {string} o.contentDir 文章目录（仓库内路径），如 src/content/news
    * @param {string} [o.apiBase]
+   * @param {() => Promise<string|null>} [o.refresh] 令牌过期（401）时换新令牌，换不到返回 null
    */
-  constructor({ token, repo, branch = 'main', contentDir, apiBase = 'https://api.github.com' }) {
+  constructor({ token, repo, branch = 'main', contentDir, apiBase = 'https://api.github.com', refresh }) {
     if (!contentDir) throw new Error('缺少 contentDir');
-    Object.assign(this, { token, repo, branch, apiBase, contentDir: contentDir.replace(/^\/+|\/+$/g, '') });
+    Object.assign(this, { token, repo, branch, apiBase, refresh, contentDir: contentDir.replace(/^\/+|\/+$/g, '') });
   }
 
-  async req(path, { method = 'GET', body } = {}) {
+  async req(path, { method = 'GET', body } = {}, retried = false) {
     const res = await fetch(this.apiBase + path, {
       method,
       headers: {
@@ -45,7 +46,12 @@ export class GitHubStore {
       body: body ? JSON.stringify(body) : undefined,
       cache: 'no-store',
     });
-    if (res.status === 401) throw new AuthError('登录已失效，请重新登录');
+    if (res.status === 401) {
+      const token = !retried && this.refresh ? await this.refresh().catch(() => null) : null;
+      if (!token) throw new AuthError('登录已失效，请重新登录');
+      this.token = token;
+      return this.req(path, { method, body }, true);
+    }
     const json = res.status === 204 ? null : await res.json().catch(() => null);
     if (!res.ok) {
       const err = new Error(json?.message ? `GitHub：${json.message}` : `GitHub 请求失败（${res.status}）`);
@@ -63,8 +69,13 @@ export class GitHubStore {
 
   /** 当前用户和对仓库的写权限 */
   async whoami() {
-    const [user, repo] = await Promise.all([this.req('/user'), this.req(`/repos/${this.repo}`)]);
-    return { login: user.login, name: user.name || user.login, avatar: user.avatar_url, canWrite: Boolean(repo.permissions?.push) };
+    const user = await this.req('/user');
+    // 看不到仓库（404）：不是协作者，或用 GitHub App 登录时 App 没装到这个仓库
+    const repo = await this.req(`/repos/${this.repo}`).catch((e) => {
+      if (e.status === 404 || e.status === 403) return null;
+      throw e;
+    });
+    return { login: user.login, name: user.name || user.login, avatar: user.avatar_url, canWrite: Boolean(repo?.permissions?.push) };
   }
 
   /** 一次请求取回全部文章（含正文） */

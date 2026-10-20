@@ -13,6 +13,7 @@ import { icons } from './icons.js';
 
 let CONFIG; // 启动时从 ./config.json 读入
 const TOKEN_KEY = 'simple-git-cms-token';
+const REFRESH_KEY = 'simple-git-cms-refresh'; // GitHub App 登录时才有，用来换新令牌
 const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 // 本地开发：可以把 GitHub API 指到本机的测试代理
 const API_BASE = (isLocal && localStorage.getItem('simple-git-cms-api')) || 'https://api.github.com';
@@ -76,8 +77,30 @@ function showLogin(error) {
 
 function logout(reason) {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
   state.dirty = false;
   showLogin(reason);
+}
+
+// 令牌过期时用 refresh_token 换新的。refresh_token 只能用一次，并发的请求共用同一次换取
+let refreshing = null;
+function refreshToken() {
+  const refresh = localStorage.getItem(REFRESH_KEY);
+  if (!refresh) return Promise.resolve(null);
+  refreshing ??= fetch(`${CONFIG.auth.base}/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refresh }),
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (!data?.access_token) return null;
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+      if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
+      return data.access_token;
+    })
+    .finally(() => (refreshing = null));
+  return refreshing;
 }
 
 $('#login-github').addEventListener('click', () => {
@@ -92,6 +115,7 @@ $('#login-github').addEventListener('click', () => {
 $('#token-form').addEventListener('submit', (e) => {
   e.preventDefault();
   localStorage.setItem(TOKEN_KEY, e.target.token.value.trim());
+  localStorage.removeItem(REFRESH_KEY);
   e.target.reset();
   start();
 });
@@ -759,17 +783,21 @@ async function start() {
   }
   // 从登录中转跳回来时，令牌在 # 后面
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.get('access_token')) localStorage.setItem(TOKEN_KEY, hash.get('access_token'));
+  if (hash.get('access_token')) {
+    localStorage.setItem(TOKEN_KEY, hash.get('access_token'));
+    if (hash.get('refresh_token')) localStorage.setItem(REFRESH_KEY, hash.get('refresh_token'));
+    else localStorage.removeItem(REFRESH_KEY);
+  }
   if (hash.has('access_token') || hash.has('error')) history.replaceState(null, '', location.pathname);
   if (hash.get('error')) return showLogin(`登录失败：${hash.get('error')}`);
 
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return showLogin();
-  store = new GitHubStore({ token, repo: CONFIG.repo, branch: CONFIG.branch, contentDir: CONFIG.collection.dir, apiBase: API_BASE });
+  store = new GitHubStore({ token, repo: CONFIG.repo, branch: CONFIG.branch, contentDir: CONFIG.collection.dir, apiBase: API_BASE, refresh: refreshToken });
 
   await busy('正在载入…', async () => {
     const me = await store.whoami();
-    if (!me.canWrite) return logout(`账号 ${me.login} 没有这个网站仓库的编辑权限，请联系管理员。`);
+    if (!me.canWrite) return logout(`账号 ${me.login} 没有这个网站仓库的编辑权限：需要被加为仓库协作者（Write），且登录用的 GitHub App 已安装到这个仓库。请联系管理员。`);
     $('#user-name').textContent = me.name;
     $('#user-avatar').src = me.avatar;
     state.articles = await store.listArticles();
