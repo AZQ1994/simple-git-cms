@@ -18,8 +18,9 @@ function figure(img) {
 function walk(node) {
   if (!node.children) return;
   node.children = node.children.map((child) => {
-    if (child.type === 'element' && child.tagName === 'p' && child.children.length && child.children.every((c) => isImg(c) || isBlank(c))) {
-      const imgs = child.children.filter(isImg);
+    const imgs = child.type === 'element' && child.tagName === 'p' ? child.children.filter(isImg) : [];
+    // 只处理「全是图片（加空白）」的段落；只有空白（如 &nbsp;）的段落原样保留
+    if (imgs.length && child.children.every((c) => isImg(c) || isBlank(c))) {
       if (imgs.length > 1) {
         return { type: 'element', tagName: 'div', properties: { className: ['gallery', `cols-${Math.min(imgs.length, 3)}`] }, children: imgs.map(figure) };
       }
