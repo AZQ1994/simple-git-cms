@@ -718,8 +718,8 @@ async function openPreview() {
   } catch (e) {
     return toast(e.message, 'error');
   }
-  // 编辑器和网站同域名、或在本地开发时用当前域名，否则用网站地址
-  const url = new URL(CONFIG.preview.url, (isLocal ? '' : CONFIG.assetBase) || location.origin).href;
+  // 和图片一样：编辑器和网站同域名、或在本地开发时用当前域名，否则用网站地址
+  const url = new URL(CONFIG.preview.url, CONFIG.assetBase || location.origin).href;
   $('#preview').hidden = false;
   if (previewFrame.src !== url) {
     previewReady = false;
@@ -826,8 +826,8 @@ async function loadConfig() {
   };
   CONFIG.media.url = '/' + strip(CONFIG.media.url);
   if (!CONFIG.repo || !CONFIG.collection.dir || !CONFIG.media.dir || !CONFIG.auth.base) throw new Error('config.json 缺少 repo / collection.dir / media.dir / auth.base');
-  // 编辑器和网站不同域名时，图片从网站地址加载
-  CONFIG.assetBase = new URL(CONFIG.siteUrl).origin === location.origin ? '' : CONFIG.siteUrl;
+  // 编辑器和网站不同域名时，图片从网站地址加载（本地开发时用本地的网站）
+  CONFIG.assetBase = isLocal || new URL(CONFIG.siteUrl).origin === location.origin ? '' : CONFIG.siteUrl;
   setImageOptions({ ...CONFIG.media, timeZone: CONFIG.timeZone });
 
   document.title = [CONFIG.title, CONFIG.siteName].filter(Boolean).join(' · ');

@@ -1,6 +1,6 @@
 {
   "name": "simple-git-cms",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "以 GitHub 仓库为后端的静态网站内容编辑器（Markdown 文章 + 图片）",
   "type": "module",
