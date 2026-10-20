@@ -539,32 +539,55 @@ const handleRefresh = async (request, env) => {
   return json({ access_token: data.access_token, refresh_token: data.refresh_token ?? '' });
 };
 
+/**
+ * [simple-git-cms] The main request handler. It takes a standard `Request` and a plain object of
+ * environment variables and returns a standard `Response`, with no runtime-specific APIs in
+ * between, so the same file runs unchanged on Cloudflare Workers, Deno Deploy, Vercel and Netlify
+ * edge functions, Bun, and Node (see `server.js`).
+ * @param {Request} request - HTTP request.
+ * @param {{ [key: string]: string }} env - Environment variables.
+ * @returns {Promise<Response>} HTTP response.
+ * @see https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+ * @see https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
+ */
+export const handleRequest = async (request, env) => {
+  const { method, url } = request;
+  const { pathname } = new URL(url);
+
+  if (method === 'GET' && ['/auth', '/oauth/authorize'].includes(pathname)) {
+    return handleAuth(request, env);
+  }
+
+  if (method === 'GET' && ['/callback', '/oauth/redirect'].includes(pathname)) {
+    return handleCallback(request, env);
+  }
+
+  if (['POST', 'OPTIONS'].includes(method) && pathname === '/refresh') {
+    return handleRefresh(request, env);
+  }
+
+  return new Response('', { status: 404 });
+};
+
+/**
+ * [simple-git-cms] Environment variables for runtimes that don't hand them to the fetch handler.
+ * Cloudflare Workers pass them in as the second argument; Deno, Bun and Node keep them on the
+ * process instead.
+ * @returns {{ [key: string]: string }} Environment variables, possibly empty.
+ */
+const ambientEnv = () => {
+  if (typeof process !== 'undefined' && process.env) return process.env;
+  // eslint-disable-next-line no-undef
+  if (typeof Deno !== 'undefined') return Deno.env.toObject();
+  return {};
+};
+
+/**
+ * [simple-git-cms] Default export in the shape every edge runtime understands. Cloudflare Workers call
+ * `fetch(request, env)`; the others call `fetch(request)` and the variables are read off the
+ * process instead.
+ * @see https://developers.cloudflare.com/workers/runtime-apis/fetch/
+ */
 export default {
-  /**
-   * The main request handler.
-   * @param {Request} request - HTTP request.
-   * @param {{ [key: string]: string }} env - Environment variables.
-   * @returns {Promise<Response>} HTTP response.
-   * @see https://developers.cloudflare.com/workers/runtime-apis/fetch/
-   * @see https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
-   * @see https://docs.gitlab.com/ee/api/oauth2.html#authorization-code-flow
-   */
-  async fetch(request, env) {
-    const { method, url } = request;
-    const { pathname } = new URL(url);
-
-    if (method === 'GET' && ['/auth', '/oauth/authorize'].includes(pathname)) {
-      return handleAuth(request, env);
-    }
-
-    if (method === 'GET' && ['/callback', '/oauth/redirect'].includes(pathname)) {
-      return handleCallback(request, env);
-    }
-
-    if (['POST', 'OPTIONS'].includes(method) && pathname === '/refresh') {
-      return handleRefresh(request, env);
-    }
-
-    return new Response('', { status: 404 });
-  },
+  fetch: (request, env) => handleRequest(request, env && Object.keys(env).length ? env : ambientEnv()),
 };

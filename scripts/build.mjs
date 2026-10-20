@@ -22,7 +22,7 @@ await build({
   globalName: 'simpleGitCmsPreview',
   target: 'es2022',
   outfile: path.join(out, 'preview.js'),
-  legalComments: 'none',
+  legalComments: 'eof', // 把依赖的许可证声明留在打包结果末尾（MIT 等许可证要求保留）
 });
 
 await build({
@@ -33,7 +33,7 @@ await build({
   format: 'iife',
   target: 'es2022',
   outfile: path.join(out, 'app.js'),
-  legalComments: 'none',
+  legalComments: 'eof', // 把依赖的许可证声明留在打包结果末尾（MIT 等许可证要求保留）
   banner: { js: `/* Simple Git CMS ${version} */` },
 });
 const css = [path.join(root, 'node_modules/cropperjs/dist/cropper.min.css'), path.join(root, 'public/app.css')]

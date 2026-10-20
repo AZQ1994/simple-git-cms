@@ -1,13 +1,39 @@
 {
   "name": "simple-git-cms",
   "version": "0.2.1",
+  "description": "A content editor for static sites that uses a GitHub repository as its backend — no server, no database.",
+  "keywords": [
+    "cms",
+    "git",
+    "github",
+    "static-site",
+    "markdown",
+    "editor",
+    "astro",
+    "hugo",
+    "headless-cms"
+  ],
+  "license": "MIT",
+  "author": "azq1994",
+  "homepage": "https://github.com/AZQ1994/simple-git-cms",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AZQ1994/simple-git-cms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AZQ1994/simple-git-cms/issues"
+  },
   "private": true,
-  "description": "以 GitHub 仓库为后端的静态网站内容编辑器（Markdown 文章 + 图片）",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "dev": "node scripts/dev.mjs",
+    "test": "node --test test/*.test.mjs",
     "install-to": "node scripts/install.mjs",
-    "test": "node --test test/*.test.mjs"
+    "licenses": "node scripts/licenses.mjs"
   },
   "devDependencies": {
     "@tiptap/core": "^3.32.0",
