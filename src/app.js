@@ -163,6 +163,9 @@ const SiteParagraph = Paragraph.extend({
     const isEmpty = tokens.length === 1 && t.type === 'text' && ['&nbsp;', '\u00a0'].some((v) => t.raw === v || t.text === v);
     return helpers.createNode('paragraph', undefined, isEmpty ? [] : content);
   },
+  // 空段落（编辑时按回车留出的空行）存成 &nbsp;，网站上才会同样显示为空行。
+  // 默认只有连续第二个空段落才会写出来，第一个会被吞掉
+  renderMarkdown: (node, h) => (node.content?.length ? h.renderChildren(node.content) : '&nbsp;'),
 });
 
 // 图片：行内节点（同一段里的多张图在网站上并排显示）。title 作为图片说明。
@@ -216,7 +219,13 @@ editor.on('transaction', () => {
 });
 
 // & 会被写成 &amp;（显示一样），存回文件时还原
-const toMarkdown = () => editor.getMarkdown().replace(/&amp;(?![a-zA-Z]+;|#\d+;)/g, '&');
+// 开头和结尾的空行去掉（插入图片后总会留一个空段落）
+const toMarkdown = () =>
+  editor
+    .getMarkdown()
+    .replace(/&amp;(?![a-zA-Z]+;|#\d+;)/g, '&')
+    .replace(/^(?:\s*&nbsp;\s*\n)+/, '')
+    .replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');
 
 const commands = {
   h2: (c) => c.toggleHeading({ level: 2 }),
