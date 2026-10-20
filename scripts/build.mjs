@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import { build } from 'esbuild';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -24,6 +25,12 @@ const css = [path.join(root, 'node_modules/cropperjs/dist/cropper.min.css'), pat
   .map((f) => fs.readFileSync(f, 'utf8'))
   .join('\n');
 fs.writeFileSync(path.join(out, 'app.css'), css);
-for (const f of ['index.html', 'config.example.json']) fs.copyFileSync(path.join(root, 'public', f), path.join(out, f));
+fs.copyFileSync(path.join(root, 'public/config.example.json'), path.join(out, 'config.example.json'));
+// app.js / app.css 网址带上内容指纹：网站给静态文件设了缓存时，升级后浏览器也会立刻用新版本
+const hash = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(out, f))).digest('hex').slice(0, 10);
+const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8')
+  .replace('./app.css"', `./app.css?v=${hash('app.css')}"`)
+  .replace('./app.js"', `./app.js?v=${hash('app.js')}"`);
+fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, 'VERSION'), `${version}\n`);
 console.log(`Simple Git CMS ${version} → dist/ (app.js ${(fs.statSync(path.join(out, 'app.js')).size / 1024).toFixed(0)}KB)`);
