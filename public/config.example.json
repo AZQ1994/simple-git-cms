@@ -25,6 +25,10 @@
     "quality": 0.82
   },
 
+  "preview": {
+    "url": "/news/preview/"
+  },
+
   "deploy": {
     "skipCiForDrafts": true
   }

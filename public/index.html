@@ -67,6 +67,7 @@
             <a class="btn ghost" id="view-live" target="_blank" rel="noopener" hidden><span data-icon="external"></span><span class="hide-sm">在网站查看</span></a>
             <button class="btn ghost danger" id="btn-delete" type="button" hidden>删除</button>
             <button class="btn ghost" id="btn-unpublish" type="button" hidden>撤回为草稿</button>
+            <button class="btn ghost" id="btn-preview" type="button" hidden><span data-icon="eye"></span><span class="hide-sm">预览</span></button>
             <button class="btn ghost" id="btn-save" type="button">保存草稿</button>
             <button class="btn primary" id="btn-publish" type="button">发布</button>
           </div>
@@ -170,6 +171,20 @@
           <button type="button" class="btn primary" data-conflict="mine">用我的版本覆盖</button>
         </div>
       </div>
+    </div>
+
+    <!-- 预览：嵌入网站上的预览页（config.json 的 preview.url），用网站自己的排版显示正在编辑的内容 -->
+    <div class="preview" id="preview" hidden>
+      <div class="preview-bar">
+        <strong>预览</strong>
+        <span class="muted hide-sm">和发布后的样子一致，内容未保存也能看</span>
+        <div class="seg" id="preview-size">
+          <button type="button" data-size="desktop" class="on"><span data-icon="monitor"></span><span class="hide-sm">电脑</span></button>
+          <button type="button" data-size="phone"><span data-icon="phone"></span><span class="hide-sm">手机</span></button>
+        </div>
+        <button type="button" class="btn ghost" id="preview-close"><span data-icon="x"></span>关闭</button>
+      </div>
+      <div class="preview-stage"><iframe id="preview-frame" title="预览"></iframe></div>
     </div>
 
     <div class="toast" id="toast" role="status" hidden></div>

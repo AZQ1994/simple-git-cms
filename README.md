@@ -12,6 +12,7 @@
 - 图片：粘贴 / 拖入 / 多选上传，浏览器里压缩成 webp；裁剪、旋转、说明、多张并排、替换
 - 文章：标题、日期、标签、摘要、草稿 / 发布 / 撤回 / 删除草稿
 - 保存：文章 + 新图片合成一个提交；文章在打开后被别人改过时提示冲突（载入对方版本 / 覆盖）
+- 预览：在编辑器里直接看文章在网站上的样子（电脑 / 手机宽度），未保存的内容和图片也能看
 - 草稿保存自动加 `[skip ci]`，不触发部署；发布后在顶栏显示部署进度（读 GitHub Actions 状态）
 - 登录：用 GitHub App 登录（整页跳转，手机可用；令牌只能访问装了 App 的仓库，过期自动续期），或 Fine-grained 访问令牌
 - 权限：就是仓库权限，能推送的人才能编辑；谁改了什么都在 git 历史里
@@ -51,10 +52,14 @@
    | `collection.url` | 文章网址，`{id}` 会被替换 |
    | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
    | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
+   | `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
    | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
 
 3. **部署登录中转**：见 `auth-worker/README.md`。
 4. **网站端**：见 `integrations/astro/README.md`（图片说明和并排的显示）。
+   要用预览，在网站上加一个预览页：用文章页同样的排版，引入 `integrations/preview-client.js`，
+   在 `connectPreview(article => …)` 里把标题、日期、标签和 `article.html` 填进去。
+   编辑器把正文按网站相同的流程（remark-gfm、smartypants、rehype-figures）转成 HTML 发过去，预览页只负责显示。
 5. **编辑者**：需要 GitHub 账号，并加为仓库的协作者（Write 权限）；GitHub App 要安装到这个仓库。
 
 ## 文章格式
@@ -87,5 +92,5 @@ npm run build
 
 - 编辑者必须有 GitHub 账号（不想用 GitHub 账号的话，需要再加一层自己的登录服务，以 GitHub App 身份提交）
 - 每个网站一个文章集合，字段固定为上面几项
-- 草稿只能在编辑器里看，网站上没有草稿预览
+- 预览是在浏览器里转换 Markdown，网站另外加的 Markdown 插件不会体现在预览里
 - 外部图片地址（从别的网页粘贴来的）会被拒绝保存，需要下载后重新上传

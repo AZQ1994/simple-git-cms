@@ -662,6 +662,7 @@ function updateBar() {
   const has = Boolean(a);
   $('#btn-save').hidden = !has || (a.id && !a.draft); // 已发布的文章只有「更新」
   $('#btn-publish').hidden = !has;
+  $('#btn-preview').hidden = !has || !CONFIG.preview?.url;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
   $('#view-live').hidden = !has || !a.id || a.draft;
@@ -678,6 +679,72 @@ function updateBar() {
   s.textContent = !a.id ? '新文章' : live ? '已发布' : '草稿';
   if (state.dirty) s.textContent += ' · 未保存';
 }
+
+// ---------- 预览 ----------
+// 网站上的预览页（integrations/preview-client.js）嵌在 iframe 里，编辑器把当前内容发过去，用网站的排版显示
+
+let previewReady = false;
+let renderMarkdown; // preview.js 单独打包，第一次预览时加载
+
+function loadRenderer() {
+  if (renderMarkdown) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = __PREVIEW_JS__; // eslint-disable-line no-undef
+    s.onload = () => {
+      renderMarkdown = window.simpleGitCmsPreview.renderMarkdown;
+      resolve();
+    };
+    s.onerror = () => reject(new Error('预览组件加载失败，请检查网络后重试'));
+    document.head.append(s);
+  });
+}
+const previewFrame = $('#preview-frame');
+
+function sendPreview() {
+  if (!previewReady || !renderMarkdown || $('#preview').hidden || !state.current) return;
+  const a = collect();
+  const images = {};
+  for (const [src, p] of pending) images[src] = p.blob;
+  previewFrame.contentWindow.postMessage(
+    { type: 'simple-git-cms-preview', article: { title: a.title, date: a.date, tags: a.tags, description: a.description }, html: renderMarkdown(a.body), images },
+    new URL(previewFrame.src).origin,
+  );
+}
+
+async function openPreview() {
+  try {
+    await loadRenderer();
+  } catch (e) {
+    return toast(e.message, 'error');
+  }
+  // 编辑器和网站同域名、或在本地开发时用当前域名，否则用网站地址
+  const url = new URL(CONFIG.preview.url, (isLocal ? '' : CONFIG.assetBase) || location.origin).href;
+  $('#preview').hidden = false;
+  if (previewFrame.src !== url) {
+    previewReady = false;
+    previewFrame.src = url;
+  } else {
+    sendPreview();
+  }
+}
+
+addEventListener('message', (e) => {
+  if (e.source !== previewFrame.contentWindow || e.data?.type !== 'simple-git-cms-preview-ready') return;
+  previewReady = true;
+  sendPreview();
+});
+$('#btn-preview').addEventListener('click', openPreview);
+$('#preview-close').addEventListener('click', () => ($('#preview').hidden = true));
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#preview').hidden) $('#preview').hidden = true;
+});
+$('#preview-size').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  $('#preview-size').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+  $('.preview-stage').classList.toggle('phone', b.dataset.size === 'phone');
+});
 
 let deployTimer;
 function watchDeploy(commit) {
