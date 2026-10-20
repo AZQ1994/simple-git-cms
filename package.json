@@ -1,0 +1,23 @@
+{
+  "name": "simple-git-cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "以 GitHub 仓库为后端的静态网站内容编辑器（Markdown 文章 + 图片）",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "install-to": "node scripts/install.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-image": "^3.32.0",
+    "@tiptap/extension-paragraph": "^3.32.0",
+    "@tiptap/markdown": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "cropperjs": "^1.6.2",
+    "esbuild": "^0.28.2",
+    "yaml": "^2.9.1"
+  }
+}

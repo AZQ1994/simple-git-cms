@@ -1,0 +1,31 @@
+{
+  "title": "内容管理",
+  "siteName": "示例网站",
+  "logo": "./logo.png",
+
+  "repo": "owner/repo",
+  "branch": "main",
+  "siteUrl": "https://example.com",
+  "timeZone": "Asia/Tokyo",
+
+  "auth": {
+    "base": "https://cms-auth.example.com"
+  },
+
+  "collection": {
+    "label": "新闻",
+    "dir": "src/content/news",
+    "url": "/news/{id}/"
+  },
+
+  "media": {
+    "dir": "public/uploads",
+    "url": "/uploads",
+    "maxWidth": 1600,
+    "quality": 0.82
+  },
+
+  "deploy": {
+    "skipCiForDrafts": true
+  }
+}

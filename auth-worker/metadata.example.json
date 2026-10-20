@@ -1,0 +1,8 @@
+{
+  "main_module": "index.js",
+  "compatibility_date": "2025-09-01",
+  "keep_bindings": ["secret_text"],
+  "bindings": [
+    { "type": "plain_text", "name": "ALLOWED_DOMAINS", "text": "example.com, cms.example.com" }
+  ]
+}
