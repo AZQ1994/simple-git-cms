@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>内容管理</title>
+    <title>Simple Git CMS</title>
     <link rel="stylesheet" href="./app.css" />
   </head>
   <body>
@@ -12,21 +12,22 @@
     <section class="login" id="login" hidden>
       <div class="login-card">
         <img class="login-logo brand-logo" alt="" />
-        <h1 data-text="title">内容管理</h1>
-        <p class="muted"><span data-text="collection"></span>的编辑与发布</p>
+        <h1 data-text="title"></h1>
+        <p class="muted" id="login-subtitle"></p>
         <button class="btn primary lg block" id="login-github" type="button">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5Z"/></svg>
-          使用 GitHub 登录
+          <span data-i18n="login.github"></span>
         </button>
         <details class="token-login">
-          <summary>使用访问令牌登录</summary>
+          <summary data-i18n="login.tokenSummary"></summary>
           <form id="token-form">
             <input name="token" type="password" placeholder="github_pat_…" autocomplete="off" required />
-            <button class="btn" type="submit">登录</button>
+            <button class="btn" type="submit" data-i18n="login.tokenSubmit"></button>
           </form>
-          <p class="hint">在 GitHub → Settings → Developer settings → Fine-grained tokens 生成，仓库权限选 Contents: Read and write。</p>
+          <p class="hint" data-i18n="login.tokenHint"></p>
         </details>
         <p class="error" id="login-error" hidden></p>
+        <select class="lang-select" id="lang-select" aria-label="Language"></select>
       </div>
     </section>
 
@@ -36,99 +37,100 @@
         <div class="side-top">
           <img class="side-logo brand-logo" alt="" />
           <p class="side-collection" data-text="collection"></p>
-          <button class="btn primary block" id="new-article" type="button"><span data-icon="plus"></span>新建文章</button>
+          <button class="btn primary block" id="new-article" type="button"><span data-icon="plus"></span><span data-i18n="list.new"></span></button>
           <label class="search">
             <span data-icon="search"></span>
-            <input id="search" type="search" placeholder="搜索文章" />
+            <input id="search" type="search" data-i18n-placeholder="list.search" />
           </label>
           <div class="seg" role="tablist" id="filter">
-            <button type="button" class="on" data-filter="all">全部 <span id="count-all"></span></button>
-            <button type="button" data-filter="live">已发布 <span id="count-live"></span></button>
-            <button type="button" data-filter="draft">草稿 <span id="count-draft"></span></button>
+            <button type="button" class="on" data-filter="all"><span data-i18n="filter.all"></span> <span id="count-all"></span></button>
+            <button type="button" data-filter="live"><span data-i18n="filter.live"></span> <span id="count-live"></span></button>
+            <button type="button" data-filter="draft"><span data-i18n="filter.draft"></span> <span id="count-draft"></span></button>
           </div>
         </div>
         <ul class="list" id="list"></ul>
         <div class="side-foot">
           <img class="avatar" id="user-avatar" alt="" />
           <span class="user-name" id="user-name"></span>
-          <button class="link-btn" id="logout" type="button">退出</button>
+          <select class="lang-select" id="lang-select-app" data-i18n-aria-label="user.language"></select>
+          <button class="link-btn" id="logout" type="button" data-i18n="user.logout"></button>
         </div>
       </aside>
       <div class="scrim" id="scrim"></div>
 
       <main class="main">
         <header class="bar">
-          <button class="icon-btn only-mobile" id="open-list" type="button" aria-label="文章列表"><span data-icon="menu"></span></button>
+          <button class="icon-btn only-mobile" id="open-list" type="button" data-i18n-aria-label="list.openAria"><span data-icon="menu"></span></button>
           <div class="bar-status">
             <span class="status" id="status"></span>
             <span class="deploy" id="deploy" hidden></span>
           </div>
           <div class="bar-actions">
-            <a class="btn ghost" id="view-live" target="_blank" rel="noopener" hidden><span data-icon="external"></span><span class="hide-sm">在网站查看</span></a>
-            <button class="btn ghost danger" id="btn-delete" type="button" hidden>删除</button>
-            <button class="btn ghost" id="btn-unpublish" type="button" hidden>撤回为草稿</button>
-            <button class="btn ghost" id="btn-preview" type="button" hidden><span data-icon="eye"></span><span class="hide-sm">预览</span></button>
-            <button class="btn ghost" id="btn-save" type="button">保存草稿</button>
-            <button class="btn primary" id="btn-publish" type="button">发布</button>
+            <a class="btn ghost" id="view-live" target="_blank" rel="noopener" hidden><span data-icon="external"></span><span class="hide-sm" data-i18n="bar.viewLive"></span></a>
+            <button class="btn ghost danger" id="btn-delete" type="button" hidden data-i18n="bar.delete"></button>
+            <button class="btn ghost" id="btn-unpublish" type="button" hidden data-i18n="bar.unpublish"></button>
+            <button class="btn ghost" id="btn-preview" type="button" hidden><span data-icon="eye"></span><span class="hide-sm" data-i18n="bar.preview"></span></button>
+            <button class="btn ghost" id="btn-save" type="button" data-i18n="bar.saveDraft"></button>
+            <button class="btn primary" id="btn-publish" type="button"></button>
           </div>
         </header>
 
         <div class="empty" id="empty">
           <span class="empty-icon" data-icon="doc"></span>
-          <p>从左侧选择一篇文章，或者新建一篇。</p>
+          <p data-i18n="empty.hint"></p>
         </div>
 
         <article class="doc" id="doc" hidden>
-          <textarea class="title" id="f-title" rows="1" placeholder="标题"></textarea>
+          <textarea class="title" id="f-title" rows="1" data-i18n-placeholder="doc.titlePlaceholder"></textarea>
 
           <div class="meta">
             <label class="meta-item">
-              <span class="meta-label">日期</span>
+              <span class="meta-label" data-i18n="doc.date"></span>
               <input type="date" id="f-date" />
             </label>
             <div class="meta-item grow">
-              <span class="meta-label">标签</span>
+              <span class="meta-label" data-i18n="doc.tags"></span>
               <div class="tags" id="tags">
-                <input id="tag-input" list="tag-options" placeholder="添加标签" />
+                <input id="tag-input" list="tag-options" data-i18n-placeholder="doc.addTag" />
               </div>
               <datalist id="tag-options"></datalist>
             </div>
           </div>
 
           <details class="seo" id="seo">
-            <summary>搜索摘要 <span class="muted" id="desc-hint"></span></summary>
-            <textarea id="f-desc" rows="3" placeholder="显示在搜索结果里的简介（60～110 字）。不填会自动取正文开头。"></textarea>
+            <summary><span data-i18n="doc.seo"></span> <span class="muted" id="desc-hint"></span></summary>
+            <textarea id="f-desc" rows="3" data-i18n-placeholder="doc.descPlaceholder"></textarea>
           </details>
 
           <div class="toolbar" id="toolbar">
-            <button type="button" data-cmd="h2" title="小标题"><span data-icon="h2"></span></button>
-            <button type="button" data-cmd="bold" title="加粗（⌘B）"><span data-icon="bold"></span></button>
-            <button type="button" data-cmd="italic" title="斜体（⌘I）"><span data-icon="italic"></span></button>
+            <button type="button" data-cmd="h2" data-i18n-title="toolbar.h2"><span data-icon="h2"></span></button>
+            <button type="button" data-cmd="bold" data-i18n-title="toolbar.bold"><span data-icon="bold"></span></button>
+            <button type="button" data-cmd="italic" data-i18n-title="toolbar.italic"><span data-icon="italic"></span></button>
             <span class="sep"></span>
-            <button type="button" data-cmd="bulletList" title="列表"><span data-icon="bulletList"></span></button>
-            <button type="button" data-cmd="orderedList" title="编号列表"><span data-icon="orderedList"></span></button>
-            <button type="button" data-cmd="blockquote" title="引用"><span data-icon="blockquote"></span></button>
-            <button type="button" data-cmd="link" title="链接"><span data-icon="link"></span></button>
+            <button type="button" data-cmd="bulletList" data-i18n-title="toolbar.bulletList"><span data-icon="bulletList"></span></button>
+            <button type="button" data-cmd="orderedList" data-i18n-title="toolbar.orderedList"><span data-icon="orderedList"></span></button>
+            <button type="button" data-cmd="blockquote" data-i18n-title="toolbar.blockquote"><span data-icon="blockquote"></span></button>
+            <button type="button" data-cmd="link" data-i18n-title="toolbar.link"><span data-icon="link"></span></button>
             <span class="sep"></span>
-            <button type="button" data-cmd="image" title="插入图片（可多选，多张会并排）"><span data-icon="image"></span><span class="tb-label">图片</span></button>
+            <button type="button" data-cmd="image" data-i18n-title="toolbar.image"><span data-icon="image"></span><span class="tb-label" data-i18n="toolbar.imageLabel"></span></button>
             <span class="spacer"></span>
-            <button type="button" data-cmd="undo" title="撤销（⌘Z）"><span data-icon="undo"></span></button>
-            <button type="button" data-cmd="redo" title="重做（⇧⌘Z）"><span data-icon="redo"></span></button>
+            <button type="button" data-cmd="undo" data-i18n-title="toolbar.undo"><span data-icon="undo"></span></button>
+            <button type="button" data-cmd="redo" data-i18n-title="toolbar.redo"><span data-icon="redo"></span></button>
           </div>
           <div class="body" id="body"></div>
-          <p class="foot-hint">图片可以直接粘贴或拖进来；点一下图片可以裁剪、加说明、并排。</p>
+          <p class="foot-hint" data-i18n="doc.footHint"></p>
         </article>
 
         <!-- 选中图片时的工具条 -->
         <div class="img-bar" id="img-bar" hidden>
-          <button type="button" data-img="crop"><span data-icon="crop"></span>裁剪/旋转</button>
-          <button type="button" data-img="caption"><span data-icon="caption"></span>说明</button>
-          <button type="button" data-img="layout"><span data-icon="columns"></span><span class="layout-label">并排</span></button>
-          <button type="button" data-img="replace"><span data-icon="replace"></span>替换</button>
+          <button type="button" data-img="crop"><span data-icon="crop"></span><span data-i18n="img.crop"></span></button>
+          <button type="button" data-img="caption"><span data-icon="caption"></span><span data-i18n="img.caption"></span></button>
+          <button type="button" data-img="layout"><span data-icon="columns"></span><span class="layout-label"></span></button>
+          <button type="button" data-img="replace"><span data-icon="replace"></span><span data-i18n="img.replace"></span></button>
           <button type="button" data-img="delete" class="danger"><span data-icon="trash"></span></button>
           <form class="caption-form" id="caption-form" hidden>
-            <input id="caption-input" placeholder="图片说明（显示在图片下方）" />
-            <button type="submit">确定</button>
+            <input id="caption-input" data-i18n-placeholder="img.captionPlaceholder" />
+            <button type="submit" data-i18n="img.captionSubmit"></button>
           </form>
         </div>
       </main>
@@ -142,19 +144,19 @@
         <div class="crop-stage"><img alt="" /></div>
         <div class="crop-tools">
           <div class="seg small">
-            <button type="button" data-crop="ratio:free" class="on">自由</button>
+            <button type="button" data-crop="ratio:free" class="on" data-i18n="crop.free"></button>
             <button type="button" data-crop="ratio:1.7777777778">16:9</button>
             <button type="button" data-crop="ratio:1.3333333333">4:3</button>
             <button type="button" data-crop="ratio:1">1:1</button>
           </div>
           <div class="crop-rotate">
-            <button type="button" class="icon-btn" data-crop="left" title="向左旋转"><span data-icon="rotateL"></span></button>
-            <button type="button" class="icon-btn" data-crop="right" title="向右旋转"><span data-icon="rotateR"></span></button>
-            <button type="button" class="link-btn" data-crop="reset">还原</button>
+            <button type="button" class="icon-btn" data-crop="left" data-i18n-title="crop.rotateLeft"><span data-icon="rotateL"></span></button>
+            <button type="button" class="icon-btn" data-crop="right" data-i18n-title="crop.rotateRight"><span data-icon="rotateR"></span></button>
+            <button type="button" class="link-btn" data-crop="reset" data-i18n="crop.reset"></button>
           </div>
           <div class="crop-actions">
-            <button type="button" class="btn ghost" data-crop="cancel">取消</button>
-            <button type="button" class="btn primary" data-crop="apply">完成</button>
+            <button type="button" class="btn ghost" data-crop="cancel" data-i18n="crop.cancel"></button>
+            <button type="button" class="btn primary" data-crop="apply" data-i18n="crop.apply"></button>
           </div>
         </div>
       </div>
@@ -163,12 +165,12 @@
     <!-- 冲突 -->
     <div class="modal" id="conflict-modal" hidden>
       <div class="modal-card narrow">
-        <h2>这篇文章已被其他人修改</h2>
-        <p class="muted" id="conflict-text">在你打开之后，有人保存了新的版本。</p>
+        <h2 data-i18n="conflict.title"></h2>
+        <p class="muted" id="conflict-text"></p>
         <div class="modal-actions">
-          <button type="button" class="btn ghost" data-conflict="cancel">取消</button>
-          <button type="button" class="btn ghost" data-conflict="theirs">载入对方的版本</button>
-          <button type="button" class="btn primary" data-conflict="mine">用我的版本覆盖</button>
+          <button type="button" class="btn ghost" data-conflict="cancel" data-i18n="conflict.cancel"></button>
+          <button type="button" class="btn ghost" data-conflict="theirs" data-i18n="conflict.theirs"></button>
+          <button type="button" class="btn primary" data-conflict="mine" data-i18n="conflict.mine"></button>
         </div>
       </div>
     </div>
@@ -176,15 +178,15 @@
     <!-- 预览：嵌入网站上的预览页（config.json 的 preview.url），用网站自己的排版显示正在编辑的内容 -->
     <div class="preview" id="preview" hidden>
       <div class="preview-bar">
-        <strong>预览</strong>
-        <span class="muted hide-sm">和发布后的样子一致，内容未保存也能看</span>
+        <strong data-i18n="preview.title"></strong>
+        <span class="muted hide-sm" data-i18n="preview.hint"></span>
         <div class="seg" id="preview-size">
-          <button type="button" data-size="desktop" class="on"><span data-icon="monitor"></span><span class="hide-sm">电脑</span></button>
-          <button type="button" data-size="phone"><span data-icon="phone"></span><span class="hide-sm">手机</span></button>
+          <button type="button" data-size="desktop" class="on"><span data-icon="monitor"></span><span class="hide-sm" data-i18n="preview.desktop"></span></button>
+          <button type="button" data-size="phone"><span data-icon="phone"></span><span class="hide-sm" data-i18n="preview.phone"></span></button>
         </div>
-        <button type="button" class="btn ghost" id="preview-close"><span data-icon="x"></span>关闭</button>
+        <button type="button" class="btn ghost" id="preview-close"><span data-icon="x"></span><span data-i18n="preview.close"></span></button>
       </div>
-      <div class="preview-stage"><iframe id="preview-frame" title="预览"></iframe></div>
+      <div class="preview-stage"><iframe id="preview-frame" data-i18n-title="preview.title"></iframe></div>
     </div>
 
     <div class="toast" id="toast" role="status" hidden></div>

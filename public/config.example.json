@@ -1,19 +1,20 @@
 {
-  "title": "内容管理",
-  "siteName": "示例网站",
+  "title": "Content",
+  "siteName": "Example Site",
   "logo": "./logo.png",
+  "lang": "en",
 
   "repo": "owner/repo",
   "branch": "main",
   "siteUrl": "https://example.com",
-  "timeZone": "Asia/Tokyo",
+  "timeZone": "UTC",
 
   "auth": {
     "base": "https://cms-auth.example.com"
   },
 
   "collection": {
-    "label": "新闻",
+    "label": "news",
     "dir": "src/content/news",
     "url": "/news/{id}/"
   },

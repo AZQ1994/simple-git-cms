@@ -2,7 +2,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { GitHubStore, ConflictError } from '../src/github.js';
+import { GitHubStore, ConflictError, AuthError } from '../src/github.js';
 
 let files; // path -> text
 let head;
@@ -118,5 +118,5 @@ test('令牌过期（401）时换新令牌重试一次；换不到则报登录�
   assert.equal(calls, 1);
 
   const dead = new GitHubStore({ token: 'old', repo: 'o/r', contentDir: 'site/news', refresh: async () => null });
-  await assert.rejects(dead.req('/user'), /登录已失效/);
+  await assert.rejects(dead.req('/user'), (e) => e instanceof AuthError);
 });

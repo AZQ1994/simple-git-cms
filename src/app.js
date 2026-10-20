@@ -10,6 +10,7 @@ import { GitHubStore, ConflictError, AuthError } from './github.js';
 import { excerpt } from './article.js';
 import { compressImage, newImagePath, openCropper, setImageOptions } from './images.js';
 import { icons } from './icons.js';
+import { applyI18n, getLocale, locales, rememberLocale, resolveLocale, setLocale, t } from './i18n/index.js';
 
 let CONFIG; // 启动时从 ./config.json 读入
 const TOKEN_KEY = 'simple-git-cms-token';
@@ -21,6 +22,49 @@ const API_BASE = (isLocal && localStorage.getItem('simple-git-cms-api')) || 'htt
 const $ = (s) => document.querySelector(s);
 const fill = (root = document) => root.querySelectorAll('[data-icon]').forEach((el) => (el.innerHTML = icons[el.dataset.icon] ?? ''));
 fill();
+
+// ---------- 界面语言 ----------
+
+// 先按使用者选过的语言 / 浏览器语言填一遍，config.json 读到后（可能带 lang）再填一次
+let RAW = {}; // config.json 原文，切换语言时用来区分「配置写了」和「用默认值」
+setLocale(resolveLocale());
+applyI18n();
+
+/** 切换语言后重新填一遍界面：静态文字、语言菜单，以及已经渲染出来的内容 */
+function relabel() {
+  applyI18n();
+  for (const sel of document.querySelectorAll('.lang-select')) sel.value = getLocale();
+  if (CONFIG) {
+    CONFIG.title = RAW.title || t('config.defaultTitle');
+    CONFIG.collection.label = RAW.collection?.label || t('config.defaultCollection');
+    document.title = [CONFIG.title, CONFIG.siteName].filter(Boolean).join(' · ');
+    document.querySelectorAll('[data-text="title"]').forEach((el) => (el.textContent = CONFIG.title));
+    document.querySelectorAll('[data-text="collection"]').forEach((el) => (el.textContent = CONFIG.collection.label));
+    $('#login-subtitle').textContent = t('login.subtitle', { collection: CONFIG.collection.label });
+  }
+  renderTags();
+  renderList();
+  updateBar();
+  updateDescHint();
+  onSelection();
+}
+
+for (const sel of document.querySelectorAll('.lang-select')) {
+  sel.replaceChildren(
+    ...Object.entries(locales).map(([code, dict]) => {
+      const o = document.createElement('option');
+      o.value = code;
+      o.textContent = dict['lang.name'];
+      return o;
+    }),
+  );
+  sel.value = getLocale();
+  sel.addEventListener('change', (e) => {
+    setLocale(e.target.value);
+    rememberLocale(e.target.value);
+    relabel();
+  });
+}
 
 // ---------- 提示 ----------
 
@@ -126,7 +170,9 @@ $('#logout').addEventListener('click', () => {
 
 // ---------- 文章列表 ----------
 
-const fmtDate = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: CONFIG.timeZone });
+// 日期输入框要 ISO 的 YYYY-MM-DD；列表里按界面语言显示
+const fmtDateInput = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: CONFIG.timeZone });
+const fmtDate = (iso) => new Date(iso).toLocaleDateString(getLocale(), { timeZone: CONFIG.timeZone, dateStyle: 'medium' });
 
 function renderList() {
   const q = $('#search').value.trim().toLowerCase();
@@ -137,7 +183,7 @@ function renderList() {
   const items = state.articles.filter(
     (a) =>
       (state.filter === 'all' || (state.filter === 'draft') === a.draft) &&
-      (!q || a.title.toLowerCase().includes(q) || a.tags.some((t) => t.includes(q))),
+      (!q || a.title.toLowerCase().includes(q) || a.tags.some((tag) => tag.toLowerCase().includes(q))),
   );
   const ul = $('#list');
   ul.replaceChildren(
@@ -147,17 +193,28 @@ function renderList() {
       btn.type = 'button';
       btn.className = 'item' + (state.current?.id === a.id ? ' active' : '');
       btn.innerHTML = `<span class="item-title"></span><span class="item-meta"><span class="dot ${a.draft ? 'draft' : 'live'}"></span><span class="item-state"></span><span>${fmtDate(a.date)}</span></span>`;
-      btn.querySelector('.item-title').textContent = a.title || '（无标题）';
-      btn.querySelector('.item-state').textContent = a.draft ? '草稿' : '已发布';
+      btn.querySelector('.item-title').textContent = a.title || t('list.untitled');
+      btn.querySelector('.item-state').textContent = a.draft ? t('status.draft') : t('status.live');
       btn.addEventListener('click', () => openArticle(a.id));
       li.append(btn);
       return li;
     }),
   );
-  if (!items.length) ul.innerHTML = '<li class="list-empty">没有符合条件的文章</li>';
+  if (!items.length) {
+    const li = document.createElement('li');
+    li.className = 'list-empty';
+    li.textContent = t('list.empty');
+    ul.replaceChildren(li);
+  }
 
   const allTags = [...new Set(state.articles.flatMap((a) => a.tags))];
-  $('#tag-options').innerHTML = allTags.map((t) => `<option value="${t.replace(/"/g, '&quot;')}"></option>`).join('');
+  $('#tag-options').replaceChildren(
+    ...allTags.map((tag) => {
+      const o = document.createElement('option');
+      o.value = tag;
+      return o;
+    }),
+  );
 }
 
 $('#search').addEventListener('input', renderList);
@@ -278,7 +335,7 @@ $('#toolbar').addEventListener('click', (e) => {
   if (cmd === 'image') return pickFiles((files) => insertFiles(files));
   if (cmd === 'link') {
     const prev = editor.getAttributes('link').href ?? '';
-    const href = prompt('链接地址（留空表示取消链接）', prev);
+    const href = prompt(t('toolbar.linkPrompt'), prev);
     if (href === null) return;
     const chain = editor.chain().focus().extendMarkRange('link');
     return (href.trim() ? chain.setLink({ href: href.trim() }) : chain.unsetLink()).run();
@@ -315,7 +372,7 @@ async function addPending(blob) {
 function insertFiles(files) {
   const imgs = files.filter((f) => f.type.startsWith('image/'));
   if (!imgs.length) return false;
-  busy(`正在处理 ${imgs.length} 张图片…`, async () => {
+  busy(t('img.processing', { n: imgs.length }), async () => {
     const nodes = [];
     for (const f of imgs) nodes.push({ type: 'image', attrs: { src: await addPending(await compressImage(f)), alt: '' } });
     editor.chain().focus().insertContent([{ type: 'paragraph', content: nodes }, { type: 'paragraph' }]).run();
@@ -343,7 +400,7 @@ function onSelection() {
   if (!img) return;
   const layout = $('#img-bar [data-img="layout"]');
   layout.hidden = !img.inGroup && !img.prevIsImages;
-  layout.querySelector('.layout-label').textContent = img.inGroup ? '单独一行' : '与上一张并排';
+  layout.querySelector('.layout-label').textContent = img.inGroup ? t('img.layoutAlone') : t('img.layoutSide');
   layout.querySelector('[data-icon]').innerHTML = img.inGroup ? icons.rows : icons.columns;
   positionImageBar();
 }
@@ -385,7 +442,7 @@ $('#img-bar').addEventListener('click', async (e) => {
     return;
   }
   if (act === 'replace') {
-    return pickFiles(([f]) => busy('正在处理图片…', async () => setSrc(await addPending(await compressImage(f)))), false);
+    return pickFiles(([f]) => busy(t('img.processingOne'), async () => setSrc(await addPending(await compressImage(f)))), false);
   }
   if (act === 'layout') {
     const { tr, schema } = editor.state;
@@ -427,23 +484,23 @@ function renderTags() {
   const box = $('#tags');
   box.querySelectorAll('.chip').forEach((el) => el.remove());
   const input = $('#tag-input');
-  for (const t of tags) {
+  for (const tag of tags) {
     const chip = document.createElement('span');
     chip.className = 'chip';
-    chip.textContent = t;
+    chip.textContent = tag;
     const x = document.createElement('button');
     x.type = 'button';
     x.textContent = '×';
-    x.setAttribute('aria-label', `删除标签 ${t}`);
+    x.setAttribute('aria-label', t('doc.removeTag', { tag }));
     x.addEventListener('click', () => {
-      tags = tags.filter((v) => v !== t);
+      tags = tags.filter((v) => v !== tag);
       renderTags();
       markDirty();
     });
     chip.append(x);
     box.insertBefore(chip, input);
   }
-  input.placeholder = tags.length ? '' : '添加标签';
+  input.placeholder = tags.length ? '' : t('doc.addTag');
 }
 
 function addTag(v) {
@@ -486,10 +543,11 @@ function markDirty() {
   if (state.loading || !state.current) return;
   state.dirty = true;
   updateBar();
+  queuePreview();
 }
 
 function confirmDiscard() {
-  return !state.dirty || confirm('有未保存的修改，确定要放弃吗？');
+  return !state.dirty || confirm(t('save.discardConfirm'));
 }
 addEventListener('beforeunload', (e) => {
   if (state.dirty) e.preventDefault();
@@ -505,7 +563,7 @@ function load(a) {
   state.loading = true;
   state.current = a;
   $('#f-title').value = a.title;
-  $('#f-date').value = fmtDate(a.date);
+  $('#f-date').value = fmtDateInput(a.date);
   $('#f-desc').value = a.description;
   tags = [...a.tags];
   renderTags();
@@ -540,7 +598,7 @@ $('#new-article').addEventListener('click', () => {
 
 function collect() {
   const date = $('#f-date').value;
-  const keepTime = state.current.date && fmtDate(state.current.date) === date;
+  const keepTime = state.current.date && fmtDateInput(state.current.date) === date;
   return {
     ...state.current,
     title: $('#f-title').value.trim(),
@@ -553,16 +611,16 @@ function collect() {
 }
 
 function validate(a) {
-  if (!a.title) return '请填写标题';
-  if (!a.body.trim()) return '请填写正文';
-  if (!a.tags.length) return '请至少添加一个标签';
+  if (!a.title) return t('validate.title');
+  if (!a.body.trim()) return t('validate.body');
+  if (!a.tags.length) return t('validate.tags');
   const externalImage = new RegExp(`!\\[[^\\]]*\\]\\((?!${CONFIG.media.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/)[^)]+\\)`);
-  if (externalImage.test(a.body)) return '正文里有外部图片地址（可能是从别处粘贴的），请下载后用「图片」按钮重新上传';
+  if (externalImage.test(a.body)) return t('validate.externalImage');
   return null;
 }
 
 /** 保存。draft 指定保存后的草稿状态；返回是否成功 */
-async function save({ draft, force = false, label = '正在保存…' }) {
+async function save({ draft, force = false, label = t('save.saving') }) {
   const article = { ...collect(), draft };
   const err = validate(article);
   if (err) {
@@ -578,8 +636,8 @@ async function save({ draft, force = false, label = '正在保存…' }) {
   }
   // 草稿改草稿不影响网站，跳过部署
   const skipCi = CONFIG.deploy.skipCiForDrafts && draft && !wasLive;
-  const verb = !state.current.id ? '新建' : draft && wasLive ? '撤回' : !draft && !wasLive ? '发布' : '更新';
-  const message = `${skipCi ? '[skip ci] ' : ''}${verb}文章：${article.title}`;
+  const action = !state.current.id ? 'create' : draft && wasLive ? 'unpublish' : !draft && !wasLive ? 'publish' : 'update';
+  const message = `${skipCi ? '[skip ci] ' : ''}${t('commit.article', { verb: t(`verb.${action}`), title: article.title })}`;
 
   return (
     (await busy(label, async () => {
@@ -595,7 +653,7 @@ async function save({ draft, force = false, label = '正在保存…' }) {
         state.dirty = false;
         updateBar();
         renderList();
-        toast(skipCi ? '草稿已保存' : `已${verb}，约 1 分钟后网站更新`);
+        toast(skipCi ? t('save.draftSaved') : t(`done.${action}`));
         if (!skipCi) watchDeploy(r.commit);
         return true;
       } catch (e) {
@@ -612,16 +670,16 @@ async function save({ draft, force = false, label = '正在保存…' }) {
 $('#btn-save').addEventListener('click', () => save({ draft: state.current.draft || !state.current.id }));
 $('#btn-publish').addEventListener('click', () => {
   const live = state.current.id && !state.current.draft;
-  if (!live && !confirm('发布后所有人都能在网站上看到这篇文章。确定发布？')) return;
-  save({ draft: false, label: live ? '正在更新…' : '正在发布…' });
+  if (!live && !confirm(t('save.publishConfirm'))) return;
+  save({ draft: false, label: live ? t('save.updating') : t('save.publishing') });
 });
 $('#btn-unpublish').addEventListener('click', () => {
-  if (confirm('撤回后网站上将看不到这篇文章，内容会保留为草稿。确定撤回？')) save({ draft: true, label: '正在撤回…' });
+  if (confirm(t('save.unpublishConfirm'))) save({ draft: true, label: t('save.unpublishing') });
 });
 $('#btn-delete').addEventListener('click', async () => {
-  if (!confirm(`永久删除草稿「${state.current.title || '无标题'}」？`)) return;
-  await busy('正在删除…', async () => {
-    await store.saveArticle(state.current, { baseSha: state.current.sha, deleteArticle: true, message: `${CONFIG.deploy.skipCiForDrafts ? '[skip ci] ' : ''}删除草稿：${state.current.title}` });
+  if (!confirm(t('save.deleteConfirm', { title: state.current.title || t('list.untitled') }))) return;
+  await busy(t('save.deleting'), async () => {
+    await store.saveArticle(state.current, { baseSha: state.current.sha, deleteArticle: true, message: `${CONFIG.deploy.skipCiForDrafts ? '[skip ci] ' : ''}${t('commit.delete', { title: state.current.title })}` });
     state.articles = state.articles.filter((a) => a.id !== state.current.id);
     state.current = null;
     state.dirty = false;
@@ -629,15 +687,13 @@ $('#btn-delete').addEventListener('click', async () => {
     $('#empty').hidden = false;
     updateBar();
     renderList();
-    toast('已删除');
+    toast(t('save.deleted'));
   });
 });
 
 function resolveConflict(theirs, draft) {
   const modal = $('#conflict-modal');
-  $('#conflict-text').textContent = theirs
-    ? `在你打开之后，有人保存了新的版本（标题：${theirs.title}）。`
-    : '在你打开之后，这篇文章已被删除。';
+  $('#conflict-text').textContent = theirs ? t('conflict.theirsText', { title: theirs.title }) : t('conflict.deletedText');
   modal.querySelector('[data-conflict="theirs"]').hidden = !theirs;
   modal.hidden = false;
   modal.onclick = (e) => {
@@ -671,13 +727,13 @@ function updateBar() {
     return;
   }
   const live = a.id && !a.draft;
-  $('#btn-publish').textContent = live ? '更新' : '发布';
+  $('#btn-publish').textContent = live ? t('bar.update') : t('bar.publish');
   $('#btn-publish').disabled = live && !state.dirty;
   $('#view-live').href = CONFIG.siteUrl + CONFIG.collection.url.replace('{id}', a.id);
   const s = $('#status');
   s.className = `status ${live ? 'live' : 'draft'}`;
-  s.textContent = !a.id ? '新文章' : live ? '已发布' : '草稿';
-  if (state.dirty) s.textContent += ' · 未保存';
+  s.textContent = !a.id ? t('status.new') : live ? t('status.live') : t('status.draft');
+  if (state.dirty) s.textContent += ` · ${t('status.unsaved')}`;
 }
 
 // ---------- 预览 ----------
@@ -695,11 +751,18 @@ function loadRenderer() {
       renderMarkdown = window.simpleGitCmsPreview.renderMarkdown;
       resolve();
     };
-    s.onerror = () => reject(new Error('预览组件加载失败，请检查网络后重试'));
+    s.onerror = () => reject(new Error(t('preview.loadFailed')));
     document.head.append(s);
   });
 }
 const previewFrame = $('#preview-frame');
+
+// 编辑时预览跟着更新（稍等一下再发，避免每敲一个字都重新转换一次 Markdown）
+let previewTimer;
+function queuePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(sendPreview, 400);
+}
 
 function sendPreview() {
   if (!previewReady || !renderMarkdown || $('#preview').hidden || !state.current) return;
@@ -752,7 +815,7 @@ function watchDeploy(commit) {
   const el = $('#deploy');
   el.hidden = false;
   el.className = 'deploy pending';
-  el.textContent = '正在更新网站…';
+  el.textContent = t('deploy.pending');
   const started = Date.now();
   const tick = async () => {
     let s = 'pending';
@@ -763,11 +826,12 @@ function watchDeploy(commit) {
     }
     if (s === 'success') {
       el.className = 'deploy ok';
-      el.innerHTML = `${icons.check}网站已更新`;
+      el.innerHTML = icons.check;
+      el.append(t('deploy.success'));
       deployTimer = setTimeout(() => (el.hidden = true), 8000);
     } else if (s === 'failure') {
       el.className = 'deploy fail';
-      el.textContent = '网站更新失败，请联系管理员';
+      el.textContent = t('deploy.failure');
     } else if (s === 'superseded') {
       el.hidden = true; // 被之后的保存取代，由那次保存继续显示
     } else if (Date.now() - started < 10 * 60_000) {
@@ -792,7 +856,7 @@ $('#f-title').addEventListener('keydown', (e) => {
 
 function updateDescHint() {
   const n = $('#f-desc').value.trim().length;
-  $('#desc-hint').textContent = n ? `${n} 字` : '自动生成';
+  $('#desc-hint').textContent = n ? t('doc.descCount', { n }) : t('doc.descAuto');
 }
 $('#f-desc').addEventListener('input', updateDescHint);
 
@@ -800,7 +864,7 @@ document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's' && state.current) {
     e.preventDefault();
     const live = state.current.id && !state.current.draft;
-    save({ draft: !live, label: live ? '正在更新…' : '正在保存…' });
+    save({ draft: !live, label: live ? t('save.updating') : t('save.saving') });
   }
 });
 
@@ -808,11 +872,14 @@ document.addEventListener('keydown', (e) => {
 
 async function loadConfig() {
   const res = await fetch('./config.json', { cache: 'no-store' });
-  if (!res.ok) throw new Error('找不到 config.json');
+  if (!res.ok) throw new Error(t('config.missing'));
   const c = await res.json();
+  RAW = c;
+  // config.json 的 lang 只在使用者自己没选过语言时生效
+  setLocale(resolveLocale({ configured: c.lang }));
   const strip = (p) => String(p ?? '').replace(/^\/+|\/+$/g, '');
   CONFIG = {
-    title: '内容管理',
+    title: t('config.defaultTitle'),
     siteName: '',
     logo: './logo.png',
     branch: 'main',
@@ -820,23 +887,21 @@ async function loadConfig() {
     ...c,
     siteUrl: (c.siteUrl || location.origin).replace(/\/+$/, ''),
     auth: { ...c.auth },
-    collection: { label: '文章', url: '/{id}/', ...c.collection, dir: strip(c.collection?.dir) },
+    collection: { label: t('config.defaultCollection'), url: '/{id}/', ...c.collection, dir: strip(c.collection?.dir) },
     media: { url: '/uploads', ...c.media, dir: strip(c.media?.dir) },
     deploy: { skipCiForDrafts: true, ...c.deploy },
   };
   CONFIG.media.url = '/' + strip(CONFIG.media.url);
-  if (!CONFIG.repo || !CONFIG.collection.dir || !CONFIG.media.dir || !CONFIG.auth.base) throw new Error('config.json 缺少 repo / collection.dir / media.dir / auth.base');
+  if (!CONFIG.repo || !CONFIG.collection.dir || !CONFIG.media.dir || !CONFIG.auth.base) throw new Error(t('config.incomplete'));
   // 编辑器和网站不同域名时，图片从网站地址加载（本地开发时用本地的网站）
   CONFIG.assetBase = isLocal || new URL(CONFIG.siteUrl).origin === location.origin ? '' : CONFIG.siteUrl;
   setImageOptions({ ...CONFIG.media, timeZone: CONFIG.timeZone });
 
-  document.title = [CONFIG.title, CONFIG.siteName].filter(Boolean).join(' · ');
   for (const img of document.querySelectorAll('.brand-logo')) {
     img.src = CONFIG.logo;
     img.alt = CONFIG.siteName;
   }
-  document.querySelectorAll('[data-text="title"]').forEach((el) => (el.textContent = CONFIG.title));
-  document.querySelectorAll('[data-text="collection"]').forEach((el) => (el.textContent = CONFIG.collection.label));
+  relabel();
 }
 
 async function start() {
@@ -856,15 +921,23 @@ async function start() {
     else localStorage.removeItem(REFRESH_KEY);
   }
   if (hash.has('access_token') || hash.has('error')) history.replaceState(null, '', location.pathname);
-  if (hash.get('error')) return showLogin(`登录失败：${hash.get('error')}`);
+  if (hash.get('error')) return showLogin(t('login.failed', { error: hash.get('error') }));
 
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return showLogin();
-  store = new GitHubStore({ token, repo: CONFIG.repo, branch: CONFIG.branch, contentDir: CONFIG.collection.dir, apiBase: API_BASE, refresh: refreshToken });
+  store = new GitHubStore({
+    token,
+    repo: CONFIG.repo,
+    branch: CONFIG.branch,
+    contentDir: CONFIG.collection.dir,
+    apiBase: API_BASE,
+    refresh: refreshToken,
+    timeZone: CONFIG.timeZone,
+  });
 
-  await busy('正在载入…', async () => {
+  await busy(t('save.loading'), async () => {
     const me = await store.whoami();
-    if (!me.canWrite) return logout(`账号 ${me.login} 没有这个网站仓库的编辑权限：需要被加为仓库协作者（Write），且登录用的 GitHub App 已安装到这个仓库。请联系管理员。`);
+    if (!me.canWrite) return logout(t('login.noAccess', { login: me.login }));
     $('#user-name').textContent = me.name;
     $('#user-avatar').src = me.avatar;
     state.articles = await store.listArticles();

@@ -1,7 +1,9 @@
 // 图片：浏览器里压缩成 webp、裁剪 / 旋转。
 import Cropper from 'cropperjs';
+import { t } from './i18n/index.js';
 
-const opts = { url: '/uploads', maxWidth: 1600, quality: 0.82, timeZone: 'Asia/Tokyo' };
+const MAX_MB = 30;
+const opts = { url: '/uploads', maxWidth: 1600, quality: 0.82, timeZone: 'UTC' };
 
 /** 由 config.media 设置：url（网站上的图片路径前缀）、maxWidth、quality、timeZone（日期文件夹用） */
 export function setImageOptions(o = {}) {
@@ -18,14 +20,14 @@ export function newImagePath() {
 
 async function canvasToWebp(canvas) {
   const blob = await new Promise((r) => canvas.toBlob(r, 'image/webp', opts.quality));
-  if (!blob) throw new Error('图片压缩失败');
+  if (!blob) throw new Error(t('img.compressFailed'));
   return blob;
 }
 
 /** 文件或 Blob → 压缩后的 webp Blob（限制最大宽度，按 EXIF 方向摆正） */
 export async function compressImage(file) {
-  if (!file.type.startsWith('image/')) throw new Error('只能上传图片');
-  if (file.size > 30 * 1024 * 1024) throw new Error('图片超过 30MB');
+  if (!file.type.startsWith('image/')) throw new Error(t('img.notImage'));
+  if (file.size > MAX_MB * 1024 * 1024) throw new Error(t('img.tooLarge', { mb: MAX_MB }));
   const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
   const scale = Math.min(1, opts.maxWidth / bmp.width);
   const canvas = document.createElement('canvas');

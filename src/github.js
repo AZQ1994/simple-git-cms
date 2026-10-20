@@ -1,10 +1,11 @@
 // 通过 GitHub API 读写文章（浏览器和 Node 都能用）。
 // 保存时把文章和新图片合成「一个提交」，并检查文章有没有在打开之后被别人改过。
 import { parseArticle, serializeArticle } from './article.js';
+import { t } from './i18n/index.js';
 
 export class ConflictError extends Error {
   constructor(theirs) {
-    super('这篇文章在你打开之后已被其他人修改');
+    super(t('conflict.title'));
     this.name = 'ConflictError';
     this.theirs = theirs; // 对方的版本（已解析），被删除时为 null
   }
@@ -29,10 +30,11 @@ export class GitHubStore {
    * @param {string} o.contentDir 文章目录（仓库内路径），如 src/content/news
    * @param {string} [o.apiBase]
    * @param {() => Promise<string|null>} [o.refresh] 令牌过期（401）时换新令牌，换不到返回 null
+   * @param {string} [o.timeZone] 新文章编号用哪个时区的「年月日时分」
    */
-  constructor({ token, repo, branch = 'main', contentDir, apiBase = 'https://api.github.com', refresh }) {
-    if (!contentDir) throw new Error('缺少 contentDir');
-    Object.assign(this, { token, repo, branch, apiBase, refresh, contentDir: contentDir.replace(/^\/+|\/+$/g, '') });
+  constructor({ token, repo, branch = 'main', contentDir, apiBase = 'https://api.github.com', refresh, timeZone = 'UTC' }) {
+    if (!contentDir) throw new Error('contentDir is required');
+    Object.assign(this, { token, repo, branch, apiBase, refresh, timeZone, contentDir: contentDir.replace(/^\/+|\/+$/g, '') });
   }
 
   async req(path, { method = 'GET', body } = {}, retried = false) {
@@ -48,13 +50,13 @@ export class GitHubStore {
     });
     if (res.status === 401) {
       const token = !retried && this.refresh ? await this.refresh().catch(() => null) : null;
-      if (!token) throw new AuthError('登录已失效，请重新登录');
+      if (!token) throw new AuthError(t('login.expired'));
       this.token = token;
       return this.req(path, { method, body }, true);
     }
     const json = res.status === 204 ? null : await res.json().catch(() => null);
     if (!res.ok) {
-      const err = new Error(json?.message ? `GitHub：${json.message}` : `GitHub 请求失败（${res.status}）`);
+      const err = new Error(json?.message ? t('github.error', { message: json.message }) : t('github.requestFailed', { status: res.status }));
       err.status = res.status;
       throw err;
     }
@@ -63,7 +65,7 @@ export class GitHubStore {
 
   async graphql(query, variables) {
     const json = await this.req('/graphql', { method: 'POST', body: { query, variables } });
-    if (json.errors?.length) throw new Error(`GitHub：${json.errors[0].message}`);
+    if (json.errors?.length) throw new Error(t('github.error', { message: json.errors[0].message }));
     return json.data;
   }
 
@@ -147,7 +149,11 @@ export class GitHubStore {
       const newTree = await this.req(`/repos/${this.repo}/git/trees`, { method: 'POST', body: { base_tree: headCommit.tree.sha, tree } });
       const commit = await this.req(`/repos/${this.repo}/git/commits`, {
         method: 'POST',
-        body: { message: message ?? `${article.id ? '更新' : '新建'}文章：${id} ${article.title}`, tree: newTree.sha, parents: [head] },
+        body: {
+          message: message ?? t('commit.article', { verb: t(article.id ? 'verb.update' : 'verb.create'), title: `${id} ${article.title}` }),
+          tree: newTree.sha,
+          parents: [head],
+        },
       });
       try {
         await this.req(`/repos/${this.repo}/git/refs/heads/${this.branch}`, { method: 'PATCH', body: { sha: commit.sha, force: false } });
@@ -158,13 +164,13 @@ export class GitHubStore {
         throw e;
       }
     }
-    throw new Error('保存失败：仓库正在频繁更新，请稍后再试');
+    throw new Error(t('save.busyRepo'));
   }
 
-  /** 新文章编号：东京时间 年月日时分，重复时加 1 */
+  /** 新文章编号：config.timeZone 时区的 年月日时分，重复时加 1 */
   async newId(ref) {
     const parts = Object.fromEntries(
-      new Intl.DateTimeFormat('en', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      new Intl.DateTimeFormat('en', { timeZone: this.timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
         .formatToParts(new Date())
         .map((p) => [p.type, p.value]),
     );
