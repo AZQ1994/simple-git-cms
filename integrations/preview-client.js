@@ -1,14 +1,17 @@
-// Simple Git CMS 预览页的接收端：放在网站的一个页面里（例如 /news/preview/），编辑器把它嵌在 iframe 里，
-// 把正在编辑的文章（标题、日期、标签、正文 HTML、还没上传的图片）发过来，页面用网站自己的排版显示。
+// Receiving end of the Simple Git CMS preview. Put it on a page of your own site (say /news/preview/)
+// that uses your normal article layout. The editor embeds that page in an iframe and posts the
+// article being edited — title, date, tags, body HTML, and any images not uploaded yet — so the
+// preview is rendered by the site itself rather than by the editor.
 //
 //   import { connectPreview } from './preview-client.js';
-//   connectPreview((article) => { /* 把 article.title / date / tags / html 填进页面 */ });
+//   connectPreview((article) => { /* put article.title / date / tags / html on the page */ });
 //
-// article.html 里还没上传的图片已经换成了本页可用的 blob: 地址。
-// 只接受本站同域名、或 allowOrigins 里列出的编辑器发来的消息（编辑器放在别的域名时要列出）。
+// Images in article.html that have not been uploaded yet are already rewritten to blob: URLs this
+// page can load. Only messages from the same origin are accepted, plus any origin listed in
+// allowOrigins — needed when the editor is hosted on a different domain than the site.
 export function connectPreview(onUpdate, { allowOrigins = [] } = {}) {
   const allowed = new Set([location.origin, ...allowOrigins]);
-  const urls = new Map(); // 图片路径 → blob: 地址；每次更新沿用，避免图片闪烁
+  const urls = new Map(); // image path -> blob: URL, reused between updates so images don't flicker
   addEventListener('message', (e) => {
     if (e.source !== parent || !allowed.has(e.origin) || e.data?.type !== 'simple-git-cms-preview') return;
     const { article, html, images = {} } = e.data;

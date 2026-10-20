@@ -1,15 +1,19 @@
-# 在 Astro 网站里显示图片说明和并排
+# Image captions and side-by-side images on an Astro site
 
-编辑器的约定（都是标准 Markdown）：
+The editor writes plain Markdown and uses two conventions for images:
 
-- 图片说明写在图片的 title 里：`![](/uploads/a.webp "说明")`
-- 同一段里的多张图片 = 并排：`![](/uploads/a.webp)![](/uploads/b.webp)`
+- a caption goes in the image's title: `![](/uploads/a.webp "The caption")`
+- several images in one paragraph means side by side: `![](/uploads/a.webp)![](/uploads/b.webp)`
 
-`rehype-figures.mjs` 把它们转换成 `<figure><figcaption>` 和 `<div class="gallery cols-N">`。
+`rehype-figures.mjs` turns those into `<figure><figcaption>` and `<div class="gallery cols-N">`.
+It is a standard rehype plugin with no dependencies — copy the file into your site, for example to
+`src/lib/rehype-figures.mjs`.
 
-## 安装
+## Setup
 
-Astro 7 默认的 Markdown 处理器不支持 rehype 插件，需要装 `@astrojs/markdown-remark`：
+> **Astro 7 renders Markdown with Sätteri by default, which does not run rehype plugins at all.**
+> Without the step below the plugin is silently ignored and captions stay as `title` attributes. To
+> keep the unified pipeline, install Astro's Markdown processor and set `markdown.processor`.
 
 ```bash
 npm install @astrojs/markdown-remark
@@ -17,13 +21,36 @@ npm install @astrojs/markdown-remark
 
 ```js
 // astro.config.mjs
-import rehypeFigures from './src/lib/rehype-figures.mjs'; // 从这里复制过去
+import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
+import rehypeFigures from './src/lib/rehype-figures.mjs';
+
+export default defineConfig({
+  markdown: {
+    processor: unified({
+      rehypePlugins: [rehypeFigures],
+    }),
+  },
+});
+```
+
+On Astro 6 and earlier the older top-level form also works, and needs no extra package:
+
+```js
 export default defineConfig({
   markdown: { rehypePlugins: [rehypeFigures] },
 });
 ```
 
-## 样式（放进文章正文的样式里）
+That form is deprecated — on Astro 7 it still works but also requires `@astrojs/markdown-remark` —
+so prefer `markdown.processor` on anything recent.
+
+The editor's preview runs this same plugin in the browser, so what you see while writing matches
+what the site builds.
+
+## Styles
+
+Add these wherever your article body is styled:
 
 ```css
 .prose figure { margin: 12px 0; }

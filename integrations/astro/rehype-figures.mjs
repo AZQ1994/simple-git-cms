@@ -1,6 +1,6 @@
-// 文章正文里的图片排版（与编辑器一致）：
-// - 一段里只有一张图且带说明（Markdown 的 title）→ <figure> + <figcaption>
-// - 一段里有多张图 → 并排的 .gallery
+// Image layout in article bodies, matching what the editor shows:
+// - a paragraph holding one image with a caption (Markdown's title) -> <figure> + <figcaption>
+// - a paragraph holding several images -> a side-by-side .gallery
 const isImg = (n) => n.type === 'element' && n.tagName === 'img';
 const isBlank = (n) => n.type === 'text' && !n.value.trim();
 
@@ -19,7 +19,8 @@ function walk(node) {
   if (!node.children) return;
   node.children = node.children.map((child) => {
     const imgs = child.type === 'element' && child.tagName === 'p' ? child.children.filter(isImg) : [];
-    // 只处理「全是图片（加空白）」的段落；只有空白（如 &nbsp;）的段落原样保留
+    // Only paragraphs that are nothing but images (and whitespace); a paragraph holding only
+    // whitespace, such as &nbsp;, is left alone
     if (imgs.length && child.children.every((c) => isImg(c) || isBlank(c))) {
       if (imgs.length > 1) {
         return { type: 'element', tagName: 'div', properties: { className: ['gallery', `cols-${Math.min(imgs.length, 3)}`] }, children: imgs.map(figure) };

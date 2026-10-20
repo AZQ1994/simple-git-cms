@@ -1,96 +1,153 @@
 # Simple Git CMS
 
-以 **GitHub 仓库为后端**的静态网站内容编辑器。文章是仓库里的 Markdown 文件，编辑器是一个纯静态页面，
-在使用者的浏览器里直接通过 GitHub API 读写，**不需要自己的后端服务器和数据库**。
+**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
-适合 Astro / Hugo 等静态网站：编辑者在网页上写文章、传图片、发布，背后是一次 git 提交，
-再由 GitHub Actions 等 CI 自动构建上线。
+A content editor for static sites that uses a **GitHub repository as its backend**. Articles are
+Markdown files in the repository; the editor is a plain static page that reads and writes them
+through the GitHub API, straight from the editor's browser. **No server of your own, and no
+database.**
 
-## 功能
+It suits Astro, Hugo and friends: someone writes an article, drops in images and publishes; behind
+the scenes that is one git commit, and your existing CI builds and deploys the site.
 
-- 所见即所得的编辑（基于 TipTap），保存为干净的 Markdown；已有文章打开再保存内容不变
-- 图片：粘贴 / 拖入 / 多选上传，浏览器里压缩成 webp；裁剪、旋转、说明、多张并排、替换
-- 文章：标题、日期、标签、摘要、草稿 / 发布 / 撤回 / 删除草稿
-- 保存：文章 + 新图片合成一个提交；文章在打开后被别人改过时提示冲突（载入对方版本 / 覆盖）
-- 预览：在编辑器里直接看文章在网站上的样子（电脑 / 手机宽度），未保存的内容和图片也能看
-- 草稿保存自动加 `[skip ci]`，不触发部署；发布后在顶栏显示部署进度（读 GitHub Actions 状态）
-- 登录：用 GitHub App 登录（整页跳转，手机可用；令牌只能访问装了 App 的仓库，过期自动续期），或 Fine-grained 访问令牌
-- 权限：就是仓库权限，能推送的人才能编辑；谁改了什么都在 git 历史里
+## What it does
 
-## 组成
+- **WYSIWYG editing** (TipTap) that saves clean Markdown — open an existing article and save it
+  again and the file is unchanged
+- **Images**: paste, drop or pick several at once, compressed to webp in the browser; crop, rotate,
+  caption, place side by side, replace
+- **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft
+- **Saving**: the article and its new images go in as a single commit; if someone else changed the
+  article while it was open, you are offered their version or yours
+- **Preview**: see the article in your own site's layout, at desktop or phone width, including
+  changes and images you have not saved yet
+- **Deployment**: draft saves get `[skip ci]` so they don't trigger a build; after publishing, the
+  top bar follows the GitHub Actions run
+- **Sign-in**: GitHub App sign-in (a full-page redirect, so it works on phones; the token only
+  reaches repositories the App is installed on, and is refreshed automatically), or a fine-grained
+  access token
+- **Permissions are just repository permissions** — whoever can push can edit, and who changed what
+  is in the git history
+- **Interface in English, 简体中文 and 日本語**, switchable in place
 
-| 目录 | 内容 |
+## Layout
+
+| Directory | What's in it |
 |---|---|
-| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`app.js`（界面） |
-| `public/` | 页面、样式、`config.example.json` |
-| `auth-worker/` | 「用 GitHub 登录」的 Cloudflare Worker（见其 README） |
-| `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件 |
-| `test/` | `npm test`，用假的 GitHub API 测试保存 / 冲突 / 重试，不访问网络 |
+| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), `app.js` (the interface) |
+| `public/` | The page, its styles, and `config.example.json` |
+| `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
+| `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
+| `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. |
 
-## 用到一个网站上
+## Putting it on a site
 
-1. **构建并安装编辑器**
+### 1. Build and install the editor
 
-   ```bash
-   npm install
-   npm run build
-   node scripts/install.mjs ../my-site/public/editor   # 复制到网站的静态目录，网址就是 /editor/
-   ```
+```bash
+npm install
+npm run build
+node scripts/install.mjs ../my-site/public/editor   # a static directory, so the URL is /editor/
+```
 
-   安装只覆盖编辑器文件，不动目标目录里的 `config.json` 和 `logo.png`。升级时重复这两步。
+Installing only overwrites the editor's own files; `config.json` and `logo.png` in the target
+directory are left alone. To upgrade, repeat those two steps.
 
-2. **写 `config.json`**（放在编辑器同目录，参照 `config.example.json`）
+### 2. Write `config.json`
 
-   | 字段 | 说明 |
-   |---|---|
-   | `title` / `siteName` / `logo` | 界面上的名称和 logo |
-   | `repo` / `branch` | 内容所在的仓库 |
-   | `siteUrl` | 网站地址，用于「在网站查看」；编辑器不在网站同域名下时也用来加载图片 |
-   | `timeZone` | 日期显示和图片目录用的时区 |
-   | `auth.base` | 登录中转 Worker 的地址 |
-   | `collection.dir` | 文章目录（仓库内路径），每篇文章一个 `<id>.md` |
-   | `collection.url` | 文章网址，`{id}` 会被替换 |
-   | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
-   | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
-   | `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
-   | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
+Put it next to the editor's `index.html`, modelled on `config.example.json`.
 
-3. **部署登录中转**：见 `auth-worker/README.md`。
-4. **网站端**：见 `integrations/astro/README.md`（图片说明和并排的显示）。
-   要用预览，在网站上加一个预览页：用文章页同样的排版，引入 `integrations/preview-client.js`，
-   在 `connectPreview(article => …)` 里把标题、日期、标签和 `article.html` 填进去。
-   编辑器把正文按网站相同的流程（remark-gfm、smartypants、rehype-figures）转成 HTML 发过去，预览页只负责显示。
-5. **编辑者**：需要 GitHub 账号，并加为仓库的协作者（Write 权限）；GitHub App 要安装到这个仓库。
+| Field | Meaning |
+|---|---|
+| `title` / `siteName` / `logo` | What the interface calls itself |
+| `lang` | Starting interface language: `en`, `zh` or `ja`. Omit it to follow the browser. Whatever the person picks from the menu wins. |
+| `repo` / `branch` | Where the content lives |
+| `siteUrl` | Your site's address, used for "View on site" — and to load images when the editor is not on the same domain |
+| `timeZone` | Used for dates shown, for image folders, and for new article IDs |
+| `auth.base` | The URL of the sign-in relay |
+| `collection.dir` | The article directory inside the repository; one `<id>.md` per article |
+| `collection.url` | The article's URL on the site; `{id}` is substituted |
+| `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
+| `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
+| `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
+| `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
 
-## 文章格式
+### 3. Deploy the sign-in relay
+
+See [auth/README.md](auth/README.md). Cloudflare Workers is the documented route, but the relay is
+a single standard-web-API file — Deno Deploy, Vercel, Netlify, Bun and plain Node all work.
+
+### 4. Set up the site side
+
+See [integrations/astro/README.md](integrations/astro/README.md) for captions and side-by-side
+images.
+
+For the preview, add a page to your site that uses your normal article layout, import
+[`integrations/preview-client.js`](integrations/preview-client.js), and fill in the title, date,
+tags and `article.html` inside `connectPreview(article => …)`. The editor converts the body through
+the same pipeline your site uses (remark-gfm, smartypants, rehype-figures) and posts the HTML over;
+the preview page only has to display it.
+
+### 5. Add your editors
+
+They need a GitHub account, collaborator access to the repository (Write), and the GitHub App
+installed on it.
+
+## The article format
 
 ```markdown
 ---
-title: "标题"
-description: "摘要（可省略，省略时取正文开头）"
+title: "A title"
+description: "Summary — optional; taken from the start of the body when absent"
 date: 2026-10-21T03:00:00.000Z
-tags: ["标签1", "标签2"]
-draft: true            # 草稿时才有
+tags: ["tag one", "tag two"]
+draft: true            # only present on drafts
 ---
 
-正文（Markdown）。![](/uploads/20261021/abc.webp "图片说明")
+The body, in Markdown. ![](/uploads/20261021/abc.webp "An image caption")
 ```
 
-frontmatter 里编辑器不认识的字段会原样保留。新文章的文件名（即 id）是创建时的「年月日时分」。
+Frontmatter fields the editor doesn't recognise are preserved untouched. A new article's filename —
+its id — is the year, month, day, hour and minute it was created.
 
-## 本地开发
+## Developing
 
 ```bash
 npm install
 npm test
-npm run build
+npm run dev     # build, then serve the editor at http://localhost:4173
 ```
 
-在 localhost 打开编辑器时，可以设置 `localStorage['simple-git-cms-api']` 把 GitHub API 指到本地代理，方便测试。
+`npm run dev` creates `dist/config.json` from the example on first run; point it at a real
+repository to edit anything. On localhost you can also set `localStorage['simple-git-cms-api']` to send
+the GitHub API through a local proxy.
 
-## 已知限制
+Adding or changing a dependency means re-running `npm run licenses`, which regenerates
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) from whatever is actually bundled. CI checks it.
 
-- 编辑者必须有 GitHub 账号（不想用 GitHub 账号的话，需要再加一层自己的登录服务，以 GitHub App 身份提交）
-- 每个网站一个文章集合，字段固定为上面几项
-- 预览是在浏览器里转换 Markdown，网站另外加的 Markdown 插件不会体现在预览里
-- 外部图片地址（从别的网页粘贴来的）会被拒绝保存，需要下载后重新上传
+### Translations
+
+Each language is one flat file of strings in `src/i18n/` — `en.js`, `zh.js`, `ja.js`. To add one,
+copy `en.js`, translate the values, and add it to `locales` in `src/i18n/index.js`. The tests fail
+on any key that is missing, extra, empty, or whose `{placeholders}` don't match English, so a new
+language can't ship half-done.
+
+## Known limits
+
+- Editors need a GitHub account. Letting people in without one would mean adding your own sign-in
+  service that commits as the GitHub App.
+- One article collection per site, with the fields listed above
+- The preview converts Markdown in the browser, so Markdown plugins your site adds separately are
+  not reflected in it
+- Image addresses pointing somewhere else (pasted from another page) are refused on save — download
+  the image and upload it again
+- The GitHub token is kept in `localStorage`, which is the usual trade-off for an editor with no
+  backend: anyone who can inject a script into the editor's origin can read it. Serve the editor
+  from a domain you control and don't put untrusted scripts on it.
+
+## License
+
+[MIT](LICENSE). The relay in `auth/` derives from
+[sveltia/sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth) and carries its MIT notice
+in [auth/LICENSE](auth/LICENSE); the bundled dependencies are listed in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
