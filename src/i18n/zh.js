@@ -82,6 +82,7 @@ export default {
   'img.notImage': '只能上传图片',
   'img.tooLarge': '图片超过 {mb}MB',
   'img.compressFailed': '图片压缩失败',
+  'img.cropperLoadFailed': '图片编辑组件加载失败，请检查网络后重试',
 
   // 裁剪窗口
   'crop.free': '自由',

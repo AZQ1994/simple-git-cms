@@ -16,7 +16,7 @@ if (!fs.existsSync(path.join(dist, 'app.js'))) {
   process.exit(1);
 }
 fs.mkdirSync(target, { recursive: true });
-for (const f of ['index.html', 'app.js', 'app.css', 'preview.js', 'VERSION', 'config.example.json']) fs.copyFileSync(path.join(dist, f), path.join(target, f));
+for (const f of ['index.html', 'app.js', 'app.css', 'preview.js', 'cropper.js', 'cropper.css', 'VERSION', 'config.example.json']) fs.copyFileSync(path.join(dist, f), path.join(target, f));
 const hasConfig = fs.existsSync(path.join(target, 'config.json'));
 console.log(`已安装 Simple Git CMS ${fs.readFileSync(path.join(dist, 'VERSION'), 'utf8').trim()} → ${target}`);
 if (!hasConfig) console.log('还没有 config.json：参照 config.example.json 写一份，再放一张 logo.png');

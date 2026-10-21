@@ -82,6 +82,7 @@ export default {
   'img.notImage': '画像のみアップロードできます',
   'img.tooLarge': '画像が {mb}MB を超えています',
   'img.compressFailed': '画像の圧縮に失敗しました',
+  'img.cropperLoadFailed': '画像編集の部品を読み込めませんでした。通信状況を確認してお試しください。',
 
   // 切り抜き
   'crop.free': '自由',

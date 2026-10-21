@@ -118,8 +118,9 @@ npm test
 npm run dev     # build, then serve the editor at http://localhost:4173
 ```
 
-`npm run dev` creates `dist/config.json` from the example on first run; point it at a real
-repository to edit anything. On localhost you can also set `localStorage['simple-git-cms-api']` to send
+`npm run dev` creates `dev.config.json` at the repository root on first run (gitignored); point
+it at a real repository to edit anything. It is copied into `dist/` after every build, so it
+survives rebuilds. On localhost you can also set `localStorage['simple-git-cms-api']` to send
 the GitHub API through a local proxy.
 
 Adding or changing a dependency means re-running `npm run licenses`, which regenerates

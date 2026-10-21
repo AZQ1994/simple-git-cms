@@ -116,8 +116,9 @@ npm test
 npm run dev     # ビルドして http://localhost:4173 でエディターを開きます
 ```
 
-`npm run dev` は初回に例から `dist/config.json` を作ります。実際に編集するには、本物のリポジトリを
-指すように書き換えてください。localhost で開くときは `localStorage['simple-git-cms-api']` を設定して
+`npm run dev` は初回にリポジトリ直下へ例から `dev.config.json` を作ります（gitignore 済み）。
+実際に編集するには、本物のリポジトリを指すように書き換えてください。ビルドのたびに `dist/` へ
+コピーされるので、作り直しても消えません。localhost で開くときは `localStorage['simple-git-cms-api']` を設定して
 GitHub API をローカルのプロキシに向けることもできます。
 
 依存を足したり変えたりしたら `npm run licenses` を実行し直してください。実際にバンドルされた

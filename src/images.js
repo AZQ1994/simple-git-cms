@@ -1,6 +1,28 @@
 // 图片：浏览器里压缩成 webp、裁剪 / 旋转。
-import Cropper from 'cropperjs';
 import { t } from './i18n/index.js';
+
+// Cropper.js and its stylesheet are a good chunk of the editor and are only needed once someone
+// crops an image, so they are built separately and fetched the first time the crop window opens.
+let cropperLib;
+
+function loadCropper() {
+  if (cropperLib) return Promise.resolve(cropperLib);
+  return new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = __CROPPER_CSS__; // eslint-disable-line no-undef
+    document.head.append(link);
+
+    const script = document.createElement('script');
+    script.src = __CROPPER_JS__; // eslint-disable-line no-undef
+    script.onload = () => {
+      cropperLib = window.simpleGitCmsCropper.Cropper;
+      resolve(cropperLib);
+    };
+    script.onerror = () => reject(new Error(t('img.cropperLoadFailed')));
+    document.head.append(script);
+  });
+}
 
 const MAX_MB = 30;
 const opts = { url: '/uploads', maxWidth: 1600, quality: 0.82, timeZone: 'UTC' };
@@ -42,7 +64,8 @@ export async function compressImage(file) {
  * 打开裁剪 / 旋转窗口。src 为当前显示用的地址（同源或 blob:）。
  * 确定时返回新的 webp Blob，取消时返回 null。
  */
-export function openCropper(src) {
+export async function openCropper(src) {
+  const Cropper = await loadCropper();
   const modal = document.getElementById('crop-modal');
   const img = modal.querySelector('img');
   return new Promise((resolve) => {

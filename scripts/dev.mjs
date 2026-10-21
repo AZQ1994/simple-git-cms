@@ -11,14 +11,17 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 const port = Number(process.env.PORT || 4173);
 
+// Every build empties dist/, so the config to develop against lives at the repository root as
+// dev.config.json (gitignored) and is copied in afterwards. Edit that file, not dist/config.json.
+const devConfig = path.join(root, 'dev.config.json');
+const fresh = !fs.existsSync(devConfig);
+
 const built = spawnSync(process.execPath, [path.join(root, 'scripts/build.mjs')], { stdio: 'inherit' });
 if (built.status !== 0) process.exit(built.status ?? 1);
 
-const config = path.join(dist, 'config.json');
-if (!fs.existsSync(config)) {
-  fs.copyFileSync(path.join(dist, 'config.example.json'), config);
-  console.log('dist/config.json created from the example — edit it to point at your repository.');
-}
+if (fresh) fs.copyFileSync(path.join(dist, 'config.example.json'), devConfig);
+fs.copyFileSync(devConfig, path.join(dist, 'config.json'));
+if (fresh) console.log('dev.config.json created from the example — edit it to point at your repository.');
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

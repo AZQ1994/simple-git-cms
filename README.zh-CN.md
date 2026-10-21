@@ -104,7 +104,8 @@ npm test
 npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 ```
 
-`npm run dev` 第一次会用示例生成 `dist/config.json`，把它指向一个真实仓库才能编辑。
+`npm run dev` 第一次会在仓库根目录用示例生成 `dev.config.json`（已 gitignore），把它指向一个
+真实仓库才能编辑。每次构建后都会复制进 `dist/`，所以重新构建不会丢。
 在 localhost 打开编辑器时，还可以设置 `localStorage['simple-git-cms-api']` 把 GitHub API 指到本地代理。
 
 增删依赖之后要重新跑一次 `npm run licenses`，它会按实际打包进去的包重新生成

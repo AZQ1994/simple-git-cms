@@ -36,7 +36,6 @@ Regenerate this file with `npm run licenses`.
 | [character-entities-html4](https://www.npmjs.com/package/character-entities-html4) | 2.1.0 | MIT | Copyright (c) 2015 Titus Wormer <tituswormer@gmail.com> |
 | [character-entities-legacy](https://www.npmjs.com/package/character-entities-legacy) | 3.0.0 | MIT | Copyright (c) 2015 Titus Wormer <tituswormer@gmail.com> |
 | [comma-separated-tokens](https://www.npmjs.com/package/comma-separated-tokens) | 2.0.3 | MIT | Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com> |
-| [cropperjs](https://fengyuanchen.github.io/cropperjs) | 1.6.2 | MIT | — |
 | [decode-named-character-reference](https://www.npmjs.com/package/decode-named-character-reference) | 1.3.0 | MIT | Copyright (c) Titus Wormer <tituswormer@gmail.com> |
 | [entities](https://www.npmjs.com/package/entities) | 6.0.1 | BSD-2-Clause | Copyright (c) Felix Böhm |
 | [escape-string-regexp](https://www.npmjs.com/package/escape-string-regexp) | 5.0.0 | MIT | Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com) |

@@ -82,6 +82,7 @@ export default {
   'img.notImage': 'Only images can be uploaded.',
   'img.tooLarge': 'The image is larger than {mb}MB.',
   'img.compressFailed': 'Could not compress the image.',
+  'img.cropperLoadFailed': 'Could not load the image editor. Check your connection and try again.',
 
   // Crop dialog
   'crop.free': 'Free',
