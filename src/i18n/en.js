@@ -70,6 +70,8 @@ export default {
   'html.placeholder': 'HTML, kept in the file exactly as written',
   'toolbar.image': 'Insert images (pick several to place them side by side)',
   'toolbar.imageLabel': 'Image',
+  'toolbar.attach': 'Attach a file (PDF and the like, uploaded as it is)',
+  'toolbar.attachLabel': 'File',
   'toolbar.undo': 'Undo (⌘Z)',
   'toolbar.redo': 'Redo (⇧⌘Z)',
   'toolbar.linkPrompt': 'Link address (leave empty to remove the link)',
@@ -84,6 +86,10 @@ export default {
   'table.colDelete': 'Delete this column',
   'table.align': 'Align this column (left, centre, right)',
   'table.delete': 'Delete the table',
+
+  // Files
+  'file.attaching': 'Uploading the file…',
+  'file.tooLarge': 'The file is larger than {mb}MB.',
 
   // Images
   'img.crop': 'Crop / rotate',

@@ -26,7 +26,8 @@
     "dir": "public/uploads",
     "url": "/uploads",
     "maxWidth": 1600,
-    "quality": 0.82
+    "quality": 0.82,
+    "maxFileMB": 20
   },
 
   "preview": {

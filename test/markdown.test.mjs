@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MarkdownManager } from '@tiptap/markdown';
 import { cleanMarkdown, schemaExtensions } from '../src/schema.js';
+import { newFilePath } from '../src/images.js';
 
 const md = new MarkdownManager({ extensions: schemaExtensions });
 /** A file through the editor and back out again. */
@@ -101,4 +102,16 @@ test('what is typed between the angle brackets is what the file keeps', () => {
 test('an & that spells out an entity is still spelled out', () => {
   const body = 'An ampersand & and an escaped &amp;lt; entity.';
   assert.equal(roundTrip(body), body);
+});
+
+// ---------- Attachment names ----------
+
+test('an attachment keeps a name worth reading in the address, and cannot overwrite another', () => {
+  const a = newFilePath('入学案内 2026 (最新).PDF');
+  const b = newFilePath('入学案内 2026 (最新).PDF');
+  assert.match(a, /^\/uploads\/\d{8}\/[a-z0-9-]+-[a-z0-9]{4}\.pdf$/, a);
+  assert.notEqual(a, b, 'two files of the same name on the same day are two files');
+  assert.match(newFilePath('Course Guide.pdf'), /course-guide-[a-z0-9]{4}\.pdf$/);
+  assert.match(newFilePath('no-extension'), /no-extension-[a-z0-9]{4}$/);
+  assert.match(newFilePath('.hidden'), /\/hidden-[a-z0-9]{4}$/, 'a name that is all extension is just a name');
 });

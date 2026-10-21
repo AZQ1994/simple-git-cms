@@ -22,6 +22,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   caption, place side by side, replace
 - **Tables**: add and remove rows and columns, align a column left, centre or right — written out
   as a plain GFM table that lines up in the file
+- **Attachments**: a PDF or anything else goes into the repository as it is, linked from the body
+  under the name it came with, up to a size you set
 - **Nothing is quietly dropped**: anything in the file the editor has no buttons for — an embed, a
   leftover `<div>`, a component your site expands itself — is shown as an HTML box whose source you
   can edit, and written back exactly as it was
@@ -89,6 +91,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `collection.imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
+| `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default) |
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
 

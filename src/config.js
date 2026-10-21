@@ -42,6 +42,7 @@ const SPEC = {
       url: { ...str, slash: true },
       maxWidth: { type: 'number', min: 1, max: 10000 },
       quality: { type: 'number', min: 0, max: 1 },
+      maxFileMB: { type: 'number', min: 1, max: 100 },
     },
   },
   preview: { fields: { url: { ...str, slash: true } } },

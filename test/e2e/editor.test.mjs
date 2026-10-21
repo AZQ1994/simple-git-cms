@@ -3,7 +3,7 @@
 // commit. Run with `npm run test:e2e` (needs a Chrome; see test/e2e/README.md).
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -240,6 +240,24 @@ test('a cover image is uploaded with the article and named in the frontmatter', 
   await page.evaluate(`document.querySelector('#cover-acts [data-cover="remove"]').click()`);
   await save();
   assert.doesNotMatch(gh.files.get(`${CONTENT_DIR}/${id}.md`), /^image:/m);
+});
+
+test('a file is attached as it is, and linked from the body', async () => {
+  const file = join(mkdtempSync(join(tmpdir(), 'sgcms-')), 'Course Guide.pdf');
+  writeFileSync(file, '%PDF-1.4 a small pretend PDF\n');
+
+  await page.evaluate(`document.querySelector('#toolbar [data-cmd="attach"]').click()`);
+  await page.chooseFile('#file-input', file);
+  await page.until(`document.querySelector('#body a[href*="course-guide"]')`, { label: 'the link' });
+  const id = await page.evaluate(`new URLSearchParams(location.search).get('id')`);
+  await save();
+
+  const saved = gh.files.get(`${CONTENT_DIR}/${id}.md`);
+  const [, text, href] = saved.match(/\[([^\]]+)\]\((\/uploads\/[^)]+)\)/) ?? [];
+  assert.equal(text, 'Course Guide.pdf', 'the link reads as the file was named');
+  assert.match(href, /^\/uploads\/\d{8}\/course-guide-\w{4}\.pdf$/);
+  // and the file went in untouched, which is the whole point of attaching rather than uploading
+  assert.equal(Buffer.from(gh.files.get(href.replace('/uploads', MEDIA_DIR))).toString(), '%PDF-1.4 a small pretend PDF\n');
 });
 
 test('nothing went wrong in the browser', async () => {

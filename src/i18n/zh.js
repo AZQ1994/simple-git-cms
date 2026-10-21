@@ -71,6 +71,8 @@ export default {
   'html.placeholder': '写在这里的 HTML 会原样存进文件',
   'toolbar.image': '插入图片（可多选，多张会并排）',
   'toolbar.imageLabel': '图片',
+  'toolbar.attach': '附件（PDF 之类，原样上传）',
+  'toolbar.attachLabel': '附件',
   'toolbar.undo': '撤销（⌘Z）',
   'toolbar.redo': '重做（⇧⌘Z）',
   'toolbar.linkPrompt': '链接地址（留空表示取消链接）',
@@ -85,6 +87,10 @@ export default {
   'table.colDelete': '删除这一列',
   'table.align': '这一列的对齐方式（左 / 居中 / 右）',
   'table.delete': '删除表格',
+
+  // 附件
+  'file.attaching': '正在上传文件…',
+  'file.tooLarge': '文件超过 {mb}MB。',
 
   // 图片
   'img.crop': '裁剪/旋转',

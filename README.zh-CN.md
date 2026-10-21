@@ -17,6 +17,7 @@
 - 所见即所得的编辑（基于 TipTap），保存为干净的 Markdown；已有文章打开再保存内容不变
 - 图片：粘贴 / 拖入 / 多选上传，浏览器里压缩成 webp；裁剪、旋转、说明、多张并排、替换
 - 表格：加减行列，整列左 / 居中 / 右对齐；写进文件的是对齐整齐的 GFM 表格
+- 附件：PDF 之类的文件原样进仓库（不压缩），在正文里按原来的文件名插入成链接，大小上限自己定
 - 不认识的内容不会被悄悄丢掉：文件里编辑器没有按钮的东西——嵌入的视频、残留的 `<div>`、
   网站自己展开的组件——会显示成一个可以直接改源码的 HTML 块，保存时原样写回
 - 封面图：在文章信息栏里上传、更换、裁剪、删除，写进你指定的 frontmatter 字段——就是网站用来
@@ -73,6 +74,7 @@ node scripts/install.mjs ../my-site/public/editor   # 复制到网站的静态�
 | `collection.imageField` | 封面图写在 frontmatter 的哪个字段，比如 `image`。不填就没有封面图这个控件 |
 | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
 | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
+| `media.maxFileMB` | 附件大小上限，单位 MB（默认 20） |
 | `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
 

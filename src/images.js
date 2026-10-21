@@ -25,20 +25,40 @@ function loadCropper() {
 }
 
 const MAX_MB = 30;
-const opts = { url: '/uploads', maxWidth: 1600, quality: 0.82, timeZone: 'UTC' };
+const opts = { url: '/uploads', maxWidth: 1600, quality: 0.82, maxFileMB: 20, timeZone: 'UTC' };
 
-/** Set from config.media: url (the path prefix on the site), maxWidth, quality, and timeZone
- * (which decides the dated folder). */
+/** Set from config.media: url (the path prefix on the site), maxWidth, quality, maxFileMB, and
+ * timeZone (which decides the dated folder). */
 export function setImageOptions(o = {}) {
   Object.assign(opts, Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)));
   opts.url = opts.url.replace(/\/+$/, '');
 }
 
 /** Path on the site for a new image: <media.url>/<date>/<random>.webp */
-export function newImagePath() {
-  const day = new Date().toLocaleDateString('sv-SE', { timeZone: opts.timeZone }).replaceAll('-', '');
-  const rand = crypto.getRandomValues(new Uint32Array(2)).reduce((s, n) => s + n.toString(36), '').slice(0, 10);
-  return `${opts.url}/${day}/${rand}.webp`;
+export const newImagePath = () => `${opts.url}/${today()}/${token(10)}.webp`;
+
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: opts.timeZone }).replaceAll('-', '');
+const token = (n) => crypto.getRandomValues(new Uint32Array(2)).reduce((s, v) => s + v.toString(36), '').slice(0, n);
+
+/** Path on the site for a file that is kept as it is — a PDF, say. The name is the one it came
+ * with, cut down to what reads well in a URL, plus a few random characters so that uploading two
+ * files called the same thing on the same day cannot overwrite one with the other. */
+export function newFilePath(name) {
+  const dot = name.lastIndexOf('.');
+  const ext = (dot > 0 ? name.slice(dot + 1) : '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+  const base =
+    (dot > 0 ? name.slice(0, dot) : name)
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/^[-.]+|[-.]+$/g, '')
+      .slice(0, 40) || 'file';
+  return `${opts.url}/${today()}/${base}-${token(4)}${ext ? `.${ext}` : ''}`;
+}
+
+/** Refuse a file that is too big to be worth committing, before anything is read. */
+export function checkFileSize(file) {
+  if (file.size > opts.maxFileMB * 1024 * 1024) throw new Error(t('file.tooLarge', { mb: opts.maxFileMB }));
+  return file;
 }
 
 async function canvasToWebp(canvas) {

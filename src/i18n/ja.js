@@ -71,6 +71,8 @@ export default {
   'html.placeholder': 'ここに書いた HTML はそのままファイルに入ります',
   'toolbar.image': '画像を挿入（複数選ぶと横並びになります）',
   'toolbar.imageLabel': '画像',
+  'toolbar.attach': 'ファイルを添付（PDF など、そのままアップロード）',
+  'toolbar.attachLabel': 'ファイル',
   'toolbar.undo': '取り消し（⌘Z）',
   'toolbar.redo': 'やり直し（⇧⌘Z）',
   'toolbar.linkPrompt': 'リンク先（空にするとリンクを解除します）',
@@ -85,6 +87,10 @@ export default {
   'table.colDelete': 'この列を削除',
   'table.align': 'この列の揃え方（左 / 中央 / 右）',
   'table.delete': '表を削除',
+
+  // ファイル
+  'file.attaching': 'ファイルをアップロードしています…',
+  'file.tooLarge': 'ファイルが {mb}MB を超えています。',
 
   // 画像
   'img.crop': '切り抜き/回転',

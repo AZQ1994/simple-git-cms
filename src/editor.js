@@ -8,7 +8,7 @@ import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { $, busy } from './dom.js';
 import { cleanMarkdown, schemaExtensions } from './schema.js';
 import { addPending, displaySrc, emit, on } from './store.js';
-import { compressImage, newImagePath, openCropper } from './images.js';
+import { checkFileSize, compressImage, newFilePath, newImagePath, openCropper } from './images.js';
 import { icons } from './icons.js';
 import { t } from './i18n/index.js';
 
@@ -104,6 +104,7 @@ $('#toolbar').addEventListener('click', (e) => {
   if (!b) return;
   const cmd = b.dataset.cmd;
   if (cmd === 'image') return pickFiles((files) => insertFiles(files));
+  if (cmd === 'attach') return pickFiles(([f]) => attach(f), { multiple: false, accept: '' });
   if (cmd === 'link') {
     const prev = editor.getAttributes('link').href ?? '';
     const href = prompt(t('toolbar.linkPrompt'), prev);
@@ -121,9 +122,10 @@ function updateToolbar() {
 // ---------- Images ----------
 
 let filePicked;
-function pickFiles(cb, multiple = true) {
+function pickFiles(cb, { multiple = true, accept = 'image/*' } = {}) {
   const input = $('#file-input');
   input.multiple = multiple;
+  input.accept = accept;
   filePicked = cb;
   input.click();
 }
@@ -145,6 +147,20 @@ function insertFiles(files) {
     editor.chain().focus().insertContent([{ type: 'paragraph', content: nodes }, { type: 'paragraph' }]).run();
   });
   return true;
+}
+
+/** Put a file in the repository as it is — no compressing, no resizing — and link to it from
+ * where the cursor is. The link's text is the name the file arrived with. */
+function attach(file) {
+  busy(t('file.attaching'), async () => {
+    checkFileSize(file);
+    const path = addPending(newFilePath(file.name), file);
+    editor
+      .chain()
+      .focus()
+      .insertContent([{ type: 'text', text: file.name, marks: [{ type: 'link', attrs: { href: path } }] }, { type: 'text', text: ' ' }])
+      .run();
+  });
 }
 
 function selectedImage() {
@@ -224,7 +240,7 @@ $('#img-bar').addEventListener('click', async (e) => {
     return;
   }
   if (act === 'replace') {
-    return pickFiles(([f]) => busy(t('img.processingOne'), async () => setSrc(hold(await compressImage(f)))), false);
+    return pickFiles(([f]) => busy(t('img.processingOne'), async () => setSrc(hold(await compressImage(f)))), { multiple: false });
   }
   if (act === 'layout') {
     const { tr, schema } = editor.state;
