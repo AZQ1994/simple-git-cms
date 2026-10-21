@@ -34,6 +34,8 @@
     "test": "node --test test/*.test.mjs",
     "lint": "eslint .",
     "install-to": "node scripts/install.mjs",
+    "site": "node www/build.mjs",
+    "site:deploy": "node www/build.mjs && npx -y wrangler@4 deploy --config www/wrangler.toml",
     "licenses": "node scripts/licenses.mjs"
   },
   "devDependencies": {

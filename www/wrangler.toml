@@ -1,0 +1,13 @@
+# The project's own site, served as static assets from a Worker.
+#   npm run site && npx wrangler deploy --config www/wrangler.toml
+name = "simple-git-cms-site"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "./dist"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+[[routes]]
+pattern = "simple-git-cms.azq1994.com"
+custom_domain = true

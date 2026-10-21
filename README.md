@@ -41,6 +41,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
 | `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. |
+| `www/` | The project's own site, [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com) ([details](www/README.md)) |
 
 ## Putting it on a site
 

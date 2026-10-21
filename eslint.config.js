@@ -27,7 +27,7 @@ export default [
   },
   {
     // Build scripts and tests run in Node, and printing to stdout is what the scripts are for
-    files: ['scripts/**/*.mjs', 'test/**/*.mjs', 'eslint.config.js'],
+    files: ['scripts/**/*.mjs', 'test/**/*.mjs', 'www/**/*.mjs', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
     rules: { 'no-console': 'off' },
   },
