@@ -7,7 +7,6 @@ import Paragraph from '@tiptap/extension-paragraph';
 import { Markdown } from '@tiptap/markdown';
 import { NodeSelection } from '@tiptap/pm/state';
 import { GitHubStore, ConflictError, AuthError } from './github.js';
-import { excerpt } from './article.js';
 import { compressImage, newImagePath, openCropper, setImageOptions } from './images.js';
 import { icons } from './icons.js';
 import { applyI18n, getLocale, locales, rememberLocale, resolveLocale, setLocale, t } from './i18n/index.js';

@@ -32,10 +32,12 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/dev.mjs",
     "test": "node --test test/*.test.mjs",
+    "lint": "eslint .",
     "install-to": "node scripts/install.mjs",
     "licenses": "node scripts/licenses.mjs"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tiptap/core": "^3.32.0",
     "@tiptap/extension-image": "^3.32.0",
     "@tiptap/extension-paragraph": "^3.32.0",
@@ -44,6 +46,8 @@
     "@tiptap/starter-kit": "^3.32.0",
     "cropperjs": "^1.6.2",
     "esbuild": "^0.28.2",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0",
     "rehype-raw": "^7.0.0",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
