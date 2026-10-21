@@ -95,10 +95,19 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `collection.imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
-| `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default) |
+| `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default; see below) |
 | `blocks` | Blocks this site defines for itself; see [Blocks of your own](#blocks-of-your-own) |
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
+
+**How large `media.maxFileMB` should be.** The file never passes through the sign-in relay — the
+browser sends it straight to GitHub — so what limits it is where the site is published and what
+GitHub will keep. Cloudflare Pages and Cloudflare Workers static assets allow a single file of at
+most 25 MiB on every plan, which is what the default of 20 leaves a margin under. GitHub refuses a
+file over 100MB outright and warns above 50MB, and the upload is base64, which makes the request
+itself a third larger again. Worth knowing too: every version of an attachment stays in the
+repository's history for good, so a brochure that is replaced each year is better kept in object
+storage with a link to it in the article. A few MB, once, is what this is for.
 
 `config.schema.json` is installed next to it, so an editor that understands JSON Schema completes
 the fields and marks a typo as you write. The editor checks the file at startup as well, and names

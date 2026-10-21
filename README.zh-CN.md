@@ -77,10 +77,17 @@ node scripts/install.mjs ../my-site/public/editor   # 复制到网站的静态�
 | `collection.imageField` | 封面图写在 frontmatter 的哪个字段，比如 `image`。不填就没有封面图这个控件 |
 | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
 | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
-| `media.maxFileMB` | 附件大小上限，单位 MB（默认 20） |
+| `media.maxFileMB` | 附件大小上限，单位 MB（默认 20，理由见下） |
 | `blocks` | 这个网站自己定义的控件，见[自己定义控件](#自己定义控件) |
 | `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
+
+**`media.maxFileMB` 该设多大。** 文件不经过登录中转——浏览器直接发给 GitHub——所以限制它的是网站
+发布在哪里，以及 GitHub 愿意留什么。Cloudflare Pages 和 Cloudflare Workers 静态资源上单个文件最多
+25 MiB（免费和付费都一样），默认的 20 就是特意留在它下面的余量。GitHub 那边超过 100MB 直接拒绝、
+超过 50MB 警告，而且上传走的是 base64，请求体还要再大三分之一。另外值得知道的是：附件的每一版都会
+永久留在仓库历史里，所以每年换一次的宣传册更适合放对象存储、文章里只留一个链接。几 MB 的一次性文件
+才是这个功能的用处。
 
 `config.schema.json` 会一起装在它旁边，所以认 JSON Schema 的编辑器会给出补全，拼错了当场标出来。
 编辑器自己在启动时也会检查这个文件，并且一次把所有问题都列出来——包括它不认识的配置项，那种以前

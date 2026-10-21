@@ -128,7 +128,7 @@
           "minimum": 1,
           "maximum": 100,
           "default": 20,
-          "description": "The largest attachment that may be uploaded, in MB."
+          "description": "The largest attachment that may be uploaded, in MB. Cloudflare Pages and Workers static assets serve a single file of at most 25 MiB, and GitHub refuses one over 100MB."
         }
       }
     },
