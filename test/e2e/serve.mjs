@@ -17,17 +17,17 @@ const TYPES = {
 // A 1x1 transparent PNG, so the test's site has a logo the way a real install does
 const LOGO = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 
-export async function startEditor({ root, config }) {
+export async function startEditor({ root, config, headers = {} }) {
   const body = JSON.stringify(config);
   const server = createServer((req, res) => {
     let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (path.endsWith('/')) path += 'index.html';
     if (path === '/logo.png') {
-      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
+      res.writeHead(200, { ...headers, 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
       return res.end(LOGO);
     }
     if (path === '/config.json') {
-      res.writeHead(200, { 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' });
+      res.writeHead(200, { ...headers, 'Content-Type': TYPES['.json'], 'Cache-Control': 'no-store' });
       return res.end(body);
     }
     const file = join(root, normalize(path).replace(/^(\.\.[/\\])+/, ''));
@@ -35,7 +35,7 @@ export async function startEditor({ root, config }) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       return res.end('not found');
     }
-    res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
+    res.writeHead(200, { ...headers, 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
     createReadStream(file).pipe(res);
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));

@@ -149,6 +149,62 @@ copy `en.js`, translate the values, and add it to `locales` in `src/i18n/index.j
 on any key that is missing, extra, empty, or whose `{placeholders}` don't match English, so a new
 language can't ship half-done.
 
+## Locking the editor down
+
+The token lives in `localStorage`, so anything that can run a script on the editor's address can
+read it — and that token can write to your repository. A Content-Security-Policy header is what
+stops that: nothing but the editor's own files is allowed to run.
+
+<!-- csp:begin -->
+```http
+Content-Security-Policy:
+  default-src 'none';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob: https://avatars.githubusercontent.com;
+  connect-src 'self' https://api.github.com https://cms-auth.example.com;
+  frame-src 'self';
+  base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+```
+<!-- csp:end -->
+
+It goes on one line in the file you put it in; it is broken up here to be read. Replace
+`https://cms-auth.example.com` with your relay, and if the editor is on a different domain than the
+site, add the site's address to `img-src` and `frame-src`.
+
+| Directive | Why |
+|---|---|
+| `default-src 'none'` | Everything is refused, then opened one line at a time |
+| `script-src 'self'` | The line that matters. Only the editor's own files run — an injected `<script>`, inline or not, does nothing |
+| `style-src … 'unsafe-inline'` | Unavoidable: TipTap and the cropper set `style` attributes. Far weaker than the same for scripts, since CSS can't read `localStorage` |
+| `img-src … avatars.githubusercontent.com` | The avatar of whoever is signed in comes from GitHub |
+| `connect-src` | The editor may talk to the GitHub API and to your relay, and to nothing else |
+| `frame-src 'self'` | The preview iframe holds your own site |
+| `frame-ancestors 'none'` | Nobody may put the editor inside their page |
+
+Neither `'unsafe-eval'` nor `'unsafe-inline'` for scripts is needed — the page has no inline script
+and nothing in the bundles reaches for `eval`. `npm run test:e2e` serves the editor under exactly
+this policy, so CI notices if a change ever breaks it.
+
+Where it goes, with the editor installed at `/editor/`:
+
+```
+# Cloudflare Pages, Cloudflare Workers assets, Netlify — a _headers file at the site's root
+/editor/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; …
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+```
+
+nginx: `add_header Content-Security-Policy "…" always;` inside `location /editor/`. Apache:
+`Header always set Content-Security-Policy "…"` inside `<Location "/editor/">`. Vercel: a
+`headers` entry in `vercel.json`. If you can't set headers at all, a `<meta http-equiv>` in the
+editor's `index.html` does most of it — but `frame-ancestors` is ignored in a meta tag.
+
+**What it doesn't do.** It won't save you from a changed `app.js`, from someone who can edit what
+your server serves, or from a browser extension. The token is still in `localStorage`; this closes
+the usual way of reaching it, not the only conceivable one.
+
 ## Known limits
 
 - Editors need a GitHub account. Letting people in without one would mean adding your own sign-in
@@ -160,7 +216,8 @@ language can't ship half-done.
   the image and upload it again
 - The GitHub token is kept in `localStorage`, which is the usual trade-off for an editor with no
   backend: anyone who can inject a script into the editor's origin can read it. Serve the editor
-  from a domain you control and don't put untrusted scripts on it.
+  from a domain you control, don't put untrusted scripts on it, and give it the policy in
+  [Locking the editor down](#locking-the-editor-down).
 
 ## License
 

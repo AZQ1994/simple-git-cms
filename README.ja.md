@@ -145,6 +145,62 @@ GitHub API をローカルのプロキシに向けることもできます。
 キーの不足・余り・空文字、`{プレースホルダー}` が英語と合わない場合はテストが落ちるので、
 訳し残したまま出ることはありません。
 
+## エディターを締めておく
+
+トークンは `localStorage` にあるので、エディターのアドレスでスクリプトを実行できるものはそれを
+読めます。そしてそのトークンにはリポジトリへの書き込み権限があります。Content-Security-Policy
+ヘッダーはそれを止めるためのものです。エディター自身のファイル以外は、何も実行されません。
+
+<!-- csp:begin -->
+```http
+Content-Security-Policy:
+  default-src 'none';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob: https://avatars.githubusercontent.com;
+  connect-src 'self' https://api.github.com https://cms-auth.example.com;
+  frame-src 'self';
+  base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+```
+<!-- csp:end -->
+
+実際に置くときは 1 行です。ここで折ってあるのは読みやすさのためです。
+`https://cms-auth.example.com` は自分の中継に置き換えてください。エディターとサイトのドメインが
+違う場合は、サイトのアドレスを `img-src` と `frame-src` にも足します。
+
+| ディレクティブ | 理由 |
+|---|---|
+| `default-src 'none'` | まず全部断り、そこから 1 行ずつ開けます |
+| `script-src 'self'` | 肝心なのはこの行。動くのはエディター自身のファイルだけで、差し込まれた `<script>` はインラインでもそうでなくても何もしません |
+| `style-src … 'unsafe-inline'` | 避けられません。TipTap と切り抜きが `style` 属性を書きます。スクリプトの同じ緩和よりずっと弱く、CSS から `localStorage` は読めません |
+| `img-src … avatars.githubusercontent.com` | ログインしている人のアバターは GitHub から来ます |
+| `connect-src` | エディターが話してよいのは GitHub API と自分の中継だけ |
+| `frame-src 'self'` | プレビューの iframe に入るのは自分のサイトです |
+| `frame-ancestors 'none'` | 誰もエディターを自分のページに埋め込めません |
+
+`'unsafe-eval'` も、スクリプトの `'unsafe-inline'` も要りません。ページにインラインスクリプトは
+なく、バンドルのどこにも `eval` はないからです。`npm run test:e2e` はこのポリシーのもとで
+エディターを配信するので、何かがこれを壊したら CI が先に気づきます。
+
+エディターを `/editor/` に入れた場合、置き場所は：
+
+```
+# Cloudflare Pages、Cloudflare Workers の静的アセット、Netlify —— サイト直下の _headers
+/editor/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; …
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+```
+
+nginx は `location /editor/` の中に `add_header Content-Security-Policy "…" always;`。Apache は
+`<Location "/editor/">` の中に `Header always set Content-Security-Policy "…"`。Vercel は
+`vercel.json` の `headers`。ヘッダーがどうしても設定できないときは、エディターの `index.html` に
+`<meta http-equiv>` を置けば大半は効きます。ただし `frame-ancestors` は meta では無視されます。
+
+**できないこと。** 書き換えられた `app.js` は止められませんし、サーバーの中身を変えられる人も、
+ブラウザー拡張も止められません。トークンは `localStorage` にあるままで、これはそこへ至る普通の
+道を塞ぐだけです。
+
 ## わかっている制限
 
 - 書く人に GitHub アカウントが必要です（なしで済ませるなら、GitHub App としてコミットする
@@ -156,7 +212,8 @@ GitHub API をローカルのプロキシに向けることもできます。
   アップロードし直してください
 - GitHub のトークンは `localStorage` に入ります。バックエンドのないエディターでは普通の割り切りですが、
   エディターと同じオリジンにスクリプトを差し込める人はトークンを読めます。自分で管理している
-  ドメインに置き、素性の分からないスクリプトを同じドメインに置かないでください
+  ドメインに置き、素性の分からないスクリプトを同じドメインに置かず、[エディターを締めておく](#エディターを締めておく)
+  のポリシーを付けてください
 
 ## ライセンス
 

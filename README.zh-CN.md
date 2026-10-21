@@ -130,6 +130,59 @@ npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 要加一种语言，复制 `en.js` 翻译内容，再加进 `src/i18n/index.js` 的 `locales`。
 键少了、多了、为空，或者 `{占位符}` 和英文对不上，测试都会报错，所以不会漏翻译。
 
+## 把编辑器锁紧一点
+
+令牌放在 `localStorage` 里，所以任何能在编辑器这个地址上跑脚本的东西都能读到它——而那个令牌有你
+仓库的写权限。Content-Security-Policy 响应头就是用来堵这条路的：除了编辑器自己的文件，什么都不
+许执行。
+
+<!-- csp:begin -->
+```http
+Content-Security-Policy:
+  default-src 'none';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob: https://avatars.githubusercontent.com;
+  connect-src 'self' https://api.github.com https://cms-auth.example.com;
+  frame-src 'self';
+  base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+```
+<!-- csp:end -->
+
+放进文件时它是一行，这里拆开只是为了好读。把 `https://cms-auth.example.com` 换成你自己的中转；
+如果编辑器和网站不在同一个域名下，还要把网站的地址加进 `img-src` 和 `frame-src`。
+
+| 指令 | 为什么 |
+|---|---|
+| `default-src 'none'` | 先全部拒绝，再一行一行放开 |
+| `script-src 'self'` | 最关键的一条。只有编辑器自己的文件会跑——注入进来的 `<script>`，不管是不是内联，都不起作用 |
+| `style-src … 'unsafe-inline'` | 躲不掉：TipTap 和裁剪组件会往元素上写 `style` 属性。它比脚本的同名放宽弱得多，CSS 读不到 `localStorage` |
+| `img-src … avatars.githubusercontent.com` | 登录者的头像是从 GitHub 拿的 |
+| `connect-src` | 编辑器只许连 GitHub API 和你的中转，别的一概不行 |
+| `frame-src 'self'` | 预览的 iframe 装的是你自己的站点 |
+| `frame-ancestors 'none'` | 谁都不许把编辑器嵌进自己的页面 |
+
+`'unsafe-eval'` 和脚本的 `'unsafe-inline'` 都不需要——页面里没有内联脚本，打包文件里也没有
+`eval`。`npm run test:e2e` 就是在这份策略下跑编辑器的，所以哪天有改动把它弄坏了，CI 会先发现。
+
+编辑器装在 `/editor/` 的话，放在哪里：
+
+```
+# Cloudflare Pages、Cloudflare Workers 静态资源、Netlify —— 站点根目录下的 _headers 文件
+/editor/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; …
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+```
+
+nginx：在 `location /editor/` 里写 `add_header Content-Security-Policy "…" always;`。Apache：在
+`<Location "/editor/">` 里写 `Header always set Content-Security-Policy "…"`。Vercel：在
+`vercel.json` 的 `headers` 里加一条。要是响应头根本改不了，在编辑器的 `index.html` 里放一个
+`<meta http-equiv>` 也能顶上大半——但 `frame-ancestors` 在 meta 里是无效的。
+
+**它解决不了什么。** 挡不住被改过的 `app.js`，挡不住能改你服务器上文件的人，也挡不住浏览器扩展。
+令牌还是在 `localStorage` 里；这一条堵住的是最常见的那条路，不是唯一一条。
+
 ## 已知限制
 
 - 编辑者必须有 GitHub 账号（不想用 GitHub 账号的话，需要再加一层自己的登录服务，以 GitHub App 身份提交）
@@ -138,7 +191,7 @@ npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 - 外部图片地址（从别的网页粘贴来的）会被拒绝保存，需要下载后重新上传
 - GitHub 令牌存在 `localStorage` 里。这是「没有后端的编辑器」的通常取舍：
   任何能往编辑器所在域名注入脚本的人都能读到它。请把编辑器放在自己能控制的域名下，
-  不要在同一个域名上放来路不明的脚本。
+  不要在同一个域名上放来路不明的脚本，并给它配上[把编辑器锁紧一点](#把编辑器锁紧一点)里的那份策略。
 
 ## 许可证
 

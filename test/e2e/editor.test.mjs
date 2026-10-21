@@ -9,12 +9,14 @@ import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
 import { CONTENT_DIR, MEDIA_DIR, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
+import { policyFromReadme } from './policy.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const dist = join(root, 'dist');
 
 let gh;
 let site;
+let policy;
 let chrome;
 let page;
 
@@ -23,8 +25,16 @@ before(async () => {
   assert.ok(findChrome(), 'no Chrome found; set CHROME_PATH');
 
   gh = await startFakeGitHub();
+  // The editor is served exactly as the README says to serve it, with the fake GitHub standing in
+  // for api.github.com. If the policy and the editor ever stop agreeing, these tests say so.
+  policy = policyFromReadme().replace('https://api.github.com', gh.origin);
   site = await startEditor({
     root: dist,
+    headers: {
+      'Content-Security-Policy': policy,
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+    },
     config: {
       title: 'Test',
       siteName: 'Test site',
@@ -164,4 +174,20 @@ test('nothing went wrong in the browser', async () => {
   assert.deepEqual(JSON.parse(failed), [], 'every request the editor makes should succeed');
   // Network entries are the same requests the check above already judged, so they aren't news
   assert.deepEqual(page.logs.filter((l) => !l.startsWith('[network]')), []);
+});
+
+// Last, because the browser logs a refused script and the check above would count that as trouble
+test('all of that happened under the policy the README recommends, and it bites', async () => {
+  assert.match(policy, /^default-src 'none';/);
+  assert.doesNotMatch(policy, /unsafe-eval/);
+  assert.doesNotMatch(policy, /script-src[^;]*unsafe-inline/);
+
+  const ran = await page.evaluate(`(() => {
+    window.__injected = false;
+    const s = document.createElement('script');
+    s.textContent = 'window.__injected = true';
+    document.body.append(s);
+    return window.__injected;
+  })()`);
+  assert.equal(ran, false, 'the policy has to be in force, not merely printed in the README');
 });

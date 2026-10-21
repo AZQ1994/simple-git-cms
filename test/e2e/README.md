@@ -18,11 +18,16 @@ npm run test:e2e
 | `cdp.mjs` | A Chrome DevTools Protocol client: Node's own WebSocket, no dependencies. Starts headless Chrome, evaluates expressions in the page, answers the dialogs the editor puts up |
 | `fake-github.mjs` | The REST and GraphQL calls `src/github.js` makes, answered out of a `Map`. A test can read `gh.files` and `gh.commits` afterwards |
 | `serve.mjs` | Serves `dist/` with a `config.json` written for the test |
+| `policy.mjs` | Reads the Content-Security-Policy out of README.md, so the policy under test is the one the README tells people to use |
 | `editor.test.mjs` | Sign in, list, open, edit, save, publish, delete — each one checked against what the fake repository holds |
 
 Chrome is found at the usual places, or wherever `CHROME_PATH` points. Nothing is downloaded and
 nothing reaches the network: both servers listen on 127.0.0.1 on a port the operating system picks,
 and the editor's API is pointed at the fake one through `localStorage['simple-git-cms-api']`, which
 the editor only honours on localhost.
+
+The editor is served under the policy the README recommends, and the last test injects an inline
+script to prove the policy is in force rather than merely printed. So a change that quietly needs
+`unsafe-inline` or `unsafe-eval` fails here instead of in somebody's install.
 
 CI runs these on one Node version — what they exercise is the browser, not Node.
