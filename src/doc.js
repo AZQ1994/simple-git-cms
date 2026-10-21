@@ -1,9 +1,10 @@
 // The article being edited: its form fields and tags, opening, saving, publishing and deleting,
 // the status bar, and the deployment indicator.
 import { $, busy, toast } from './dom.js';
-import { CONFIG, emit, fmtDateInput, fmtDateTime, mediaRepoPath, on, pending, state, store } from './store.js';
+import { addPending, CONFIG, displaySrc, emit, fmtDateInput, fmtDateTime, mediaRepoPath, on, pending, state, store } from './store.js';
 import { dropDraft, getDraft, putDraft } from './recover.js';
 import { editor, setBody, toMarkdown } from './editor.js';
+import { compressImage, newImagePath, openCropper } from './images.js';
 import { renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
 import { icons } from './icons.js';
@@ -89,6 +90,10 @@ on('doc:changed', queueDraft);
 
 const draftKey = (id) => `${CONFIG.repo}/${CONFIG.collection.dir}/${id ?? 'new'}`;
 
+/** Whether an article still points at an image — in the body, or as its cover. An image that has
+ * been inserted and then deleted again is not committed. */
+const isUsed = (article, path) => article.body.includes(`(${path}`) || (coverField() && article.extra?.[coverField()] === path);
+
 let draftTimer;
 function queueDraft() {
   clearTimeout(draftTimer);
@@ -100,7 +105,7 @@ async function keepDraft() {
   const article = collect();
   const images = [];
   for (const [path, p] of pending) {
-    if (!p.uploaded && article.body.includes(`(${path}`)) images.push({ path, blob: p.blob });
+    if (!p.uploaded && isUsed(article, path)) images.push({ path, blob: p.blob });
   }
   await putDraft(draftKey(state.current.id), { article, images, savedAt: Date.now() });
 }
@@ -114,7 +119,7 @@ function forgetDraft(id) {
 async function unsavedDraft(id, saved) {
   const kept = await getDraft(draftKey(id));
   if (!kept?.article) return null;
-  const same = (a) => JSON.stringify([a.title, a.description, a.date, a.tags, a.body]);
+  const same = (a) => JSON.stringify([a.title, a.description, a.date, a.tags, a.body, a.extra]);
   return saved && same(kept.article) === same(saved) ? null : kept;
 }
 
@@ -178,6 +183,8 @@ function load(a) {
   $('#f-desc').value = a.description;
   tags = [...a.tags];
   renderTags();
+  cover = coverField() ? (typeof a.extra?.[coverField()] === 'string' ? a.extra[coverField()] : null) : null;
+  renderCover();
   setBody(a.body);
   updateDescHint();
   $('#empty').hidden = true;
@@ -212,13 +219,71 @@ $('#new-article').addEventListener('click', () => {
   $('#f-title').focus();
 });
 
+// ---------- Cover image ----------
+//
+// The site uses it as the article's thumbnail and its share image, so it lives in the frontmatter
+// rather than in the body. Which field it goes in is up to config.collection.imageField; when
+// that is empty there is no cover and no control.
+
+let cover = null; // the path on the site, or null
+
+const coverField = () => CONFIG.collection.imageField;
+
+function renderCover() {
+  const field = coverField();
+  // A field the editor did not write — Astro's { src, alt } object, say, or a path relative to the
+  // article — is left exactly as it is, and the control stays out of the way
+  const ours = !field || typeof (state.current?.extra?.[field] ?? '') === 'string';
+  $('#cover').hidden = !field || !ours;
+  if ($('#cover').hidden) return;
+  $('#cover-img').hidden = !cover;
+  if (cover) $('#cover-img').src = displaySrc(cover);
+  $('#cover-empty').hidden = Boolean(cover);
+  $('#cover-acts').hidden = !cover;
+}
+
+function setCover(path) {
+  cover = path;
+  renderCover();
+  markDirty();
+}
+
+// A file chooser of its own, so a cover never lands in the body by mistake
+const pickCover = () => {
+  $('#cover-input').value = '';
+  $('#cover-input').click();
+};
+$('#cover-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) busy(t('img.processingOne'), async () => setCover(addPending(newImagePath(), await compressImage(file))));
+});
+
+$('#cover-pick').addEventListener('click', pickCover);
+$('#cover-acts').addEventListener('click', async (e) => {
+  const act = e.target.closest('[data-cover]')?.dataset.cover;
+  if (!act || !cover) return;
+  if (act === 'remove') return setCover(null);
+  if (act === 'replace') return pickCover();
+  if (act === 'crop') {
+    const blob = await openCropper(displaySrc(cover));
+    if (blob) setCover(addPending(newImagePath(), blob));
+  }
+});
+
 // ---------- Saving ----------
 
 export function collect() {
   const date = $('#f-date').value;
   const keepTime = state.current.date && fmtDateInput(state.current.date) === date;
+  const extra = { ...state.current.extra };
+  // Assigning to a field that is already there keeps its place in the frontmatter
+  if (coverField()) {
+    if (cover) extra[coverField()] = cover;
+    else delete extra[coverField()];
+  }
   return {
     ...state.current,
+    extra,
     title: $('#f-title').value.trim(),
     description: $('#f-desc').value.trim(),
     tags: [...tags],
@@ -248,7 +313,7 @@ async function save({ draft, force = false, label = t('save.saving') }) {
   const keyBefore = state.current.id; // a new article is kept under 'new' until it has one
   const images = [];
   for (const [path, p] of pending) {
-    if (!p.uploaded && article.body.includes(`(${path}`)) {
+    if (!p.uploaded && isUsed(article, path)) {
       images.push({ url: path, path: mediaRepoPath(path), bytes: new Uint8Array(await p.blob.arrayBuffer()) });
     }
   }

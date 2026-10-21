@@ -125,6 +125,14 @@ export async function openPage(port) {
       await send('Page.navigate', { url });
       await sleep(400);
     },
+    /** Choose a file in a file input, as the file picker would. */
+    async chooseFile(selector, file) {
+      await send('DOM.enable');
+      const { root } = await send('DOM.getDocument', { depth: -1 });
+      const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId, selector });
+      if (!nodeId) throw new Error(`no file input at ${selector}`);
+      await send('DOM.setFileInputFiles', { files: [file], nodeId });
+    },
     /** Press a key the way a person would, so the page's keymaps see it. */
     async press(key) {
       const vk = KEYS[key] ?? 0;

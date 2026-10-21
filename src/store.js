@@ -32,6 +32,12 @@ export const state = {
 /** New images not committed yet: path on the site -> { blob, url, uploaded } */
 export const pending = new Map();
 
+/** Hold a new image until something commits it, and give back the path it will have on the site. */
+export function addPending(path, blob) {
+  pending.set(path, { blob, url: URL.createObjectURL(blob), uploaded: false });
+  return path;
+}
+
 // When the editor is on a different domain than the site, images need the site's address prefixed
 export const displaySrc = (src) => pending.get(src)?.url ?? (src?.startsWith('/') && CONFIG.assetBase ? CONFIG.assetBase + src : src);
 // An image's path on the site (/uploads/…) to its path in the repository (public/uploads/…)

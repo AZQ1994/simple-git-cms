@@ -85,6 +85,18 @@
         <article class="doc" id="doc" hidden>
           <textarea class="title" id="f-title" rows="1" data-i18n-placeholder="doc.titlePlaceholder"></textarea>
 
+          <div class="cover" id="cover" hidden>
+            <button type="button" class="cover-box" id="cover-pick">
+              <img id="cover-img" alt="" hidden />
+              <span class="cover-empty" id="cover-empty"><span data-icon="image"></span><span data-i18n="doc.coverAdd"></span></span>
+            </button>
+            <div class="cover-acts" id="cover-acts" hidden>
+              <button type="button" data-cover="crop"><span data-icon="crop"></span><span data-i18n="img.crop"></span></button>
+              <button type="button" data-cover="replace"><span data-icon="replace"></span><span data-i18n="doc.coverReplace"></span></button>
+              <button type="button" data-cover="remove" class="danger"><span data-icon="trash"></span><span data-i18n="doc.coverRemove"></span></button>
+            </div>
+          </div>
+
           <div class="meta">
             <label class="meta-item">
               <span class="meta-label" data-i18n="doc.date"></span>
@@ -154,6 +166,7 @@
     </div>
 
     <input type="file" id="file-input" accept="image/*" multiple hidden />
+    <input type="file" id="cover-input" accept="image/*" hidden />
 
     <!-- Crop window -->
     <div class="modal" id="crop-modal" hidden>

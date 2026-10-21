@@ -208,6 +208,20 @@ svg { flex: none; }
   font-size: 30px; line-height: 1.35; font-weight: 700; color: var(--ink); letter-spacing: .01em; background: none;
 }
 .title::placeholder { color: var(--placeholder); }
+/* The cover image, which the site uses as the article's thumbnail and its share image */
+.cover { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+.cover-box {
+  display: block; width: 168px; aspect-ratio: 16 / 9; padding: 0; overflow: hidden;
+  border: 1px dashed var(--line-strong); border-radius: 9px; background: var(--surface); color: var(--faint); cursor: pointer;
+}
+.cover-box:hover { border-color: var(--navy); color: var(--navy); }
+.cover-box img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cover-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 100%; font-size: 12.5px; }
+.cover-acts { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.cover-acts button { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; border: 0; border-radius: 7px; background: none; color: var(--muted); cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.cover-acts button:hover { background: var(--hover); color: var(--ink); }
+.cover svg { width: 15px; height: 15px; }
+
 .meta { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; margin-top: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
 .meta-item { display: flex; align-items: center; gap: 10px; }
 .meta-item.grow { flex: 1; min-width: 240px; }

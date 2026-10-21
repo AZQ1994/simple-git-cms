@@ -7,7 +7,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { $, busy } from './dom.js';
 import { cleanMarkdown, schemaExtensions } from './schema.js';
-import { displaySrc, emit, on, pending } from './store.js';
+import { addPending, displaySrc, emit, on } from './store.js';
 import { compressImage, newImagePath, openCropper } from './images.js';
 import { icons } from './icons.js';
 import { t } from './i18n/index.js';
@@ -130,11 +130,7 @@ $('#file-input').addEventListener('change', (e) => {
   if (files.length) filePicked?.(files);
 });
 
-async function addPending(blob) {
-  const path = newImagePath();
-  pending.set(path, { blob, url: URL.createObjectURL(blob), uploaded: false });
-  return path;
-}
+const hold = (blob) => addPending(newImagePath(), blob);
 
 /** Insert images: one gets its own paragraph, several share one so they sit side by side. */
 function insertFiles(files) {
@@ -142,7 +138,7 @@ function insertFiles(files) {
   if (!imgs.length) return false;
   busy(t('img.processing', { n: imgs.length }), async () => {
     const nodes = [];
-    for (const f of imgs) nodes.push({ type: 'image', attrs: { src: await addPending(await compressImage(f)), alt: '' } });
+    for (const f of imgs) nodes.push({ type: 'image', attrs: { src: hold(await compressImage(f)), alt: '' } });
     editor.chain().focus().insertContent([{ type: 'paragraph', content: nodes }, { type: 'paragraph' }]).run();
   });
   return true;
@@ -221,11 +217,11 @@ $('#img-bar').addEventListener('click', async (e) => {
   }
   if (act === 'crop') {
     const blob = await openCropper(displaySrc(img.node.attrs.src));
-    if (blob) setSrc(await addPending(blob));
+    if (blob) setSrc(hold(blob));
     return;
   }
   if (act === 'replace') {
-    return pickFiles(([f]) => busy(t('img.processingOne'), async () => setSrc(await addPending(await compressImage(f)))), false);
+    return pickFiles(([f]) => busy(t('img.processingOne'), async () => setSrc(hold(await compressImage(f)))), false);
   }
   if (act === 'layout') {
     const { tr, schema } = editor.state;

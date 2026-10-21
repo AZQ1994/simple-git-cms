@@ -22,6 +22,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   caption, place side by side, replace
 - **Tables**: add and remove rows and columns, align a column left, centre or right — written out
   as a plain GFM table that lines up in the file
+- **A cover image**: uploaded, replaced, cropped or removed in the article's own form, and
+  written to a frontmatter field of your choosing — what a site uses for list thumbnails and
+  share images
 - **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft. The open
   one is in the address bar, so reloading comes back to it and the link opens it for anyone else
   who can sign in
@@ -80,6 +83,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `auth.base` | The URL of the sign-in relay |
 | `collection.dir` | The article directory inside the repository; one `<id>.md` per article |
 | `collection.url` | The article's URL on the site; `{id}` is substituted |
+| `collection.imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |

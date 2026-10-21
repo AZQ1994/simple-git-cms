@@ -31,6 +31,7 @@ const SPEC = {
   collection: {
     fields: {
       label: str,
+      imageField: str,
       dir: { ...str, required: true },
       url: { ...str, slash: true, wants: '{id}', hint: 'config.noId' },
     },

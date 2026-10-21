@@ -55,7 +55,7 @@ async function loadConfig() {
     ...c,
     siteUrl: (c.siteUrl || location.origin).replace(/\/+$/, ''),
     auth: { ...c.auth },
-    collection: { label: t('config.defaultCollection'), url: '/{id}/', ...c.collection, dir: strip(c.collection?.dir) },
+    collection: { label: t('config.defaultCollection'), url: '/{id}/', imageField: '', ...c.collection, dir: strip(c.collection?.dir) },
     media: { url: '/uploads', ...c.media, dir: strip(c.media?.dir) },
     deploy: { skipCiForDrafts: true, ...c.deploy },
   };

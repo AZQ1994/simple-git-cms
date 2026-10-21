@@ -18,6 +18,7 @@
   "collection": {
     "label": "news",
     "dir": "src/content/news",
+    "imageField": "image",
     "url": "/news/{id}/"
   },
 

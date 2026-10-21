@@ -4,58 +4,147 @@
   "description": "config.json, which sits next to the editor's index.html.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["repo", "auth", "collection", "media"],
+  "required": [
+    "repo",
+    "auth",
+    "collection",
+    "media"
+  ],
   "properties": {
-    "$schema": { "type": "string" },
-    "title": { "type": "string", "description": "What the editor calls itself." },
-    "siteName": { "type": "string", "description": "The site's name, used as the logo's alt text." },
-    "logo": { "type": "string", "description": "An image next to the editor, e.g. ./logo.png. A missing one is simply not shown." },
-    "lang": { "enum": ["en", "zh", "ja"], "description": "Starting interface language. Omit it to follow the browser; whatever the person picks from the menu wins." },
-    "repo": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$", "description": "owner/name of the repository holding the content." },
-    "branch": { "type": "string", "default": "main" },
-    "siteUrl": { "type": "string", "pattern": "^https?://", "description": "The site's address: used for \"View on site\", and to load images when the editor is on another domain." },
-    "timeZone": { "type": "string", "default": "Asia/Tokyo", "description": "An IANA zone, e.g. Asia/Tokyo. Used for dates shown, image folders and new article ids." },
+    "$schema": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "What the editor calls itself."
+    },
+    "siteName": {
+      "type": "string",
+      "description": "The site's name, used as the logo's alt text."
+    },
+    "logo": {
+      "type": "string",
+      "description": "An image next to the editor, e.g. ./logo.png. A missing one is simply not shown."
+    },
+    "lang": {
+      "enum": [
+        "en",
+        "zh",
+        "ja"
+      ],
+      "description": "Starting interface language. Omit it to follow the browser; whatever the person picks from the menu wins."
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[^/\\s]+/[^/\\s]+$",
+      "description": "owner/name of the repository holding the content."
+    },
+    "branch": {
+      "type": "string",
+      "default": "main"
+    },
+    "siteUrl": {
+      "type": "string",
+      "pattern": "^https?://",
+      "description": "The site's address: used for \"View on site\", and to load images when the editor is on another domain."
+    },
+    "timeZone": {
+      "type": "string",
+      "default": "Asia/Tokyo",
+      "description": "An IANA zone, e.g. Asia/Tokyo. Used for dates shown, image folders and new article ids."
+    },
     "auth": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["base"],
+      "required": [
+        "base"
+      ],
       "properties": {
-        "base": { "type": "string", "pattern": "^(https?://|/)", "description": "The sign-in relay's address (see auth/README.md)." }
+        "base": {
+          "type": "string",
+          "pattern": "^(https?://|/)",
+          "description": "The sign-in relay's address (see auth/README.md)."
+        }
       }
     },
     "collection": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["dir"],
+      "required": [
+        "dir"
+      ],
       "properties": {
-        "label": { "type": "string", "description": "What this collection is called in the interface, e.g. news." },
-        "dir": { "type": "string", "description": "The article directory inside the repository; one <id>.md per article." },
-        "url": { "type": "string", "pattern": "^/", "default": "/{id}/", "description": "The article's address on the site. {id} is substituted." }
+        "label": {
+          "type": "string",
+          "description": "What this collection is called in the interface, e.g. news."
+        },
+        "imageField": {
+          "type": "string",
+          "description": "The frontmatter field for the article's cover image, e.g. image. Empty (the default) means no cover image control."
+        },
+        "dir": {
+          "type": "string",
+          "description": "The article directory inside the repository; one <id>.md per article."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^/",
+          "default": "/{id}/",
+          "description": "The article's address on the site. {id} is substituted."
+        }
       }
     },
     "media": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["dir"],
+      "required": [
+        "dir"
+      ],
       "properties": {
-        "dir": { "type": "string", "description": "Where images live in the repository, e.g. public/uploads." },
-        "url": { "type": "string", "pattern": "^/", "default": "/uploads", "description": "Their path prefix on the site." },
-        "maxWidth": { "type": "number", "minimum": 1, "maximum": 10000, "description": "Images wider than this are scaled down on upload." },
-        "quality": { "type": "number", "minimum": 0, "maximum": 1, "description": "webp quality, 0 to 1." }
+        "dir": {
+          "type": "string",
+          "description": "Where images live in the repository, e.g. public/uploads."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^/",
+          "default": "/uploads",
+          "description": "Their path prefix on the site."
+        },
+        "maxWidth": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Images wider than this are scaled down on upload."
+        },
+        "quality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "webp quality, 0 to 1."
+        }
       }
     },
     "preview": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "url": { "type": "string", "pattern": "^/", "description": "The preview page on the site. Leave it out and there is no Preview button." }
+        "url": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "The preview page on the site. Leave it out and there is no Preview button."
+        }
       }
     },
     "deploy": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "skipCiForDrafts": { "type": "boolean", "default": true, "description": "Add [skip ci] when saving drafts, so they don't trigger a build." }
+        "skipCiForDrafts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add [skip ci] when saving drafts, so they don't trigger a build."
+        }
       }
     }
   }

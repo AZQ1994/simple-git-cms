@@ -75,7 +75,7 @@ await writeFile(
       siteUrl: SITE,
       timeZone: 'Asia/Tokyo',
       auth: { base: '/demo/auth' },
-      collection: { label: 'news', dir: 'site/content/news', url: '/demo/preview/' },
+      collection: { label: 'news', dir: 'site/content/news', url: '/demo/preview/', imageField: 'image' },
       media: { dir: 'site/public/uploads', url: '/uploads', maxWidth: 1600, quality: 0.82 },
       preview: { url: '/demo/preview/' },
       deploy: { skipCiForDrafts: true },

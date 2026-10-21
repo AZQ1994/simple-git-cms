@@ -3,7 +3,8 @@
 // commit. Run with `npm run test:e2e` (needs a Chrome; see test/e2e/README.md).
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
@@ -43,7 +44,7 @@ before(async () => {
       siteUrl: 'http://example.invalid',
       timeZone: 'UTC',
       auth: { base: 'http://auth.invalid' },
-      collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/' },
+      collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
     },
   });
@@ -198,6 +199,32 @@ test('a table built with the toolbar is saved as a GFM table', async () => {
     gh.files.get(`${CONTENT_DIR}/${id}.md`).includes(['| Day | Open | Close |', '| :-: | ---- | ----- |', '| Mon | 9:00 | 17:00 |'].join('\n')),
     `the table in the file was:\n${gh.files.get(`${CONTENT_DIR}/${id}.md`)}`,
   );
+});
+
+test('a cover image is uploaded with the article and named in the frontmatter', async () => {
+  // A 4x4 PNG; the editor compresses whatever it is given to webp, so the format going in only
+  // has to be something a browser can decode
+  const file = join(tmpdir(), 'sgcms-cover.png');
+  writeFileSync(file, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGM4YaMBRwzEcQDxwxLBXOwG1wAAAABJRU5ErkJggg==', 'base64'));
+
+  await openArticle(1);
+  const id = await page.evaluate(`new URLSearchParams(location.search).get('id')`);
+  assert.equal(await page.evaluate(`document.getElementById('cover').hidden`), false, 'the control appears because config names a field');
+  await page.evaluate(`document.getElementById('cover-pick').click()`);
+  await page.chooseFile('#cover-input', file);
+  await page.until(`!document.getElementById('cover-img').hidden`, { label: 'the cover thumbnail' });
+  await save();
+
+  const saved = gh.files.get(`${CONTENT_DIR}/${id}.md`);
+  const [, path] = saved.match(/^image: (.+)$/m) ?? [];
+  assert.ok(path, `the frontmatter should name the cover:\n${saved}`);
+  assert.match(path, /^\/uploads\/\d{8}\/\w+\.webp$/);
+  assert.ok(gh.files.has(path.replace('/uploads', MEDIA_DIR)), 'the image itself has to be in the same commit');
+
+  // and taking it off again takes the field with it
+  await page.evaluate(`document.querySelector('#cover-acts [data-cover="remove"]').click()`);
+  await save();
+  assert.doesNotMatch(gh.files.get(`${CONTENT_DIR}/${id}.md`), /^image:/m);
 });
 
 test('nothing went wrong in the browser', async () => {
