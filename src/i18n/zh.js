@@ -95,6 +95,9 @@ export default {
   'crop.apply': '完成',
 
   // 校验
+  'recover.prompt': '这篇文章有一份 {when} 的改动没有保存过，还留在这个浏览器里。要恢复吗？',
+  'recover.promptNew': '有一篇 {when} 写着的新文章没有保存过。要恢复吗？',
+  'recover.restored': '已恢复。还没有提交到仓库。',
   'validate.title': '请填写标题',
   'validate.body': '请填写正文',
   'validate.externalImage': '正文里有外部图片地址（可能是从别处粘贴的），请下载后用「图片」按钮重新上传',

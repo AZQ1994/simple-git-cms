@@ -40,6 +40,8 @@ export const mediaRepoPath = (url) => CONFIG.media.dir + url.slice(CONFIG.media.
 // The date input needs ISO YYYY-MM-DD; the list shows it in the interface language
 export const fmtDateInput = (iso) => new Date(iso).toLocaleDateString('sv-SE', { timeZone: CONFIG.timeZone });
 export const fmtDate = (iso) => new Date(iso).toLocaleDateString(getLocale(), { timeZone: CONFIG.timeZone, dateStyle: 'medium' });
+// For things that happened rather than things that are dated — "kept since 21 Oct, 17:41"
+export const fmtDateTime = (ms) => new Date(ms).toLocaleString(getLocale(), { timeZone: CONFIG.timeZone, dateStyle: 'medium', timeStyle: 'short' });
 
 // ---------- Events ----------
 //

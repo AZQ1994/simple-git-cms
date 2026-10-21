@@ -25,6 +25,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   who can sign in
 - **Saving**: the article and its new images go in as a single commit; if someone else changed the
   article while it was open, you are offered their version or yours
+- **Nothing in progress is lost**: what hasn't been committed is kept in the browser as you type —
+  images that haven't been uploaded included — and offered back after a crash, a closed tab or a
+  reload
 - **Preview**: see the article in your own site's layout, at desktop or phone width, including
   changes and images you have not saved yet
 - **Deployment**: draft saves get `[skip ci]` so they don't trigger a build; after publishing, the

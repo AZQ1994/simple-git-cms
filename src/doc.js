@@ -1,7 +1,8 @@
 // The article being edited: its form fields and tags, opening, saving, publishing and deleting,
 // the status bar, and the deployment indicator.
 import { $, busy, toast } from './dom.js';
-import { CONFIG, emit, fmtDateInput, mediaRepoPath, on, pending, state, store } from './store.js';
+import { CONFIG, emit, fmtDateInput, fmtDateTime, mediaRepoPath, on, pending, state, store } from './store.js';
+import { dropDraft, getDraft, putDraft } from './recover.js';
 import { editor, setBody, toMarkdown } from './editor.js';
 import { renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
@@ -78,9 +79,70 @@ function markDirty() {
   emit('doc:changed');
 }
 on('doc:edited', markDirty);
+on('doc:changed', queueDraft);
+
+// ---------- Unsaved work ----------
+//
+// Everything typed is copied into the browser a moment later, so closing the tab or losing the
+// browser doesn't lose the article. The copy goes the moment it is committed, or the moment
+// someone says they don't want it.
+
+const draftKey = (id) => `${CONFIG.repo}/${CONFIG.collection.dir}/${id ?? 'new'}`;
+
+let draftTimer;
+function queueDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(keepDraft, 1200);
+}
+
+async function keepDraft() {
+  if (!state.current || !state.dirty) return;
+  const article = collect();
+  const images = [];
+  for (const [path, p] of pending) {
+    if (!p.uploaded && article.body.includes(`(${path}`)) images.push({ path, blob: p.blob });
+  }
+  await putDraft(draftKey(state.current.id), { article, images, savedAt: Date.now() });
+}
+
+function forgetDraft(id) {
+  clearTimeout(draftTimer);
+  dropDraft(draftKey(id));
+}
+
+/** What was kept for this article, if it says anything the saved version doesn't. */
+async function unsavedDraft(id, saved) {
+  const kept = await getDraft(draftKey(id));
+  if (!kept?.article) return null;
+  const same = (a) => JSON.stringify([a.title, a.description, a.date, a.tags, a.body]);
+  return saved && same(kept.article) === same(saved) ? null : kept;
+}
+
+/** Put a kept draft back on screen, images and all. Nothing is committed by this. */
+function restoreDraft(kept) {
+  for (const { path, blob } of kept.images ?? []) {
+    if (!pending.has(path)) pending.set(path, { blob, url: URL.createObjectURL(blob), uploaded: false });
+  }
+  load(kept.article);
+  state.dirty = true;
+  updateBar();
+  renderList();
+  toast(t('recover.restored'));
+}
+
+/** Offer the kept draft, and take no for an answer — permanently. */
+async function offerDraft(id, saved, prompt = 'recover.prompt') {
+  const kept = await unsavedDraft(id, saved);
+  if (!kept) return;
+  if (confirm(t(prompt, { when: fmtDateTime(kept.savedAt) }))) restoreDraft(kept);
+  else forgetDraft(id);
+}
 
 export function confirmDiscard() {
-  return !state.dirty || confirm(t('save.discardConfirm'));
+  if (!state.dirty) return true;
+  if (!confirm(t('save.discardConfirm'))) return false;
+  forgetDraft(state.current?.id); // they said they don't want it; don't offer it back later
+  return true;
 }
 addEventListener('beforeunload', (e) => {
   if (state.dirty) e.preventDefault();
@@ -103,7 +165,7 @@ function rememberOpen(id) {
 /** Reopen whatever was open before the reload. Called once the article list is in. */
 export function restoreOpen() {
   const id = idInUrl();
-  if (!id) return;
+  if (!id) return offerDraft(null, null, 'recover.promptNew'); // an article being written last time
   if (state.articles.some((a) => a.id === id)) openArticle(id);
   else rememberOpen(null); // it was deleted, or this is someone else's link to another repository
 }
@@ -134,7 +196,10 @@ function openArticle(id) {
   if (state.current?.id === id) return setSidebar(false);
   if (!confirmDiscard()) return;
   const a = state.articles.find((x) => x.id === id);
-  if (a) load(structuredClone({ ...a, extra: a.extra }));
+  if (a) {
+    load(structuredClone({ ...a, extra: a.extra }));
+    offerDraft(id, a);
+  }
   setSidebar(false);
 }
 on('article:open', openArticle);
@@ -179,6 +244,7 @@ async function save({ draft, force = false, label = t('save.saving') }) {
     return false;
   }
   const wasLive = state.current.id && !state.current.draft;
+  const keyBefore = state.current.id; // a new article is kept under 'new' until it has one
   const images = [];
   for (const [path, p] of pending) {
     if (!p.uploaded && article.body.includes(`(${path}`)) {
@@ -202,6 +268,8 @@ async function save({ draft, force = false, label = t('save.saving') }) {
         state.articles.sort((a, b) => String(b.date).localeCompare(String(a.date)));
         state.current = saved;
         state.dirty = false;
+        forgetDraft(keyBefore);
+        if (saved.id !== keyBefore) forgetDraft(saved.id);
         rememberOpen(saved.id);
         updateBar();
         renderList();
@@ -233,6 +301,7 @@ $('#btn-delete').addEventListener('click', async () => {
   await busy(t('save.deleting'), async () => {
     await store.saveArticle(state.current, { baseSha: state.current.sha, deleteArticle: true, message: `${CONFIG.deploy.skipCiForDrafts ? '[skip ci] ' : ''}${t('commit.delete', { title: state.current.title })}` });
     state.articles = state.articles.filter((a) => a.id !== state.current.id);
+    forgetDraft(state.current.id);
     state.current = null;
     state.dirty = false;
     rememberOpen(null);
