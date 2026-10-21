@@ -1,3 +1,4 @@
+// Simplified Chinese. See src/i18n/index.js for the keys; {xxx} are placeholders.
 // 简体中文。键名见 src/i18n/index.js；{xxx} 是会被替换的占位符。
 export default {
   'lang.name': '简体中文',
@@ -44,6 +45,7 @@ export default {
 
   // 文章字段
   'doc.titlePlaceholder': '标题',
+  'doc.bodyPlaceholder': '开始写正文…',
   'doc.date': '日期',
   'doc.tags': '标签',
   'doc.addTag': '添加标签',

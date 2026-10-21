@@ -1,3 +1,4 @@
+// Japanese. See src/i18n/index.js for the keys; {xxx} are placeholders.
 // 日本語。キーは src/i18n/index.js を参照。{xxx} は置き換えられる部分。
 export default {
   'lang.name': '日本語',
@@ -44,6 +45,7 @@ export default {
 
   // 記事の項目
   'doc.titlePlaceholder': 'タイトル',
+  'doc.bodyPlaceholder': '本文を書き始めてください…',
   'doc.date': '日付',
   'doc.tags': 'タグ',
   'doc.addTag': 'タグを追加',

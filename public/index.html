@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="./app.css" />
   </head>
   <body>
-    <!-- 登录 -->
+    <!-- Sign-in -->
     <section class="login" id="login" hidden>
       <div class="login-card">
         <img class="login-logo brand-logo" alt="" />
@@ -31,7 +31,7 @@
       </div>
     </section>
 
-    <!-- 主界面 -->
+    <!-- The editor itself -->
     <div class="app" id="app" hidden>
       <aside class="sidebar" id="sidebar">
         <div class="side-top">
@@ -121,7 +121,7 @@
           <p class="foot-hint" data-i18n="doc.footHint"></p>
         </article>
 
-        <!-- 选中图片时的工具条 -->
+        <!-- Toolbar shown while an image is selected -->
         <div class="img-bar" id="img-bar" hidden>
           <button type="button" data-img="crop"><span data-icon="crop"></span><span data-i18n="img.crop"></span></button>
           <button type="button" data-img="caption"><span data-icon="caption"></span><span data-i18n="img.caption"></span></button>
@@ -138,7 +138,7 @@
 
     <input type="file" id="file-input" accept="image/*" multiple hidden />
 
-    <!-- 裁剪 -->
+    <!-- Crop window -->
     <div class="modal" id="crop-modal" hidden>
       <div class="modal-card crop-card">
         <div class="crop-stage"><img alt="" /></div>
@@ -162,7 +162,7 @@
       </div>
     </div>
 
-    <!-- 冲突 -->
+    <!-- Conflict -->
     <div class="modal" id="conflict-modal" hidden>
       <div class="modal-card narrow">
         <h2 data-i18n="conflict.title"></h2>
@@ -175,7 +175,8 @@
       </div>
     </div>
 
-    <!-- 预览：嵌入网站上的预览页（config.json 的 preview.url），用网站自己的排版显示正在编辑的内容 -->
+    <!-- Preview: embeds the site's own preview page (config.json's preview.url) so the article
+         being edited is shown in the site's layout -->
     <div class="preview" id="preview" hidden>
       <div class="preview-bar">
         <strong data-i18n="preview.title"></strong>

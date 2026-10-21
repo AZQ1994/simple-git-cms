@@ -1,4 +1,4 @@
-// 图片：浏览器里压缩成 webp、裁剪 / 旋转。
+// Images: compressed to webp in the browser, cropped and rotated.
 import { t } from './i18n/index.js';
 
 // Cropper.js and its stylesheet are a good chunk of the editor and are only needed once someone
@@ -27,13 +27,14 @@ function loadCropper() {
 const MAX_MB = 30;
 const opts = { url: '/uploads', maxWidth: 1600, quality: 0.82, timeZone: 'UTC' };
 
-/** 由 config.media 设置：url（网站上的图片路径前缀）、maxWidth、quality、timeZone（日期文件夹用） */
+/** Set from config.media: url (the path prefix on the site), maxWidth, quality, and timeZone
+ * (which decides the dated folder). */
 export function setImageOptions(o = {}) {
   Object.assign(opts, Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)));
   opts.url = opts.url.replace(/\/+$/, '');
 }
 
-/** 新图片的网站路径：<media.url>/<日期>/<随机>.webp */
+/** Path on the site for a new image: <media.url>/<date>/<random>.webp */
 export function newImagePath() {
   const day = new Date().toLocaleDateString('sv-SE', { timeZone: opts.timeZone }).replaceAll('-', '');
   const rand = crypto.getRandomValues(new Uint32Array(2)).reduce((s, n) => s + n.toString(36), '').slice(0, 10);
@@ -46,7 +47,8 @@ async function canvasToWebp(canvas) {
   return blob;
 }
 
-/** 文件或 Blob → 压缩后的 webp Blob（限制最大宽度，按 EXIF 方向摆正） */
+/** A File or Blob to a compressed webp Blob, capped at the maximum width and turned the right
+ * way up according to its EXIF orientation. */
 export async function compressImage(file) {
   if (!file.type.startsWith('image/')) throw new Error(t('img.notImage'));
   if (file.size > MAX_MB * 1024 * 1024) throw new Error(t('img.tooLarge', { mb: MAX_MB }));
@@ -61,8 +63,8 @@ export async function compressImage(file) {
 }
 
 /**
- * 打开裁剪 / 旋转窗口。src 为当前显示用的地址（同源或 blob:）。
- * 确定时返回新的 webp Blob，取消时返回 null。
+ * Open the crop/rotate window. `src` is the address the image is currently displayed from —
+ * same-origin or a blob: URL. Resolves to a new webp Blob, or null if cancelled.
  */
 export async function openCropper(src) {
   const Cropper = await loadCropper();
@@ -103,7 +105,7 @@ export async function openCropper(src) {
       cropper = new Cropper(img, { viewMode: 1, autoCropArea: 1, background: false, responsive: true, checkOrientation: false });
     };
     img.crossOrigin = 'anonymous';
-    img.removeAttribute('src'); // 同一张图再次打开时也要触发 onload
+    img.removeAttribute('src'); // so onload fires again when the same image is reopened
     img.src = src;
     modal.hidden = false;
   });

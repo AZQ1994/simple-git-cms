@@ -17,7 +17,7 @@ legacy:
 ![](/uploads/a.webp "说明")
 `;
 
-test('解析再写回，文件完全不变（含未知字段 legacy）', () => {
+test('parsing and writing back leaves the file byte-for-byte identical, unknown fields included', () => {
   const a = parseArticle('90', sample);
   assert.equal(a.title, '东京语言学校校外活动｜参观');
   assert.deepEqual(a.tags, ['校外活动', '校园生活']);
@@ -25,14 +25,14 @@ test('解析再写回，文件完全不变（含未知字段 legacy）', () => {
   assert.equal(serializeArticle(a), sample);
 });
 
-test('草稿标记和自动摘要', () => {
+test('the draft flag, and a summary generated from the body', () => {
   const a = parseArticle('1', '---\ntitle: "T"\ndate: 2026-01-01\ntags: []\n---\n\n![](/x.webp)\n\n**很长**的正文\n');
   const out = serializeArticle({ ...a, draft: true, description: '' });
   assert.match(out, /^draft: true$/m);
   assert.match(out, /^description: "很长的正文"$/m);
 });
 
-test('标题里的引号和冒号不会破坏 YAML', () => {
+test('quotes and colons in a title do not break the YAML', () => {
   const a = parseArticle('2', serializeArticle({ id: '2', title: '他说："你好: 世界"', description: '', date: '2026-01-01T00:00:00Z', tags: ['a'], draft: false, extra: {}, body: 'x' }));
   assert.equal(a.title, '他说："你好: 世界"');
 });

@@ -1,16 +1,18 @@
-// 界面语言。字符串表在 ./zh.js / ./en.js / ./ja.js，键名是 '区域.名字' 的平铺形式。
+// Interface languages. The strings themselves live in ./en.js, ./zh.js and ./ja.js as one flat
+// object each, keyed '<area>.<name>'.
 //
-// 取哪个语言：localStorage['simple-git-cms-lang'] → config.json 的 lang → 浏览器语言 → en。
-// 在 Node 里（github.js 单独使用时）没有 localStorage / navigator，退回 en。
+// Which language: localStorage['simple-git-cms-lang'] -> config.json's `lang` -> the browser -> English.
+// Under Node — when github.js is used on its own — there is no localStorage or navigator, so it
+// falls back to English.
 //
-// 用法：
-//   t('save.deleteConfirm', { title })         取一条字符串，{xxx} 会被 params 替换
-//   applyI18n(root)                            按 data-i18n* 属性填好页面上的文字
+// Usage:
+//   t('save.deleteConfirm', { title })   one string, with {xxx} replaced from params
+//   applyI18n(root)                      fill in the page from its data-i18n* attributes
 import zh from './zh.js';
 import en from './en.js';
 import ja from './ja.js';
 
-/** 支持的语言，顺序即语言菜单里的顺序 */
+/** The languages on offer; this order is the order of the language menu. */
 export const locales = { en, zh, ja };
 
 const FALLBACK = 'en';
@@ -19,17 +21,18 @@ export const LANG_KEY = 'simple-git-cms-lang';
 let current = FALLBACK;
 let dict = locales[FALLBACK];
 
-/** 'zh-CN' / 'ja-JP' → 'zh' / 'ja'；不支持的语言返回 null */
+/** 'zh-CN' / 'ja-JP' to 'zh' / 'ja'; null for a language we don't have. */
 const normalize = (tag) => {
   const base = String(tag ?? '').toLowerCase().split(/[-_]/)[0];
   return base in locales ? base : null;
 };
 
 /**
- * 按优先级挑一个语言：使用者选过的 → config.json 的 lang → 浏览器语言 → en。
+ * Pick a language, in order of preference: one the person chose before, then config.json's `lang`,
+ * then the browser's, then English.
  * @param {object} [o]
- * @param {string} [o.configured] config.json 里的 lang
- * @returns {string} 语言代码
+ * @param {string} [o.configured] The `lang` from config.json.
+ * @returns {string} Language code.
  */
 export function resolveLocale({ configured } = {}) {
   const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_KEY) : null;
@@ -41,7 +44,7 @@ export function resolveLocale({ configured } = {}) {
   return FALLBACK;
 }
 
-/** 切换语言（只改内存里的；是否记住由调用方决定） */
+/** Switch language in memory. Whether to remember it is the caller's decision. */
 export function setLocale(code) {
   current = normalize(code) ?? FALLBACK;
   dict = locales[current];
@@ -49,7 +52,7 @@ export function setLocale(code) {
   return current;
 }
 
-/** 记住使用者选的语言，下次打开还用它 */
+/** Remember the language someone picked, so it is used again next time. */
 export function rememberLocale(code) {
   if (typeof localStorage !== 'undefined') localStorage.setItem(LANG_KEY, normalize(code) ?? FALLBACK);
 }
@@ -57,19 +60,20 @@ export function rememberLocale(code) {
 export const getLocale = () => current;
 
 /**
- * 取一条字符串。找不到键时返回键名本身（方便发现漏翻译），缺的翻译退回英文。
- * @param {string} key 如 'save.deleteConfirm'
- * @param {Record<string, string|number>} [params] 替换 {xxx}
+ * One string. An unknown key comes back as the key itself, which makes a gap easy to spot; a key
+ * missing from this language falls back to English.
+ * @param {string} key For example 'save.deleteConfirm'.
+ * @param {Record<string, string|number>} [params] Values for the {xxx} placeholders.
  */
 export function t(key, params) {
   const s = dict[key] ?? locales[FALLBACK][key] ?? key;
   return params ? s.replace(/\{(\w+)\}/g, (m, k) => (k in params ? String(params[k]) : m)) : s;
 }
 
-// 元素上可以写 data-i18n（填 textContent）或 data-i18n-<属性>（填该属性）
+// An element carries either data-i18n (fills textContent) or data-i18n-<attribute>
 const ATTRS = ['placeholder', 'title', 'aria-label'];
 
-/** 按 data-i18n* 属性填好页面上的文字。切换语言后再调一次即可。 */
+/** Fill in the page from its data-i18n* attributes. Call it again after switching language. */
 export function applyI18n(root = document) {
   for (const el of root.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
   for (const attr of ATTRS) {

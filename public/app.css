@@ -30,7 +30,7 @@ svg { flex: none; }
 .muted { color: var(--muted); }
 .hint { color: var(--faint); font-size: 12px; }
 
-/* ---------- 按钮 ---------- */
+/* ---------- Buttons ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-strong);
@@ -52,7 +52,7 @@ svg { flex: none; }
 .link-btn { border: 0; background: none; padding: 4px; color: var(--muted); cursor: pointer; font-size: 13px; }
 .link-btn:hover { color: var(--ink); }
 
-/* ---------- 登录 ---------- */
+/* ---------- Sign-in ---------- */
 .login { min-height: 100%; display: grid; place-items: center; padding: 24px; background: radial-gradient(900px 500px at 50% -10%, var(--navy-soft), #fff 70%); }
 .login-card { width: 100%; max-width: 380px; display: grid; gap: 14px; text-align: center; }
 .login-logo { width: 220px; max-height: 80px; object-fit: contain; margin: 0 auto 12px; }
@@ -65,7 +65,7 @@ svg { flex: none; }
 .token-login input { flex: 1; height: 36px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; }
 .error { color: var(--red); font-size: 13px; }
 
-/* ---------- 布局 ---------- */
+/* ---------- Layout ---------- */
 .app { height: 100%; display: grid; grid-template-columns: var(--side) 1fr; }
 .sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--bg-side); border-right: 1px solid var(--line); }
 .side-top { display: grid; gap: 12px; padding: 18px 16px 12px; }
@@ -92,7 +92,7 @@ svg { flex: none; }
 .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--line); }
 .user-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 语言选择：侧栏底部一个不起眼的下拉，登录卡片上也有一个 */
+/* Language menu: a quiet dropdown at the foot of the sidebar, and one on the sign-in card */
 .lang-select {
   border: 0; background: none; padding: 4px 2px; color: var(--muted);
   font: inherit; font-size: 12.5px; cursor: pointer; max-width: 7.5em;
@@ -124,7 +124,7 @@ svg { flex: none; }
 .empty { height: calc(100% - var(--bar)); display: grid; place-content: center; justify-items: center; gap: 12px; color: var(--faint); }
 .empty-icon svg { width: 40px; height: 40px; stroke-width: 1.2; }
 
-/* ---------- 文档 ---------- */
+/* ---------- The document ---------- */
 .doc { max-width: 760px; margin: 0 auto; padding: 44px 32px 120px; }
 .title {
   display: block; width: 100%; resize: none; overflow: hidden; border: 0; outline: 0; padding: 0;
@@ -165,7 +165,7 @@ svg { flex: none; }
 .toolbar .spacer { flex: 1; }
 .foot-hint { margin-top: 28px; color: var(--faint); font-size: 12px; text-align: center; }
 
-/* 正文：与网站文章页的排版一致 */
+/* Body text, matching the article layout on the site */
 .body .ProseMirror { min-height: 50vh; padding: 22px 0; outline: 0; font-size: 16.5px; line-height: 1.95; color: var(--text); }
 .body .ProseMirror > * + * { margin-top: 1.05em; }
 .body p { margin: 0; }
@@ -178,20 +178,21 @@ svg { flex: none; }
 .body blockquote { margin: 0; padding: 2px 0 2px 18px; border-left: 3px solid var(--navy); color: var(--muted); }
 .body a { color: var(--navy); text-decoration: underline; text-underline-offset: 3px; }
 .body hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
-.body .ProseMirror p.is-editor-empty:first-child::before { content: '开始写正文…'; color: #c7ccd6; float: left; height: 0; pointer-events: none; }
+/* The placeholder text itself is translated, so it arrives from JS as a custom property */
+.body .ProseMirror p.is-editor-empty:first-child::before { content: var(--body-placeholder, ''); color: #c7ccd6; float: left; height: 0; pointer-events: none; }
 
-/* 图片：单张占满一行；同一段里多张 → 并排网格 */
+/* Images: one on its own fills the row; several in a paragraph become a side-by-side grid */
 .img-node { display: inline-block; position: relative; max-width: 100%; vertical-align: top; cursor: pointer; line-height: 0; }
 .img-node img { display: block; max-width: 100%; height: auto; border-radius: 8px; }
 .img-node.selected img { outline: 3px solid var(--navy); outline-offset: 2px; }
 .img-cap { display: block; padding-top: 8px; font-size: 13px; line-height: 1.6; color: var(--muted); text-align: center; }
 .body p:has(> .img-node ~ .img-node) { display: flex; gap: 10px; align-items: flex-start; }
-.body p:has(> .img-node ~ .img-node) > :not(.img-node) { display: none; } /* ProseMirror 的分隔符 / 换行占位 */
+.body p:has(> .img-node ~ .img-node) > :not(.img-node) { display: none; } /* ProseMirror's separators and line-break fillers */
 .body p:has(> .img-node ~ .img-node) .img-node img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .body p:has(> .img-node ~ .img-node) .img-node { flex: 1 1 0; min-width: 0; }
 .body .ProseMirror-selectednode { outline: none; }
 
-/* 图片工具条 */
+/* Image toolbar */
 .img-bar {
   position: absolute; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: calc(100% - 16px);
   padding: 4px; border-radius: 10px; background: var(--ink); color: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
@@ -204,8 +205,8 @@ svg { flex: none; }
 .caption-form input { flex: 1; min-width: 200px; height: 32px; padding: 0 10px; border: 0; border-radius: 6px; outline: 0; background: #fff; color: var(--ink); }
 .caption-form button { background: var(--navy) !important; color: #fff !important; }
 
-/* ---------- 弹窗 ---------- */
-/* 预览 */
+/* ---------- Dialogs ---------- */
+/* Preview */
 .preview { position: fixed; inset: 0; z-index: 25; display: flex; flex-direction: column; background: #e9ebef; }
 .preview-bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--line); }
 .preview-bar strong { color: var(--ink); }
@@ -229,14 +230,14 @@ svg { flex: none; }
 .seg.small button { flex: none; padding: 0 12px; }
 .crop-rotate, .crop-actions { display: flex; align-items: center; gap: 6px; }
 
-/* ---------- 提示 ---------- */
+/* ---------- Notices ---------- */
 .toast { position: fixed; left: 50%; bottom: 28px; z-index: 40; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 13.5px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
 .toast.error { background: #a3151d; }
 .busy { position: fixed; top: 14px; left: 50%; z-index: 40; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 999px; background: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, .15); font-size: 13px; font-weight: 600; color: var(--ink); }
 .spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--navy-soft); border-top-color: var(--navy); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------- 手机 ---------- */
+/* ---------- Phones ---------- */
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { position: fixed; inset: 0 auto 0 0; width: min(320px, 88vw); z-index: 20; transform: translateX(-100%); transition: transform .2s ease; }

@@ -1,4 +1,5 @@
-// 打包编辑器到 dist/：index.html、app.js、preview.js、app.css、config.example.json
+// Bundle the editor into dist/: index.html, app.js, preview.js, cropper.js, app.css and the
+// example config.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +14,8 @@ fs.mkdirSync(out, { recursive: true });
 
 const hash = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(out, f))).digest('hex').slice(0, 10);
 
-// 预览用的 Markdown 转换比较大，单独打包，点「预览」时才加载
+// The Markdown conversion behind the preview is sizeable, so it is bundled on its own and only
+// fetched when someone opens the preview
 await build({
   entryPoints: [path.join(root, 'src/preview.js')],
   bundle: true,
@@ -22,10 +24,10 @@ await build({
   globalName: 'simpleGitCmsPreview',
   target: 'es2022',
   outfile: path.join(out, 'preview.js'),
-  legalComments: 'eof', // 把依赖的许可证声明留在打包结果末尾（MIT 等许可证要求保留）
+  legalComments: 'eof', // keep the dependencies' license notices in the bundle, as MIT and friends require
 });
 
-// 裁剪窗口用的 Cropper.js 也单独打包，点「裁剪」时才加载
+// Cropper.js is bundled separately too, and only fetched when someone crops an image
 await build({
   entryPoints: [path.join(root, 'src/cropper.js')],
   bundle: true,
@@ -34,7 +36,7 @@ await build({
   globalName: 'simpleGitCmsCropper',
   target: 'es2022',
   outfile: path.join(out, 'cropper.js'),
-  legalComments: 'eof', // 把依赖的许可证声明留在打包结果末尾（MIT 等许可证要求保留）
+  legalComments: 'eof', // keep the dependencies' license notices in the bundle, as MIT and friends require
 });
 fs.copyFileSync(path.join(root, 'node_modules/cropperjs/dist/cropper.min.css'), path.join(out, 'cropper.css'));
 
@@ -50,12 +52,13 @@ await build({
   format: 'iife',
   target: 'es2022',
   outfile: path.join(out, 'app.js'),
-  legalComments: 'eof', // 把依赖的许可证声明留在打包结果末尾（MIT 等许可证要求保留）
+  legalComments: 'eof', // keep the dependencies' license notices in the bundle, as MIT and friends require
   banner: { js: `/* Simple Git CMS ${version} */` },
 });
 fs.copyFileSync(path.join(root, 'public/app.css'), path.join(out, 'app.css'));
 fs.copyFileSync(path.join(root, 'public/config.example.json'), path.join(out, 'config.example.json'));
-// app.js / app.css 网址带上内容指纹：网站给静态文件设了缓存时，升级后浏览器也会立刻用新版本
+// Fingerprint the app.js / app.css URLs, so a browser picks up a new version immediately even
+// when the site caches static files
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8')
   .replace('./app.css"', `./app.css?v=${hash('app.css')}"`)
   .replace('./app.js"', `./app.js?v=${hash('app.js')}"`);

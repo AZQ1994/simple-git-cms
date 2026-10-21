@@ -224,7 +224,8 @@ const handleAuth = async (request, env) => {
     });
   }
 
-  // [simple-git-cms] 整页跳转模式：登录完成后带着令牌跳回 redirect_uri（必须是允许的域名），不依赖弹窗
+  // [simple-git-cms] Full-page redirect mode: when sign-in finishes, go back to redirect_uri (which must
+  // be an allowed domain) carrying the token, rather than depending on a popup
   let returnCookie = '';
 
   if (returnTo) {
@@ -300,7 +301,7 @@ const handleAuth = async (request, env) => {
     'Set-Cookie',
     `csrf-token=${provider}_${csrfToken}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`,
   );
-  // 不是整页跳转模式时清掉上一次残留的 return-to
+  // Clear any return-to left over from a previous sign-in when not in redirect mode
   authHeaders.append(
     'Set-Cookie',
     returnCookie || 'return-to=deleted; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure',
@@ -426,7 +427,7 @@ const handleCallback = async (request, env) => {
     });
   }
 
-  // [simple-git-cms] GitHub App 的令牌会过期，同时返回 refresh_token，一起交给编辑器
+  // [simple-git-cms] A GitHub App's token expires and comes with a refresh_token; hand both to the editor
   let refreshToken = '';
 
   try {
@@ -464,8 +465,8 @@ const handleCallback = async (request, env) => {
 };
 
 /**
- * [simple-git-cms] 用 refresh_token 换新的访问令牌（GitHub App 的令牌 8 小时过期）。
- * 只接受来自 ALLOWED_DOMAINS 的网页的请求（CORS）。
+ * [simple-git-cms] Trade a refresh_token for a fresh access token — a GitHub App's expires after 8
+ * hours. Only answers pages served from ALLOWED_DOMAINS (enforced via CORS).
  * @param {Request} request - HTTP request.
  * @param {{ [key: string]: string }} env - Environment variables.
  * @returns {Promise<Response>} HTTP response.

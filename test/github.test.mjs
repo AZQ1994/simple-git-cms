@@ -1,4 +1,6 @@
-// 用内存里的假 GitHub API 测试保存逻辑（不访问网络）
+// Saving, tested against an in-memory fake of the GitHub API — nothing touches the network.
+// The fixtures are deliberately CJK: article files are UTF-8 and the base64 and YAML paths both
+// have to carry non-ASCII text through unchanged.
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
@@ -7,7 +9,7 @@ import { GitHubStore, ConflictError, AuthError } from '../src/github.js';
 let files; // path -> text
 let head;
 let commits;
-let raceOnce; // 下一次更新分支时模拟别人抢先提交
+let raceOnce; // makes the next branch update behave as if someone else committed first
 const blobs = new Map();
 const sha = (s) => crypto.createHash('sha1').update(s).digest('hex');
 
@@ -62,7 +64,7 @@ beforeEach(() => {
 
 const store = () => new GitHubStore({ token: 't', repo: 'o/r', contentDir: 'site/news/' });
 
-test('新建文章：文章和图片在同一个提交里', async () => {
+test('a new article: the article and its images land in one commit', async () => {
   const s = store();
   const r = await s.saveArticle(
     { id: null, title: '新', description: '', date: '2026-02-01T00:00:00Z', tags: ['a'], draft: true, extra: {}, body: '![](/u/x.webp)' },
@@ -74,7 +76,7 @@ test('新建文章：文章和图片在同一个提交里', async () => {
   assert.equal(commits.length, 1);
 });
 
-test('打开后被别人改过 → ConflictError；force 可以覆盖', async () => {
+test('changed by someone else after opening gives ConflictError, and force overwrites', async () => {
   const s = store();
   const a = await s.getArticle('1');
   files.set('site/news/1.md', files.get('site/news/1.md').replace('正文', '别人改的'));
@@ -83,7 +85,7 @@ test('打开后被别人改过 → ConflictError；force 可以覆盖', async ()
   assert.match(files.get('site/news/1.md'), /title: "我的"/);
 });
 
-test('保存时分支被别人推进（改的是别的文件）→ 自动基于最新版本重试', async () => {
+test('the branch moving under a save (a different file) retries from the new tip', async () => {
   const s = store();
   const a = await s.getArticle('1');
   raceOnce = () => {
@@ -95,14 +97,14 @@ test('保存时分支被别人推进（改的是别的文件）→ 自动基于�
   assert.equal(files.get('site/news/2.md'), 'other');
 });
 
-test('删除文章', async () => {
+test('deleting an article', async () => {
   const s = store();
   const a = await s.getArticle('1');
   await s.saveArticle(a, { baseSha: a.sha, deleteArticle: true });
   assert.equal(files.has('site/news/1.md'), false);
 });
 
-test('令牌过期（401）时换新令牌重试一次；换不到则报登录失效', async () => {
+test('an expired token (401) is refreshed and the request retried once; otherwise it reports the session as expired', async () => {
   const realFetch = globalThis.fetch;
   globalThis.fetch = (url, opts) =>
     opts?.headers?.Authorization === 'Bearer old'

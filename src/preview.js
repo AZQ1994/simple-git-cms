@@ -1,4 +1,5 @@
-// 预览：把 Markdown 按网站相同的流程转成 HTML（Astro 默认的 remark-gfm、smartypants，加上 rehype-figures）
+// Preview rendering: Markdown to HTML through the same pipeline the site uses — Astro's defaults
+// (remark-gfm, smartypants) plus rehype-figures.
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';

@@ -1,5 +1,5 @@
-// 文章文件格式：YAML frontmatter + Markdown 正文。
-// 没有在编辑器里出现的字段（如 legacy）原样保留。
+// The article file format: YAML frontmatter plus a Markdown body. Fields the editor doesn't
+// surface (a legacy one, say) are carried through untouched.
 import YAML from 'yaml';
 
 export function parseArticle(id, text) {
@@ -19,7 +19,7 @@ export function parseArticle(id, text) {
   };
 }
 
-const q = (s) => JSON.stringify(String(s)); // JSON 字符串即合法的 YAML 字符串
+const q = (s) => JSON.stringify(String(s)); // a JSON string is also a valid YAML string
 
 export function excerpt(md, len = 110) {
   return md

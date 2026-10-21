@@ -44,6 +44,7 @@ export default {
 
   // Article fields
   'doc.titlePlaceholder': 'Title',
+  'doc.bodyPlaceholder': 'Start writing…',
   'doc.date': 'Date',
   'doc.tags': 'Tags',
   'doc.addTag': 'Add a tag',

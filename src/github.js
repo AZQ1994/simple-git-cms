@@ -1,5 +1,6 @@
-// 通过 GitHub API 读写文章（浏览器和 Node 都能用）。
-// 保存时把文章和新图片合成「一个提交」，并检查文章有没有在打开之后被别人改过。
+// Reading and writing articles through the GitHub API, from a browser or from Node.
+// A save puts the article and any new images into a single commit, and first checks whether
+// someone else changed the article since it was opened.
 import { parseArticle, serializeArticle } from './article.js';
 import { t } from './i18n/index.js';
 
@@ -7,7 +8,7 @@ export class ConflictError extends Error {
   constructor(theirs) {
     super(t('conflict.title'));
     this.name = 'ConflictError';
-    this.theirs = theirs; // 对方的版本（已解析），被删除时为 null
+    this.theirs = theirs; // their version, already parsed — null if they deleted it
   }
 }
 
@@ -24,13 +25,14 @@ const b64 = (bytes) => {
 export class GitHubStore {
   /**
    * @param {object} o
-   * @param {string} o.token GitHub 令牌
+   * @param {string} o.token GitHub token.
    * @param {string} o.repo owner/name
    * @param {string} [o.branch]
-   * @param {string} o.contentDir 文章目录（仓库内路径），如 src/content/news
+   * @param {string} o.contentDir Article directory inside the repository, e.g. src/content/news.
    * @param {string} [o.apiBase]
-   * @param {() => Promise<string|null>} [o.refresh] 令牌过期（401）时换新令牌，换不到返回 null
-   * @param {string} [o.timeZone] 新文章编号用哪个时区的「年月日时分」
+   * @param {() => Promise<string|null>} [o.refresh] Called on a 401 to get a fresh token; returns
+   * null when it can't.
+   * @param {string} [o.timeZone] Which time zone's year-month-day-hour-minute numbers an id uses.
    */
   constructor({ token, repo, branch = 'main', contentDir, apiBase = 'https://api.github.com', refresh, timeZone = 'UTC' }) {
     if (!contentDir) throw new Error('contentDir is required');
@@ -69,10 +71,11 @@ export class GitHubStore {
     return json.data;
   }
 
-  /** 当前用户和对仓库的写权限 */
+  /** Who is signed in, and whether they can write to the repository. */
   async whoami() {
     const user = await this.req('/user');
-    // 看不到仓库（404）：不是协作者，或用 GitHub App 登录时 App 没装到这个仓库
+    // A 404 means the repository isn't visible: not a collaborator, or — after signing in through
+    // the GitHub App — the App isn't installed on it
     const repo = await this.req(`/repos/${this.repo}`).catch((e) => {
       if (e.status === 404 || e.status === 403) return null;
       throw e;
@@ -80,7 +83,7 @@ export class GitHubStore {
     return { login: user.login, name: user.name || user.login, avatar: user.avatar_url, canWrite: Boolean(repo?.permissions?.push) };
   }
 
-  /** 一次请求取回全部文章（含正文） */
+  /** Every article, bodies included, in one request. */
   async listArticles() {
     const [owner, name] = this.repo.split('/');
     const data = await this.graphql(
@@ -94,7 +97,7 @@ export class GitHubStore {
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
   }
 
-  /** 读取一篇文章的最新版本；不存在时返回 null */
+  /** The latest version of one article, or null if it isn't there. */
   async getArticle(id, ref = this.branch) {
     try {
       const f = await this.req(`/repos/${this.repo}/contents/${this.contentDir}/${id}.md?ref=${encodeURIComponent(ref)}`);
@@ -107,12 +110,13 @@ export class GitHubStore {
   }
 
   /**
-   * 保存文章。article.id 为空时新建。images: [{ path: 仓库内路径, bytes: Uint8Array }]
-   * baseSha：打开文章时的版本；与当前版本不一致时抛 ConflictError（force=true 时直接覆盖）。
-   * 返回 { id, sha, commit }
+   * Save an article. An empty article.id creates a new one. `images` is
+   * [{ path: path inside the repository, bytes: Uint8Array }].
+   * `baseSha` is the version that was opened; if it no longer matches, this throws ConflictError —
+   * unless force is true, which overwrites. Returns { id, sha, commit }.
    */
   async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false } = {}) {
-    // 图片 blob 和分支无关，先传，重试时不用再传
+    // Image blobs don't depend on the branch, so upload them up front — a retry needn't repeat it
     const imageBlobs = [];
     for (const img of images) {
       const blob = await this.req(`/repos/${this.repo}/git/blobs`, { method: 'POST', body: { content: b64(img.bytes), encoding: 'base64' } });
@@ -159,7 +163,7 @@ export class GitHubStore {
         await this.req(`/repos/${this.repo}/git/refs/heads/${this.branch}`, { method: 'PATCH', body: { sha: commit.sha, force: false } });
         return { id, sha: articleSha, commit: commit.sha };
       } catch (e) {
-        // 分支在这期间有了新提交（别人保存了别的文章）：基于最新版本重试
+        // The branch moved meanwhile (someone saved a different article): start again from the tip
         if (e.status === 422 && attempt < 3) continue;
         throw e;
       }
@@ -167,7 +171,8 @@ export class GitHubStore {
     throw new Error(t('save.busyRepo'));
   }
 
-  /** 新文章编号：config.timeZone 时区的 年月日时分，重复时加 1 */
+  /** An id for a new article: year, month, day, hour and minute in config.timeZone, plus 1 on a
+   * collision. */
   async newId(ref) {
     const parts = Object.fromEntries(
       new Intl.DateTimeFormat('en', { timeZone: this.timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -179,14 +184,14 @@ export class GitHubStore {
     return String(id);
   }
 
-  /** 某个提交的部署状态：pending / success / failure / unknown */
+  /** Deployment status for a commit: pending / success / failure / superseded. */
   async deployStatus(commitSha) {
     const runs = await this.req(`/repos/${this.repo}/actions/runs?head_sha=${commitSha}&per_page=5`);
     const run = runs.workflow_runs?.[0];
     if (!run) return 'pending';
     if (run.status !== 'completed') return 'pending';
     if (run.conclusion === 'success') return 'success';
-    if (run.conclusion === 'cancelled') return 'superseded'; // 被更新的保存取代
+    if (run.conclusion === 'cancelled') return 'superseded'; // a later save took over
     return 'failure';
   }
 }

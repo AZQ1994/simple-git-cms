@@ -1,4 +1,4 @@
-// 线条图标（24×24，stroke），与 Lucide 风格一致
+// Line icons (24x24, stroked), in the same style as Lucide
 const svg = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 
 export const icons = {
