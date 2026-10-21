@@ -38,7 +38,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 |---|---|
 | `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js` に分かれていて、`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
-| `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.md)） |
+| `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.md)） |
 | `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません |
 | `www/` | このプロジェクト自身のサイト [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[詳細](www/README.md)） |
@@ -77,7 +77,7 @@ node scripts/install.mjs ../my-site/public/editor   # サイトの静的ディ�
 
 ### 3. ログイン中継を置く
 
-[auth/README.md](auth/README.md) を参照してください。手順は Cloudflare Workers で書いていますが、
+[auth/README.ja.md](auth/README.ja.md) を参照してください。手順は Cloudflare Workers で書いていますが、
 中継は標準の Web API しか使っていないので、Deno Deploy・Vercel・Netlify・Bun・普通の Node サーバーでも
 そのまま動きます。
 

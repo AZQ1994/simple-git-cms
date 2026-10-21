@@ -1,5 +1,7 @@
 # auth — the “Sign in with GitHub” relay
 
+**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
 The editor is a static page, and GitHub's OAuth exchange needs somewhere that holds the client
 secret. That is all this is: a small request handler that trades an OAuth code for a token and
 hands it back to the editor. It stores nothing.
@@ -76,6 +78,25 @@ Finally, give the relay a domain name and put it in the editor's `config.json` a
 
 One relay can serve several sites: list every domain in `ALLOWED_DOMAINS` and install the GitHub
 App on each repository.
+
+## When sign-in doesn't work
+
+Four things account for nearly every failure, and none of them report a useful error:
+
+- **The callback URL has to match exactly**, including `https://` and the `/callback` path, and it
+  is the *relay's* domain — not your site's.
+- **The App has to be installed on the repository**, which is a separate step from creating it.
+  Creating an App does not give it access to anything. On an organisation's repository an owner
+  has to approve the installation.
+- **An editor needs write access to the repository as well.** The App decides what a token *may*
+  reach; the person's own permissions decide what they may do with it. The editor checks this at
+  sign-in and says so when it fails.
+- **The domain the editor is served from has to be in `ALLOWED_DOMAINS`**, or the relay refuses to
+  start sign-in. This is the one that catches you when you move the editor to a new domain.
+
+If you leave **Expire user authorization tokens** unchecked, sign-in still works, but GitHub issues
+no refresh token: the token then lives in the browser until someone signs out. Leaving it checked
+is the better trade.
 
 ## Token refresh
 
