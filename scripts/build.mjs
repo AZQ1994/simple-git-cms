@@ -58,6 +58,7 @@ await build({
 fs.copyFileSync(path.join(root, 'public/app.css'), path.join(out, 'app.css'));
 fs.copyFileSync(path.join(root, 'public/config.example.json'), path.join(out, 'config.example.json'));
 fs.copyFileSync(path.join(root, 'public/favicon.svg'), path.join(out, 'favicon.svg'));
+fs.copyFileSync(path.join(root, 'public/config.schema.json'), path.join(out, 'config.schema.json'));
 // Fingerprint the app.js / app.css URLs, so a browser picks up a new version immediately even
 // when the site caches static files
 const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8')

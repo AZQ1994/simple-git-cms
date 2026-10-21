@@ -70,6 +70,10 @@ node scripts/install.mjs ../my-site/public/editor   # 复制到网站的静态�
 | `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
 
+`config.schema.json` 会一起装在它旁边，所以认 JSON Schema 的编辑器会给出补全，拼错了当场标出来。
+编辑器自己在启动时也会检查这个文件，并且一次把所有问题都列出来——包括它不认识的配置项，那种以前
+是被静默忽略的。
+
 ### 3. 部署登录中转
 
 见 [auth/README.zh-CN.md](auth/README.zh-CN.md)。文档里用的是 Cloudflare Workers，但中转只用标准的 Web API，

@@ -12,6 +12,7 @@
 //   doc.js         the article form, saving, publishing, the status bar
 //   preview-ui.js  the preview pane
 //   theme.js       light or dark
+//   config.js      what config.json may say, and what to say when it says something else
 import { GitHubStore } from './github.js';
 import { setImageOptions } from './images.js';
 import { $, busy, fillIcons } from './dom.js';
@@ -24,15 +25,26 @@ import { restoreOpen, updateBar } from './doc.js';
 import './preview-ui.js';
 import './theme.js';
 import { resolveLocale, setLocale, t } from './i18n/index.js';
+import { ConfigError, checkConfig } from './config.js';
 
 fillIcons();
 
 async function loadConfig() {
   const res = await fetch('./config.json', { cache: 'no-store' });
   if (!res.ok) throw new Error(t('config.missing'));
-  const c = await res.json();
+  let c;
+  try {
+    c = await res.json();
+  } catch (e) {
+    throw new Error(t('config.badJson', { message: e.message }), { cause: e });
+  }
   // config.json's `lang` only applies when nobody has picked a language themselves
-  setLocale(resolveLocale({ configured: c.lang }));
+  setLocale(resolveLocale({ configured: c?.lang }));
+
+  // Say everything that is wrong with it at once, rather than one thing per reload
+  const { problems, warnings } = checkConfig(c, t);
+  for (const w of warnings) console.warn(`config.json: ${w.text}`);
+  if (problems.length) throw new ConfigError(problems);
   const strip = (p) => String(p ?? '').replace(/^\/+|\/+$/g, '');
   const config = {
     title: t('config.defaultTitle'),
@@ -48,7 +60,6 @@ async function loadConfig() {
     deploy: { skipCiForDrafts: true, ...c.deploy },
   };
   config.media.url = '/' + strip(config.media.url);
-  if (!config.repo || !config.collection.dir || !config.media.dir || !config.auth.base) throw new Error(t('config.incomplete'));
   // On a different domain than the site, load images from the site's address — locally, from the
   // local site
   config.assetBase = isLocal || new URL(config.siteUrl).origin === location.origin ? '' : config.siteUrl;
@@ -63,12 +74,33 @@ async function loadConfig() {
   relabel();
 }
 
+/** config.json is the one thing the editor can't recover from, so the page becomes the message. */
+function showStartupError(error) {
+  const box = document.createElement('div');
+  box.className = 'fatal';
+  const heading = document.createElement('h1');
+  heading.textContent = error instanceof ConfigError ? t('config.heading') : error.message;
+  box.append(heading);
+  if (error instanceof ConfigError) {
+    const list = document.createElement('ul');
+    for (const problem of error.problems) {
+      const item = document.createElement('li');
+      item.textContent = problem.text;
+      list.append(item);
+    }
+    const where = document.createElement('p');
+    where.textContent = t('config.where');
+    box.append(list, where);
+  }
+  document.body.replaceChildren(box);
+}
+
 async function start() {
   if (!CONFIG) {
     try {
       await loadConfig();
     } catch (e) {
-      document.body.innerHTML = `<p style="padding:40px;font:15px sans-serif">${e.message}</p>`;
+      showStartupError(e);
       return;
     }
   }

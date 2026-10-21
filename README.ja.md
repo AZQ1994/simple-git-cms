@@ -80,6 +80,10 @@ node scripts/install.mjs ../my-site/public/editor   # サイトの静的ディ�
 | `preview.url` | サイト側のプレビューページ（下の手順 4）。空なら「プレビュー」ボタンは出ません |
 | `deploy.skipCiForDrafts` | 下書きの保存に `[skip ci]` を付ける（既定は true） |
 
+`config.schema.json` も隣に入るので、JSON Schema を解釈するエディターなら項目を補完し、打ち間違い
+をその場で指摘します。エディター自身も起動時にこのファイルを検査し、問題を一度にすべて並べます。
+知らない設定も含めて——以前はそれが黙って無視されていました。
+
 ### 3. ログイン中継を置く
 
 [auth/README.ja.md](auth/README.ja.md) を参照してください。手順は Cloudflare Workers で書いていますが、

@@ -1,4 +1,6 @@
 {
+  "$schema": "./config.schema.json",
+
   "title": "Content",
   "siteName": "Example Site",
   "logo": "./logo.png",

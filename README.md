@@ -83,6 +83,11 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
 
+`config.schema.json` is installed next to it, so an editor that understands JSON Schema completes
+the fields and marks a typo as you write. The editor checks the file at startup as well, and names
+every problem at once — including settings it doesn't recognise, which used to be ignored in
+silence.
+
 ### 3. Deploy the sign-in relay
 
 See [auth/README.md](auth/README.md). Cloudflare Workers is the documented route, but the relay is

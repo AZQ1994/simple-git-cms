@@ -1,0 +1,118 @@
+// config.json is the one file someone writes by hand, so the editor has to be specific about what
+// is wrong with it. These check the awkward cases, which is most of them.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { checkConfig } from '../src/config.js';
+import { setLocale, t } from '../src/i18n/index.js';
+
+setLocale('en');
+
+const good = () => ({
+  title: 'Content',
+  siteName: 'Example',
+  repo: 'owner/repo',
+  branch: 'main',
+  siteUrl: 'https://example.com',
+  timeZone: 'Asia/Tokyo',
+  auth: { base: 'https://cms-auth.example.com' },
+  collection: { label: 'news', dir: 'src/content/news', url: '/news/{id}/' },
+  media: { dir: 'public/uploads', url: '/uploads', maxWidth: 1600, quality: 0.82 },
+  preview: { url: '/news/preview/' },
+  deploy: { skipCiForDrafts: true },
+});
+
+const keys = (config) => checkConfig(config, t).problems.map((p) => p.key);
+const warnings = (config) => checkConfig(config, t).warnings.map((p) => p.key);
+
+test('a complete config has nothing wrong with it', () => {
+  const { problems, warnings: warned } = checkConfig(good(), t);
+  assert.deepEqual(problems, []);
+  assert.deepEqual(warned, []);
+});
+
+test('the smallest config that works is accepted', () => {
+  const bare = { repo: 'owner/repo', auth: { base: '/auth' }, collection: { dir: 'content' }, media: { dir: 'public/uploads' } };
+  assert.deepEqual(keys(bare), []);
+});
+
+test('every missing setting is named, not just the first', () => {
+  assert.deepEqual(keys({}).sort(), ['auth.base', 'collection.dir', 'media.dir', 'repo']);
+});
+
+test('a missing setting inside a group is named too', () => {
+  const config = { ...good(), collection: { label: 'news' } };
+  assert.deepEqual(keys(config), ['collection.dir']);
+});
+
+test('a misspelled setting is caught, with the one that was meant', () => {
+  const config = { ...good(), collections: { dir: 'x' } };
+  delete config.collection;
+  const { problems } = checkConfig(config, t);
+  assert.ok(problems.some((p) => p.key === 'collections' && /did you mean collection\?/.test(p.text)));
+  assert.ok(problems.some((p) => p.key === 'collection.dir'), 'and the real one is still missing');
+});
+
+test('a setting nobody has ever heard of is caught without a guess', () => {
+  const { problems } = checkConfig({ ...good(), bananas: true }, t);
+  assert.equal(problems.length, 1);
+  assert.equal(problems[0].key, 'bananas');
+  assert.doesNotMatch(problems[0].text, /did you mean/);
+});
+
+test('misspellings inside a group are caught as well', () => {
+  const config = { ...good(), media: { ...good().media, maxwidth: 800 } };
+  const { problems } = checkConfig(config, t);
+  assert.ok(problems.some((p) => p.key === 'media.maxwidth' && /maxWidth/.test(p.text)));
+});
+
+test('types are checked', () => {
+  assert.deepEqual(keys({ ...good(), repo: 42 }), ['repo']);
+  assert.deepEqual(keys({ ...good(), deploy: { skipCiForDrafts: 'yes' } }), ['deploy.skipCiForDrafts']);
+  assert.deepEqual(keys({ ...good(), auth: 'https://example.com' }), ['auth']);
+});
+
+test('repo has to look like owner/name', () => {
+  assert.deepEqual(keys({ ...good(), repo: 'ownerrepo' }), ['repo']);
+  assert.deepEqual(keys({ ...good(), repo: 'owner/repo/extra' }), ['repo']);
+  assert.match(checkConfig({ ...good(), repo: 'nope' }, t).problems[0].text, /owner\/name/);
+});
+
+test('addresses are checked for the kind of address they have to be', () => {
+  assert.deepEqual(keys({ ...good(), siteUrl: 'example.com' }), ['siteUrl'], 'siteUrl has to be absolute');
+  assert.deepEqual(keys({ ...good(), media: { ...good().media, url: 'uploads' } }), ['media.url'], 'media.url needs its slash');
+  assert.deepEqual(keys({ ...good(), auth: { base: 'cms-auth.example.com' } }), ['auth.base']);
+  assert.deepEqual(keys({ ...good(), auth: { base: '/demo/auth' } }), [], 'a path is a fine relay address');
+});
+
+test('numbers have to be in range', () => {
+  assert.deepEqual(keys({ ...good(), media: { ...good().media, quality: 82 } }), ['media.quality']);
+  assert.deepEqual(keys({ ...good(), media: { ...good().media, maxWidth: 0 } }), ['media.maxWidth']);
+});
+
+test('the time zone has to be one the browser knows', () => {
+  assert.deepEqual(keys({ ...good(), timeZone: 'Asia/Shinjuku' }), ['timeZone']);
+  assert.deepEqual(keys({ ...good(), timeZone: 'UTC' }), []);
+});
+
+test('lang has to be a language the editor has', () => {
+  assert.deepEqual(keys({ ...good(), lang: 'fr' }), ['lang']);
+  assert.deepEqual(keys({ ...good(), lang: 'ja' }), []);
+});
+
+test('an empty string is as missing as a missing one', () => {
+  assert.deepEqual(keys({ ...good(), repo: '   ' }), ['repo']);
+});
+
+test('a collection.url with no {id} is a warning, not a refusal', () => {
+  const config = { ...good(), collection: { ...good().collection, url: '/news/' } };
+  assert.deepEqual(keys(config), []);
+  assert.deepEqual(warnings(config), ['collection.url']);
+});
+
+test('something that is not an object at all is rejected plainly', () => {
+  for (const value of [null, [], 'config', 7]) assert.deepEqual(keys(value), ['config.json']);
+});
+
+test('$schema is allowed, since it is what gives an editor autocomplete', () => {
+  assert.deepEqual(keys({ ...good(), $schema: './config.schema.json' }), []);
+});
