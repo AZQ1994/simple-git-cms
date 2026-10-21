@@ -56,6 +56,7 @@ async function loadConfig() {
   for (const img of document.querySelectorAll('.brand-logo')) {
     img.src = config.logo;
     img.alt = config.siteName;
+    img.addEventListener('error', () => (img.hidden = true)); // no logo is better than a broken one
   }
   relabel();
 }

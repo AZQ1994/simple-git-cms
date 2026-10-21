@@ -47,7 +47,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
-| `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. |
+| `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. `npm run test:e2e` drives the built editor in a real browser ([details](test/e2e/README.md)) |
 | `www/` | The project's own site, [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com) ([details](www/README.md)) |
 
 ## Putting it on a site

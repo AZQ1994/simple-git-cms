@@ -23,6 +23,14 @@ jobs:
       - run: npm test
       - run: npm run build
 
+      # The browser tests drive the built editor, so they go after the build. One Node version is
+      # enough: what they exercise is the browser, not Node. Chrome comes with the runner image.
+      - name: Browser tests
+        if: matrix.node == '22'
+        run: npm run test:e2e
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
       # The notices file is generated from the bundled packages; a dependency change must update it
       - run: npm run licenses
       - name: THIRD-PARTY-NOTICES.md is up to date

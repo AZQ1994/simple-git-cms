@@ -44,7 +44,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.md)） |
-| `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません |
+| `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません。`npm run test:e2e` はビルド済みのエディターを実際のブラウザーで動かします（[詳細](test/e2e/README.md)） |
 | `www/` | このプロジェクト自身のサイト [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[詳細](www/README.md)） |
 
 ## サイトに組み込む
