@@ -20,6 +20,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   again and the file is unchanged
 - **Images**: paste, drop or pick several at once, compressed to webp in the browser; crop, rotate,
   caption, place side by side, replace
+- **Blocks of your own**: a video, a notice box, anything your site already renders — described
+  in `config.json` as a template, and the editor gives it a button and a small form
 - **Code**: `inline code` and fenced blocks, which keep their language and are left alone by
   everything else the editor does to text
 - **Tables**: add and remove rows and columns, align a column left, centre or right — written out
@@ -94,6 +96,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
 | `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default) |
+| `blocks` | Blocks this site defines for itself; see [Blocks of your own](#blocks-of-your-own) |
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
 
@@ -173,6 +176,43 @@ Each language is one flat file of strings in `src/i18n/` — `en.js`, `zh.js`, `
 copy `en.js`, translate the values, and add it to `locales` in `src/i18n/index.js`. The tests fail
 on any key that is missing, extra, empty, or whose `{placeholders}` don't match English, so a new
 language can't ship half-done.
+
+## Blocks of your own
+
+A site usually has a few things in its articles that are neither prose nor pictures: a video, a
+notice box, whatever your layout already knows how to render. Rather than the editor guessing at
+them, you say in `config.json` how one is written, and it becomes a button:
+
+```json
+"blocks": [
+  {
+    "name": "youtube",
+    "label": "YouTube",
+    "template": "<YouTube id=\"{id}\" />",
+    "preview": "https://i.ytimg.com/vi/{id}/hqdefault.jpg",
+    "fields": [{ "name": "id", "label": "Video ID", "placeholder": "dQw4w9WgXcQ" }]
+  }
+]
+```
+
+The template does both jobs: the editor recognises that shape in a file and shows it as a small
+form, and writes it back through the same template. Nothing in the editor knows what YouTube is.
+
+| Key | What it does |
+|---|---|
+| `name` | A name of its own, used nowhere but here |
+| `label` | What the toolbar button says. Defaults to the name |
+| `template` | How it is written in the file. `{placeholders}` are the parts someone fills in |
+| `preview` | Optional picture shown in the editor, with the same placeholders. A preview from another site has to be allowed by `img-src` in the policy below |
+| `fields` | Only needed to give a placeholder a label, a hint (`placeholder`), or room for several lines (`multiline`) |
+
+The template doesn't have to be HTML — `{{< youtube {id} >}}` or a `:::notice` block works the same
+way, since the editor only matches text and puts text back. It does have to be a block of its own,
+on its own lines, and it has to be recognisable: a template that matches ordinary prose will turn
+that prose into a block.
+
+Showing it on the site is your site's business, as it already was. The editor's preview renders
+Markdown in the browser, so a block your site expands itself will not appear there.
 
 ## Locking the editor down
 

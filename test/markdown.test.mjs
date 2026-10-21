@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { MarkdownManager } from '@tiptap/markdown';
 import { cleanMarkdown, schemaExtensions } from '../src/schema.js';
 import { newFilePath } from '../src/images.js';
+import { setBlocks } from '../src/blocks.js';
 
 const md = new MarkdownManager({ extensions: schemaExtensions });
 /** A file through the editor and back out again. */
@@ -135,4 +136,37 @@ test('an entity quoted inside code stays an entity, not the character it stands 
   for (const body of ['An entity in code: `&lt;div&gt;` and `&amp;`.', '```html\n<div>&lt;escaped&gt;</div>\n```', '<div class="note">Say &lt;p&gt; here.</div>']) {
     assert.equal(roundTrip(body), body);
   }
+});
+
+// ---------- Blocks a site defines for itself ----------
+
+const withBlocks = (list, fn) => {
+  setBlocks(list);
+  try {
+    fn();
+  } finally {
+    setBlocks([]);
+  }
+};
+
+test('a block defined in config.json is read and written through its own template', () => {
+  withBlocks([{ name: 'youtube', template: '<YouTube id="{id}" />' }], () => {
+    const body = 'Before.\n\n<YouTube id="dQw4w9WgXcQ" />\n\nAfter.';
+    assert.equal(roundTrip(body), body);
+  });
+});
+
+test('a template that is not HTML is recognised just the same', () => {
+  withBlocks([{ name: 'video', template: '{{< youtube {id} >}}' }, { name: 'notice', template: ':::notice\n{body}\n:::' }], () => {
+    for (const body of ['{{< youtube abc123 >}}', 'A.\n\n:::notice\nTwo\nlines\n:::\n\nB.']) {
+      assert.equal(roundTrip(body), body);
+    }
+  });
+});
+
+test('defining a block changes nothing about the rest of an article', () => {
+  withBlocks([{ name: 'youtube', template: '<YouTube id="{id}" />' }], () => {
+    const body = 'An ordinary paragraph.\n\n<iframe src="x"></iframe>\n\n```js\nconst a = 1;\n```';
+    assert.equal(roundTrip(body), body, 'raw HTML that is not one of the blocks stays raw HTML');
+  });
 });

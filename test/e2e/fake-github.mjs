@@ -15,6 +15,9 @@ export const TABLE = `| Course | Starts |    Fee |
 | A1     | April  | 42,000 |
 | A2     |  July  | 48,000 |`;
 
+/** A block this site has defined for itself in config.blocks. */
+export const BLOCK = '<YouTube id="dQw4w9WgXcQ" />';
+
 /** Something the editor has no node for, which has to come back out of it unchanged. */
 export const EMBED = '<iframe src="https://www.youtube.com/embed/abc123" width="560" height="315" allowfullscreen></iframe>';
 
@@ -25,7 +28,7 @@ export const MEDIA_DIR = 'site/public/uploads';
 export const seed = () =>
   new Map([
     // This one carries a table, so a test can check that opening and saving leaves it alone
-    [`${CONTENT_DIR}/202610150930.md`, article('Spring term enrolment is open', '2026-10-15T09:30:00.000Z', ['notice'], `Applications are open from today.\n\n${TABLE}\n\n${EMBED}`, false)],
+    [`${CONTENT_DIR}/202610150930.md`, article('Spring term enrolment is open', '2026-10-15T09:30:00.000Z', ['notice'], `Applications are open from today.\n\n${TABLE}\n\n${EMBED}\n\n${BLOCK}`, false)],
     [`${CONTENT_DIR}/202610120800.md`, article('Autumn festival photos', '2026-10-12T08:00:00.000Z', ['events'], 'Thank you to everyone who came.', false)],
     [`${CONTENT_DIR}/202610010000.md`, article('Draft: timetable changes', '2026-10-01T00:00:00.000Z', ['notice'], 'Still being finalised.', true)],
   ]);

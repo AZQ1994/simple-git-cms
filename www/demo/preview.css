@@ -67,6 +67,9 @@ img { max-width: 100%; }
 .prose img { display: block; height: auto; }
 .prose figure { margin: 28px 0; }
 .prose figcaption { margin-top: 10px; font-size: 14px; color: var(--muted); text-align: center; }
+/* a block this demo site defined for itself in config.blocks */
+.prose .notice { display: block; margin: 28px 0; padding: 14px 18px; border-left: 3px solid var(--accent); background: color-mix(in oklab, var(--accent) 7%, transparent); font-size: .95em; }
+
 /* tables come out of the editor as plain GFM, so the site decides how they look */
 .prose table { width: 100%; margin: 28px 0; border-collapse: collapse; font-size: .95em; }
 .prose th, .prose td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }

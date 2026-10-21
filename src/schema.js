@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Paragraph from '@tiptap/extension-paragraph';
 import { Markdown } from '@tiptap/markdown';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
+import { blockNamed, fillBlock, fillTemplate, matchBlock } from './blocks.js';
 import { t } from './i18n/index.js';
 
 // Paragraphs: by default a paragraph holding a single image is unwrapped into a standalone image
@@ -13,6 +14,8 @@ import { t } from './i18n/index.js';
 // otherwise neighbouring image paragraphs collapse into one and end up side by side.
 export const SiteParagraph = Paragraph.extend({
   parseMarkdown: (token, helpers) => {
+    const block = asBlock(token); // a paragraph may be one of the site's own blocks
+    if (block) return block;
     const tokens = token.tokens || [];
     const content = helpers.parseInline(tokens);
     const first = tokens[0];
@@ -80,6 +83,91 @@ export const SiteTable = Table.extend({
   },
 });
 
+// ---------- Blocks a site defines for itself ----------
+//
+// config.blocks says what they look like in the file; blocks.js turns each template into
+// something that recognises itself. Here they become one node type with a small form in it, so
+// that adding a YouTube embed to a site is a line of config rather than a change to the editor.
+
+/** Whatever a block looks like, it arrives as a run of HTML or as a paragraph of text, so both of
+ * those handlers ask this first. */
+const asBlock = (token) => {
+  const found = matchBlock(token.raw ?? '');
+  return found ? { type: 'customBlock', attrs: found } : null;
+};
+
+export const CustomBlock = Node.create({
+  name: 'customBlock',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  addAttributes: () => ({ block: { default: '' }, values: { default: {} }, raw: { default: '' } }),
+  parseHTML: () => [{ tag: 'div[data-block]' }],
+  renderHTML: ({ HTMLAttributes }) => ['div', { 'data-block': HTMLAttributes.block }],
+  // An insert that was never filled in is not written to the file at all
+  renderMarkdown: (node) => (Object.values(node.attrs.values ?? {}).some(Boolean) || node.attrs.raw ? fillBlock(node.attrs) : ''),
+  addNodeView() {
+    return ({ node, editor, getPos }) => {
+      const def = blockNamed(node.attrs.block);
+      const dom = document.createElement('div');
+      dom.className = 'block-card';
+      const label = document.createElement('span');
+      label.className = 'html-label';
+      label.textContent = def?.label ?? node.attrs.block;
+      dom.append(label);
+
+      const shot = document.createElement('img');
+      shot.className = 'block-shot';
+      shot.addEventListener('error', () => (shot.hidden = true)); // no preview is better than a broken one
+      dom.append(shot);
+
+      const put = (name, value) => {
+        const pos = getPos();
+        if (pos == null) return;
+        const values = { ...node.attrs.values, [name]: value };
+        editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, values, raw: '' }));
+        showPreview(values);
+      };
+      const showPreview = (values) => {
+        const src = def?.preview ? fillTemplate(def.preview, values) : '';
+        shot.hidden = !src;
+        if (src) shot.src = src;
+      };
+
+      for (const field of def?.fields ?? []) {
+        const row = document.createElement('label');
+        row.className = 'block-field';
+        const name = document.createElement('span');
+        name.textContent = field.label ?? field.name;
+        const input = document.createElement(field.multiline ? 'textarea' : 'input');
+        input.value = node.attrs.values?.[field.name] ?? '';
+        if (field.placeholder) input.placeholder = field.placeholder;
+        if (field.multiline) input.rows = 3;
+        input.addEventListener('input', () => put(field.name, input.value));
+        row.append(name, input);
+        dom.append(row);
+      }
+      // A block whose definition is gone keeps what it was read as, and says so
+      if (!def) {
+        const gone = document.createElement('p');
+        gone.className = 'block-gone';
+        gone.textContent = node.attrs.raw;
+        dom.append(gone);
+      }
+      showPreview(node.attrs.values ?? {});
+
+      return {
+        dom,
+        update: (n) => n.type.name === 'customBlock' && n.attrs.block === node.attrs.block,
+        selectNode: () => dom.classList.add('selected'),
+        deselectNode: () => dom.classList.remove('selected'),
+        stopEvent: () => true,
+        ignoreMutation: () => true,
+      };
+    };
+  },
+});
+
 // ---------- Raw HTML ----------
 //
 // Anything in the file the editor has no node for — a leftover <div>, a comment, a component a
@@ -99,7 +187,8 @@ export const HtmlBlock = Node.create({
   markdownTokenName: 'html',
   // Inline HTML — a <br> in the middle of a sentence — is not a block and is left to the usual
   // parsing; returning nothing hands the token back to it.
-  parseMarkdown: (token) => (token.block === false || !token.raw?.trim() ? null : { type: 'htmlBlock', attrs: { html: token.raw.trim() } }),
+  parseMarkdown: (token) =>
+    token.block === false || !token.raw?.trim() ? null : asBlock(token) ?? { type: 'htmlBlock', attrs: { html: token.raw.trim() } },
   renderMarkdown: (node) => node.attrs.html ?? '',
   // The box the editor draws for it: the source in a text area, so whatever the toolbar has no
   // button for can still be written by hand and read back later.
@@ -147,6 +236,7 @@ export const HtmlBlock = Node.create({
 
 /** Everything the document is made of, bar the image node, which needs the browser. */
 export const schemaExtensions = [
+  CustomBlock,
   StarterKit.configure({ paragraph: false, heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true } }),
   SiteParagraph,
   SiteTable,

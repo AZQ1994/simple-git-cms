@@ -14,13 +14,14 @@
 //   theme.js       light or dark
 //   config.js      what config.json may say, and what to say when it says something else
 import { GitHubStore } from './github.js';
+import { setBlocks } from './blocks.js';
 import { setImageOptions } from './images.js';
 import { $, busy, fillIcons } from './dom.js';
 import { API_BASE, CONFIG, isLocal, on, setConfig, setStore, state, store } from './store.js';
 import { relabel } from './lang.js';
 import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from './auth.js';
 import { renderList } from './list.js';
-import { editor } from './editor.js';
+import { addBlockButtons, editor } from './editor.js';
 import { restoreOpen, updateBar } from './doc.js';
 import './preview-ui.js';
 import './theme.js';
@@ -65,6 +66,8 @@ async function loadConfig() {
   config.assetBase = isLocal || new URL(config.siteUrl).origin === location.origin ? '' : config.siteUrl;
   setConfig(config, c);
   setImageOptions({ ...config.media, timeZone: config.timeZone });
+  setBlocks(config.blocks);
+  addBlockButtons();
 
   for (const img of document.querySelectorAll('.brand-logo')) {
     img.src = config.logo;

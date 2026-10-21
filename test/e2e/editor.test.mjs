@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { CONTENT_DIR, EMBED, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
+import { BLOCK, CONTENT_DIR, EMBED, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -46,6 +46,7 @@ before(async () => {
       auth: { base: 'http://auth.invalid' },
       collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
+      blocks: [{ name: 'youtube', label: 'YouTube', template: '<YouTube id="{id}" />', fields: [{ name: 'id', label: 'Video' }] }],
     },
   });
   chrome = await launchChrome();
@@ -128,7 +129,7 @@ test('saving a draft leaves the site alone', async () => {
   assert.match(gh.commits.at(-1).message, /^\[skip ci\] /, 'a draft save should not trigger a build');
 });
 
-test('a table and an HTML embed come back out of the editor byte for byte', async () => {
+test('a table, an HTML embed and a block the site defined come back out byte for byte', async () => {
   await openArticle(0);
   assert.match(await page.evaluate(`document.querySelectorAll('#body table').length`) + '', /^1$/, 'the table should be drawn as a table');
   assert.equal(await page.evaluate(`document.querySelectorAll('#body th').length`), 3);
@@ -141,6 +142,34 @@ test('a table and an HTML embed come back out of the editor byte for byte', asyn
   const file = gh.files.get(`${CONTENT_DIR}/202610150930.md`);
   assert.ok(file.includes(TABLE), 'the table should be written back exactly as it was read');
   assert.ok(file.includes(EMBED), 'and so should the embed, which the editor understands nothing about');
+  assert.ok(file.includes(BLOCK), 'and the block, which exists only because config.json describes it');
+});
+
+test('a block defined in config.json is a card with its own fields', async () => {
+  await openArticle(0);
+  assert.equal(await page.evaluate(`document.querySelector('#body .block-card .html-label').textContent`), 'YouTube');
+  assert.equal(await page.evaluate(`document.querySelector('#body .block-card input').value`), 'dQw4w9WgXcQ');
+
+  await page.evaluate(`(() => {
+    const i = document.querySelector('#body .block-card input');
+    i.value = 'zzz';
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await save();
+  assert.match(gh.files.get(`${CONTENT_DIR}/202610150930.md`), /<YouTube id="zzz" \/>/, 'the template is how it goes back');
+});
+
+test('the toolbar offers the blocks the site defined, and inserting one writes the template', async () => {
+  await openArticle(2); // the draft
+  await page.evaluate(`document.querySelector('#toolbar [data-block="youtube"]').click()`);
+  await page.until(`document.querySelectorAll('#body .block-card').length === 1`, { label: 'the card' });
+  await page.evaluate(`(() => {
+    const i = document.querySelector('#body .block-card input');
+    i.value = 'newly-added';
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await save();
+  assert.match(gh.files.get(`${CONTENT_DIR}/202610010000.md`), /<YouTube id="newly-added" \/>/);
 });
 
 test('the HTML box can be edited, and that is what gets committed', async () => {

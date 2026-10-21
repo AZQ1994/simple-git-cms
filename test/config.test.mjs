@@ -116,3 +116,13 @@ test('something that is not an object at all is rejected plainly', () => {
 test('$schema is allowed, since it is what gives an editor autocomplete', () => {
   assert.deepEqual(keys({ ...good(), $schema: './config.schema.json' }), []);
 });
+
+test('a block is checked the way everything else is', () => {
+  const blocks = (list) => keys({ ...good(), blocks: list });
+  assert.deepEqual(blocks([{ name: 'youtube', template: '<YouTube id="{id}" />' }]), []);
+  assert.equal(blocks('youtube').length, 1, 'blocks is a list');
+  assert.deepEqual(blocks([{ template: '<X/>' }]), ['blocks[0].name']);
+  assert.deepEqual(blocks([{ name: 'x' }]), ['blocks[0].template']);
+  assert.deepEqual(blocks([{ name: 'x', template: '<X/>', colour: 'red' }]), ['blocks[0].colour']);
+  assert.deepEqual(blocks([{ name: 'x', template: '<X {a}/>', fields: [{ label: 'A' }] }]), ['blocks[0].fields[0].name']);
+});

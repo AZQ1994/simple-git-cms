@@ -77,6 +77,14 @@ await writeFile(
       auth: { base: '/demo/auth' },
       collection: { label: 'news', dir: 'site/content/news', url: '/demo/preview/', imageField: 'image' },
       media: { dir: 'site/public/uploads', url: '/uploads', maxWidth: 1600, quality: 0.82 },
+      blocks: [
+        {
+          name: 'notice',
+          label: 'Notice',
+          template: '<aside class="notice">{text}</aside>',
+          fields: [{ name: 'text', label: 'Text', multiline: true, placeholder: 'Applications close on 20 February.' }],
+        },
+      ],
       preview: { url: '/demo/preview/' },
       deploy: { skipCiForDrafts: true },
     },

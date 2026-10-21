@@ -36,7 +36,7 @@ const seed = () => ({
     },
     [`${CONTENT_DIR}/202610010000.md`]: {
       t: article('Draft: timetable changes', '2026-10-01T00:00:00.000Z', ['notice'],
-        'The timetable for next term is still being finalised.', true),
+        'The timetable for next term is still being finalised.\n\n<aside class="notice">Rooms are not confirmed yet.</aside>', true),
     },
   },
   blobs: {},

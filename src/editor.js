@@ -6,6 +6,7 @@ import { Placeholder } from '@tiptap/extensions';
 import { NodeSelection } from '@tiptap/pm/state';
 import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { $, busy } from './dom.js';
+import { blocks } from './blocks.js';
 import { cleanMarkdown, schemaExtensions } from './schema.js';
 import { addPending, displaySrc, emit, on } from './store.js';
 import { checkFileSize, compressImage, newFilePath, newImagePath, openCropper } from './images.js';
@@ -109,6 +110,7 @@ $('#toolbar').addEventListener('click', (e) => {
   const cmd = b.dataset.cmd;
   if (cmd === 'image') return pickFiles((files) => insertFiles(files));
   if (cmd === 'attach') return pickFiles(([f]) => attach(f), { multiple: false, accept: '' });
+  if (cmd === 'block') return editor.chain().focus().insertContent({ type: 'customBlock', attrs: { block: b.dataset.block, values: {}, raw: '' } }).run();
   if (cmd === 'link') {
     const prev = editor.getAttributes('link').href ?? '';
     const href = prompt(t('toolbar.linkPrompt'), prev);
@@ -118,6 +120,19 @@ $('#toolbar').addEventListener('click', (e) => {
   }
   commands[cmd](editor.chain().focus()).run();
 });
+
+/** A button for each block the site has defined for itself. Called once, after the config is in. */
+export function addBlockButtons() {
+  for (const def of blocks()) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.cmd = 'block';
+    b.dataset.block = def.name;
+    b.title = def.label;
+    b.append(Object.assign(document.createElement('span'), { className: 'tb-label', textContent: def.label }));
+    $('#toolbar .spacer').before(b);
+  }
+}
 
 function updateToolbar() {
   for (const b of document.querySelectorAll('#toolbar [data-cmd]')) b.classList.toggle('on', Boolean(active[b.dataset.cmd]?.()));

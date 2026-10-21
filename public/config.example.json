@@ -30,6 +30,16 @@
     "maxFileMB": 20
   },
 
+  "blocks": [
+    {
+      "name": "youtube",
+      "label": "YouTube",
+      "template": "<YouTube id=\"{id}\" />",
+      "preview": "https://i.ytimg.com/vi/{id}/hqdefault.jpg",
+      "fields": [{ "name": "id", "label": "Video ID", "placeholder": "dQw4w9WgXcQ" }]
+    }
+  ],
+
   "preview": {
     "url": "/news/preview/"
   },

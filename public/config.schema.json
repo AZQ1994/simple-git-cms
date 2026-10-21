@@ -153,6 +153,63 @@
           "description": "Add [skip ci] when saving drafts, so they don't trigger a build."
         }
       }
+    },
+    "blocks": {
+      "type": "array",
+      "description": "Blocks this site defines for itself, each a template the editor recognises in a file and writes back.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "template"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A name of its own, used nowhere but here."
+          },
+          "label": {
+            "type": "string",
+            "description": "What the button says. Defaults to the name."
+          },
+          "template": {
+            "type": "string",
+            "description": "How it is written in the file, with {placeholders} for the parts someone fills in, e.g. <YouTube id=\"{id}\" />."
+          },
+          "preview": {
+            "type": "string",
+            "description": "Optional image address shown in the editor, with the same {placeholders}."
+          },
+          "fields": {
+            "type": "array",
+            "description": "Only needed to give a placeholder a label, a hint, or room for several lines.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The placeholder this describes."
+                },
+                "label": {
+                  "type": "string"
+                },
+                "placeholder": {
+                  "type": "string"
+                },
+                "multiline": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -297,6 +297,19 @@ svg { flex: none; }
 .body .column-resize-handle { display: none; }
 
 /* The bars that appear over a selected image or the table the cursor is in */
+/* A block the site defined for itself in config.json */
+.block-card { display: grid; gap: 8px; padding: 24px 12px 12px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--surface); position: relative; }
+.block-card.selected { border-color: var(--navy); }
+.block-shot { justify-self: start; max-width: 260px; max-height: 150px; border-radius: 6px; object-fit: cover; }
+.block-field { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); }
+.block-field > span { flex: none; min-width: 72px; }
+.block-field input, .block-field textarea {
+  flex: 1; min-width: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: 7px; outline: 0;
+  background: var(--bg); color: var(--ink); font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
+}
+.block-field input:focus, .block-field textarea:focus { border-color: var(--navy); }
+.block-gone { margin: 0; font: 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+
 /* Raw HTML: the file said something the editor has no buttons for, so here is its source */
 .html-block { position: relative; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--surface); padding: 22px 12px 10px; }
 .html-block.selected { border-color: var(--navy); }

@@ -45,6 +45,15 @@ const SPEC = {
       maxFileMB: { type: 'number', min: 1, max: 100 },
     },
   },
+  blocks: {
+    each: {
+      name: { ...str, required: true },
+      label: str,
+      template: { ...str, required: true, wants: '{', hint: 'config.blockTemplate' },
+      preview: str,
+      fields: { each: { name: { ...str, required: true }, label: str, placeholder: str, multiline: { type: 'boolean' } } },
+    },
+  },
   preview: { fields: { url: { ...str, slash: true } } },
   deploy: { fields: { skipCiForDrafts: { type: 'boolean' } } },
 };
@@ -116,6 +125,16 @@ export function checkConfig(raw, t) {
       if (!rule) {
         const guess = nearest(key, Object.keys(spec));
         add(problems, prefix + key, guess ? 'config.unknownDidYouMean' : 'config.unknown', { guess });
+        continue;
+      }
+      if (rule.each) {
+        if (!Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.list') });
+        else
+          value.forEach((item, i) => {
+            const path = `${prefix}${key}[${i}]`;
+            if (item === null || typeof item !== 'object' || Array.isArray(item)) add(problems, path, 'config.mustBe', { type: t('config.type.group') });
+            else walk(item, rule.each, `${path}.`);
+          });
         continue;
       }
       if (rule.fields) {
