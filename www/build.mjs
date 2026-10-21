@@ -60,7 +60,6 @@ const html = await readFile(editorPage, 'utf8');
 await writeFile(
   editorPage,
   html
-    .replace('</head>', '  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />\n  </head>')
     .replace('</body>', '    <link rel="stylesheet" href="../banner.css" />\n    <script src="../banner.js"></script>\n  </body>'),
 );
 

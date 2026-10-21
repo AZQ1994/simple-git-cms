@@ -38,6 +38,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 - **Permissions are just repository permissions** — whoever can push can edit, and who changed what
   is in the git history
 - **Interface in English, 简体中文 and 日本語**, switchable in place
+- **Light or dark**, following the computer or chosen by hand
 
 ## Layout
 

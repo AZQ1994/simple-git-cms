@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(dist, 'app.js'))) {
   process.exit(1);
 }
 fs.mkdirSync(target, { recursive: true });
-for (const f of ['index.html', 'app.js', 'app.css', 'preview.js', 'cropper.js', 'cropper.css', 'VERSION', 'config.example.json']) fs.copyFileSync(path.join(dist, f), path.join(target, f));
+for (const f of ['index.html', 'app.js', 'app.css', 'preview.js', 'cropper.js', 'cropper.css', 'favicon.svg', 'VERSION', 'config.example.json']) fs.copyFileSync(path.join(dist, f), path.join(target, f));
 const hasConfig = fs.existsSync(path.join(target, 'config.json'));
 console.log(`Installed Simple Git CMS ${fs.readFileSync(path.join(dist, 'VERSION'), 'utf8').trim()} to ${target}`);
 if (!hasConfig) console.log('No config.json yet — write one modelled on config.example.json, and add a logo.png.');

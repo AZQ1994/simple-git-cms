@@ -11,6 +11,7 @@
 //   editor.js      the editing surface: TipTap, the toolbar and the image tools
 //   doc.js         the article form, saving, publishing, the status bar
 //   preview-ui.js  the preview pane
+//   theme.js       light or dark
 import { GitHubStore } from './github.js';
 import { setImageOptions } from './images.js';
 import { $, busy, fillIcons } from './dom.js';
@@ -21,6 +22,7 @@ import { renderList } from './list.js';
 import { editor } from './editor.js';
 import { restoreOpen, updateBar } from './doc.js';
 import './preview-ui.js';
+import './theme.js';
 import { resolveLocale, setLocale, t } from './i18n/index.js';
 
 fillIcons();
