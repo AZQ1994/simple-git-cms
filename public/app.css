@@ -19,7 +19,19 @@
   --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', sans-serif;
   color-scheme: light;
 }
+
+/* The stack above is a Simplified-Chinese one. Asked to render Japanese it falls back to a Chinese
+   font, which draws some characters wrong (直 書 済) and runs wider than the layout expects — on a
+   Mac -apple-system hides this, on Windows and Android it doesn't. So pick the family from the
+   language the interface is actually in; setLocale() keeps <html lang> up to date. */
+html[lang='ja'] {
+  --font: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Noto Sans JP', 'Helvetica Neue', sans-serif;
+}
+html[lang='en'] {
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
 html, body { height: 100%; }
 body { margin: 0; font: 14px/1.6 var(--font); color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
 [hidden] { display: none !important; }
@@ -75,8 +87,18 @@ svg { flex: none; }
 .search:focus-within { border-color: var(--navy); }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); }
 .seg { display: flex; padding: 3px; border-radius: 9px; background: #eceef2; }
-.seg button { flex: 1; height: 28px; border: 0; border-radius: 7px; background: none; cursor: pointer; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
-.seg button span { color: var(--faint); font-variant-numeric: tabular-nums; margin-left: 2px; }
+/* min-width: 0 matters: without it a flex item can't shrink below its own text, so a longer
+   translation (or a reader's larger minimum font size) pushes the tabs out of the sidebar instead
+   of making them narrower. The label gives way first; the count stays whole. The basis stays
+   `auto` so that while there is room, a longer label still gets the wider tab. */
+.seg button {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  height: 28px; border: 0; border-radius: 7px; background: none; cursor: pointer;
+  font-size: 12.5px; color: var(--muted);
+}
+.seg button .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg button .count { flex: none; color: var(--faint); font-variant-numeric: tabular-nums; }
 .seg button.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
 .list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
 .item { display: grid; gap: 4px; width: 100%; padding: 10px 10px; border: 0; border-radius: 8px; background: none; text-align: left; cursor: pointer; }
