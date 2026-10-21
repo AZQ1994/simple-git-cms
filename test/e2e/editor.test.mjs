@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { BLOCK, CONTENT_DIR, EMBED, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
+import { BLOCK, CONTENT_DIR, EMBED, HTML_TABLE, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -71,6 +71,12 @@ const openArticle = async (n) => {
   await page.evaluate(`document.querySelectorAll('#list .item')[${n}].click()`);
   await page.until(`!document.getElementById('doc').hidden`, { label: 'the article form' });
 };
+const middleOf = async (selector, n) =>
+  JSON.parse(
+    await page.evaluate(
+      `(() => { const r = document.querySelectorAll(${JSON.stringify(selector)})[${n}].getBoundingClientRect(); return JSON.stringify({ x: r.x + r.width / 2, y: r.y + r.height / 2 }); })()`,
+    ),
+  );
 const setTitle = (text) =>
   page.evaluate(`(() => { const el = document.getElementById('f-title'); el.value = ${JSON.stringify(text)}; el.dispatchEvent(new Event('input', { bubbles: true })); })()`);
 const typeBody = async (text) => {
@@ -131,8 +137,9 @@ test('saving a draft leaves the site alone', async () => {
 
 test('a table, an HTML embed and a block the site defined come back out byte for byte', async () => {
   await openArticle(0);
-  assert.match(await page.evaluate(`document.querySelectorAll('#body table').length`) + '', /^1$/, 'the table should be drawn as a table');
-  assert.equal(await page.evaluate(`document.querySelectorAll('#body th').length`), 3);
+  // Both spellings are tables here: the pipe one, and the HTML one with a header across two columns
+  assert.equal(await page.evaluate(`document.querySelectorAll('#body table').length`), 2, 'the HTML one is a table too, not a box of source');
+  assert.equal(await page.evaluate(`document.querySelector('#body th[colspan="2"]').textContent`), 'Spring');
   // A table is the one thing in the body with a shape of its own; if the editor's idea of it and
   // the file's ever drift apart, every save of an untouched table would churn the file
   assert.equal(await page.evaluate(`document.querySelectorAll('#body .html-block').length`), 1, 'the embed should be a box of its own');
@@ -141,8 +148,25 @@ test('a table, an HTML embed and a block the site defined come back out byte for
   await save();
   const file = gh.files.get(`${CONTENT_DIR}/202610150930.md`);
   assert.ok(file.includes(TABLE), 'the table should be written back exactly as it was read');
+  assert.ok(file.includes(HTML_TABLE), 'and the HTML one, which is a table in the editor all the same');
   assert.ok(file.includes(EMBED), 'and so should the embed, which the editor understands nothing about');
   assert.ok(file.includes(BLOCK), 'and the block, which exists only because config.json describes it');
+});
+
+test('merging cells turns a pipe table into an HTML one, since pipes cannot say it', async () => {
+  await openArticle(2); // the draft, which has nothing in it yet
+  await page.evaluate(`document.querySelector('#toolbar [data-cmd="table"]').click()`);
+  await page.until(`!document.getElementById('table-bar').hidden`, { label: 'the table bar' });
+  assert.equal(await page.evaluate(`document.querySelector('#table-bar [data-table="format"] .tb-mono').textContent`), 'MD');
+
+  // drag across the first two header cells, which is how a person selects them
+  await page.drag(await middleOf('#body th', 0), await middleOf('#body th', 1));
+  await page.evaluate(`document.querySelector('#table-bar [data-table="merge"]').click()`);
+  await page.until(`document.querySelector('#body th[colspan="2"]')`, { label: 'a merged cell' });
+  assert.equal(await page.evaluate(`document.querySelector('#table-bar [data-table="format"] .tb-mono').textContent`), 'HTML');
+
+  await save();
+  assert.match(gh.files.get(`${CONTENT_DIR}/202610010000.md`), /<th colspan="2">/);
 });
 
 test('a block defined in config.json is a card with its own fields', async () => {

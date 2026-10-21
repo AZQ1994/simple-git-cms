@@ -157,8 +157,12 @@ comment, a component your site expands — is held as a block of raw HTML and wr
 it was. It shows as a box with its source in it, which is also how to put something into an article
 that the toolbar has no button for.
 
-A table in the body is a plain GFM table, and only what GFM can express goes into one: a header row,
-one line of text per cell, no merged cells. A hand-written table is laid out once on the first save
+A table in the body is a plain GFM table: a header row, one line of text per cell, no merged
+cells. A table that needs more than that is written as HTML — `<table>` passes through Markdown
+untouched — and the editor still shows it as a table you can edit, with a button to merge and
+split cells. Merging turns a pipe table into an HTML one, because pipes have no way of saying it.
+An HTML table with anything the editor could not write back exactly, such as a class of its own,
+stays a block of raw HTML instead. A hand-written table is laid out once on the first save
 — padded to the column widths, with the colons following them — and left alone after that. The site
 needs nothing installed to show it, since Astro and friends run remark-gfm already; it will want
 some CSS of its own.

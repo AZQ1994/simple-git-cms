@@ -5,7 +5,7 @@ import Image from '@tiptap/extension-image';
 import { Placeholder } from '@tiptap/extensions';
 import { NodeSelection } from '@tiptap/pm/state';
 import { isInTable, selectedRect } from '@tiptap/pm/tables';
-import { $, busy } from './dom.js';
+import { $, busy, toast } from './dom.js';
 import { blocks } from './blocks.js';
 import { cleanMarkdown, schemaExtensions } from './schema.js';
 import { addPending, displaySrc, emit, on } from './store.js';
@@ -209,7 +209,11 @@ export function onSelection() {
     layout.querySelector('.layout-label').textContent = img.inGroup ? t('img.layoutAlone') : t('img.layoutSide');
     layout.querySelector('[data-icon]').innerHTML = img.inGroup ? icons.rows : icons.columns;
   }
-  if (table) $('#table-bar [data-table="align"] [data-icon]').innerHTML = icons[`align${capitalize(columnAlign() ?? 'left')}`];
+  if (table) {
+    $('#table-bar [data-table="align"] [data-icon]').innerHTML = icons[`align${capitalize(columnAlign() ?? 'left')}`];
+    // Say which of the two spellings this table is written in, since it decides what it can hold
+    $('#table-bar [data-table="format"] .tb-mono').textContent = table.node.attrs.format === 'html' || hasMergedCells(table.node) ? 'HTML' : 'MD';
+  }
   positionBars();
 }
 
@@ -335,13 +339,35 @@ const tableCommands = {
   colAfter: (c) => c.addColumnAfter(),
   colDelete: (c) => c.deleteColumn(),
   delete: (c) => c.deleteTable(),
+  merge: (c) => c.mergeOrSplit(),
 };
+
+/** Whether any cell spans more than one, which a pipe table has no way of saying. */
+function hasMergedCells(table) {
+  let merged = false;
+  table.descendants((n) => {
+    if (n.attrs?.colspan > 1 || n.attrs?.rowspan > 1) merged = true;
+  });
+  return merged;
+}
+
+/** Switch a table between the two spellings: a pipe table, or HTML. */
+function toggleFormat() {
+  const table = tableAt();
+  if (!table) return;
+  const next = table.node.attrs.format === 'html' ? 'gfm' : 'html';
+  if (next === 'gfm' && hasMergedCells(table.node)) return toast(t('table.needsHtml'), 'error');
+  editor.view.dispatch(editor.state.tr.setNodeMarkup(table.pos, undefined, { ...table.node.attrs, format: next }));
+  editor.view.focus();
+  return undefined;
+}
 
 $('#table-bar').addEventListener('mousedown', (e) => e.preventDefault()); // keep the cursor in its cell
 $('#table-bar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-table]');
   if (!b || !isInTable(editor.state)) return;
   // A column with no marker is drawn left-aligned, so that is what the button shows and steps on from
+  if (b.dataset.table === 'format') return toggleFormat();
   if (b.dataset.table === 'align') return setColumnAlign(ALIGN[(ALIGN.indexOf(columnAlign() ?? 'left') + 1) % ALIGN.length]);
   tableCommands[b.dataset.table](editor.chain().focus()).run();
 });

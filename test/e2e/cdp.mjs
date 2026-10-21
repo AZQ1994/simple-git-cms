@@ -133,6 +133,16 @@ export async function openPage(port) {
       if (!nodeId) throw new Error(`no file input at ${selector}`);
       await send('DOM.setFileInputFiles', { files: [file], nodeId });
     },
+    /** Drag the mouse from one point to another, for the things only a drag can do. */
+    async drag(from, to) {
+      const mouse = { button: 'left', buttons: 1, clickCount: 1 };
+      await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...from, ...mouse });
+      for (const at of [0.5, 1]) {
+        await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: from.x + (to.x - from.x) * at, y: from.y + (to.y - from.y) * at, ...mouse });
+      }
+      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...to, ...mouse });
+      await sleep(120);
+    },
     /** Press a key the way a person would, so the page's keymaps see it. */
     async press(key) {
       const vk = KEYS[key] ?? 0;

@@ -7,6 +7,7 @@ import Paragraph from '@tiptap/extension-paragraph';
 import { Markdown } from '@tiptap/markdown';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import { blockNamed, fillBlock, fillTemplate, matchBlock } from './blocks.js';
+import { needsHtml, parseHtmlTable, writeHtmlTable } from './html-table.js';
 import { t } from './i18n/index.js';
 
 // Paragraphs: by default a paragraph holding a single image is unwrapped into a standalone image
@@ -69,7 +70,16 @@ const dashes = (w, align) =>
   align === 'left' ? `:${'-'.repeat(w - 1)}` : align === 'right' ? `${'-'.repeat(w - 1)}:` : align === 'center' ? `:${'-'.repeat(w - 2)}:` : '-'.repeat(w);
 
 export const SiteTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      // Which of the two spellings this table is written in. A table read from a pipe table stays
+      // one; a table read from HTML stays HTML; merging cells forces HTML, since pipes cannot.
+      format: { default: 'gfm', rendered: false },
+    };
+  },
   renderMarkdown(node, h) {
+    if (node.attrs?.format === 'html' || needsHtml(node)) return writeHtmlTable(node);
     const rows = (node.content ?? []).map((row) => (row.content ?? []).map((cell) => cellText(cell, h)));
     if (!rows.length) return '';
     const cols = Math.max(...rows.map((r) => r.length));
@@ -188,7 +198,10 @@ export const HtmlBlock = Node.create({
   // Inline HTML — a <br> in the middle of a sentence — is not a block and is left to the usual
   // parsing; returning nothing hands the token back to it.
   parseMarkdown: (token) =>
-    token.block === false || !token.raw?.trim() ? null : asBlock(token) ?? { type: 'htmlBlock', attrs: { html: token.raw.trim() } },
+    token.block === false || !token.raw?.trim()
+      ? null
+      : // a block of the site's own, then a table the editor can edit as a table, then the source
+        asBlock(token) ?? parseHtmlTable(token.raw) ?? { type: 'htmlBlock', attrs: { html: token.raw.trim() } },
   renderMarkdown: (node) => node.attrs.html ?? '',
   // The box the editor draws for it: the source in a text area, so whatever the toolbar has no
   // button for can still be written by hand and read back later.

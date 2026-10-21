@@ -88,6 +88,9 @@ export default {
   'table.colAfter': '右に列を追加',
   'table.colDelete': 'この列を削除',
   'table.align': 'この列の揃え方（左 / 中央 / 右）',
+  'table.merge': '選択したセルを結合、または結合を解除',
+  'table.format': 'Markdown の表と HTML の表を切り替え',
+  'table.needsHtml': 'この表には結合したセルがあるので、Markdown の表では表せません。',
   'table.delete': '表を削除',
 
   // ファイル

@@ -170,3 +170,34 @@ test('defining a block changes nothing about the rest of an article', () => {
     assert.equal(roundTrip(body), body, 'raw HTML that is not one of the blocks stays raw HTML');
   });
 });
+
+// ---------- Tables written as HTML ----------
+
+const HTML_TABLE = `<table>
+  <tr>
+    <th>Course</th>
+    <th colspan="2">Spring</th>
+  </tr>
+  <tr>
+    <td>A1</td>
+    <td style="text-align: right">42,000</td>
+    <td>April</td>
+  </tr>
+</table>`;
+
+test('a table written as HTML is read as a table and written back as HTML', () => {
+  const body = `Before.\n\n${HTML_TABLE}\n\nAfter.`;
+  assert.equal(roundTrip(body), body);
+});
+
+test('a pipe table with a merged cell becomes HTML, because pipes cannot say it', () => {
+  const pipes = '| a   | b   |\n| --- | --- |\n| 1   | 2   |';
+  const doc = md.parse(pipes);
+  doc.content[0].content[1].content[0].attrs = { colspan: 2, rowspan: 1, align: null };
+  assert.match(cleanMarkdown(md.serialize(doc)), /^<table>/, 'the file has to say what the table now is');
+});
+
+test('an HTML table the editor could not write back stays raw HTML', () => {
+  const body = '<table class="wide"><tr><td>a</td></tr></table>';
+  assert.equal(roundTrip(body), body);
+});

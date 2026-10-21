@@ -87,6 +87,9 @@ export default {
   'table.colAfter': 'Add a column to the right',
   'table.colDelete': 'Delete this column',
   'table.align': 'Align this column (left, centre, right)',
+  'table.merge': 'Merge the selected cells, or split one that was merged',
+  'table.format': 'Switch between a Markdown table and an HTML one',
+  'table.needsHtml': 'This table has merged cells, which a Markdown table cannot hold.',
   'table.delete': 'Delete the table',
 
   // Files

@@ -88,6 +88,9 @@ export default {
   'table.colAfter': '在右边加一列',
   'table.colDelete': '删除这一列',
   'table.align': '这一列的对齐方式（左 / 居中 / 右）',
+  'table.merge': '合并选中的单元格，或拆开已合并的',
+  'table.format': '在 Markdown 表格和 HTML 表格之间切换',
+  'table.needsHtml': '这张表有合并的单元格，Markdown 表格装不下。',
   'table.delete': '删除表格',
 
   // 附件
