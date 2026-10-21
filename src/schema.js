@@ -1,10 +1,12 @@
 // What a document may contain, and how each part is written back as Markdown. Kept apart from the
-// editor itself because none of it touches the DOM, so the whole Markdown round-trip can be tested
-// in Node rather than only in a browser.
+// editor itself because nothing here reaches for the DOM as it loads — the one node view below
+// only runs in a browser — so the whole Markdown round-trip can be tested in Node.
+import { Node } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Paragraph from '@tiptap/extension-paragraph';
 import { Markdown } from '@tiptap/markdown';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
+import { t } from './i18n/index.js';
 
 // Paragraphs: by default a paragraph holding a single image is unwrapped into a standalone image
 // node, which suits block-level images. Here images are inline, so the paragraph has to stay —
@@ -78,6 +80,71 @@ export const SiteTable = Table.extend({
   },
 });
 
+// ---------- Raw HTML ----------
+//
+// Anything in the file the editor has no node for — a leftover <div>, a comment, a component a
+// site builds its own embeds from — is kept exactly as written instead of being quietly dropped
+// on the next save. It shows up as a box you can edit the source of, so it is also the way to put
+// something in that the toolbar doesn't cover.
+
+export const HtmlBlock = Node.create({
+  name: 'htmlBlock',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  code: true,
+  addAttributes: () => ({ html: { default: '' } }),
+  parseHTML: () => [{ tag: 'div[data-html-block]', getAttrs: (el) => ({ html: el.getAttribute('data-html') ?? el.textContent ?? '' }) }],
+  renderHTML: ({ HTMLAttributes }) => ['div', { 'data-html-block': '', 'data-html': HTMLAttributes.html ?? '' }],
+  markdownTokenName: 'html',
+  // Inline HTML — a <br> in the middle of a sentence — is not a block and is left to the usual
+  // parsing; returning nothing hands the token back to it.
+  parseMarkdown: (token) => (token.block === false || !token.raw?.trim() ? null : { type: 'htmlBlock', attrs: { html: token.raw.trim() } }),
+  renderMarkdown: (node) => node.attrs.html ?? '',
+  // The box the editor draws for it: the source in a text area, so whatever the toolbar has no
+  // button for can still be written by hand and read back later.
+  addNodeView() {
+    return ({ node, editor, getPos }) => {
+      const dom = document.createElement('div');
+      dom.className = 'html-block';
+      const label = document.createElement('span');
+      label.className = 'html-label';
+      label.textContent = 'HTML';
+      const area = document.createElement('textarea');
+      area.spellcheck = false;
+      area.value = node.attrs.html;
+      area.placeholder = t('html.placeholder');
+      const fit = () => {
+        area.style.height = 'auto';
+        area.style.height = `${area.scrollHeight}px`;
+      };
+      area.addEventListener('input', () => {
+        fit();
+        const pos = getPos();
+        if (pos != null) editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { html: area.value }));
+      });
+      dom.append(label, area);
+      requestAnimationFrame(fit);
+      return {
+        dom,
+        update: (n) => {
+          if (n.type.name !== 'htmlBlock') return false;
+          if (document.activeElement !== area && n.attrs.html !== area.value) {
+            area.value = n.attrs.html;
+            fit();
+          }
+          return true;
+        },
+        selectNode: () => dom.classList.add('selected'),
+        deselectNode: () => dom.classList.remove('selected'),
+        stopEvent: () => true, // everything inside the box belongs to the text area
+        ignoreMutation: () => true,
+      };
+    };
+  },
+});
+
+
 /** Everything the document is made of, bar the image node, which needs the browser. */
 export const schemaExtensions = [
   StarterKit.configure({ paragraph: false, heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true }, codeBlock: false, code: false }),
@@ -86,14 +153,21 @@ export const schemaExtensions = [
   TableRow,
   SiteTableCell,
   SiteTableHeader,
+  HtmlBlock,
   Markdown,
 ];
 
-/** The serializer's output, as it should be written to the file. An & is written out as &amp;,
- * which looks the same but should go back as &. Blank lines at the very start and end are dropped
- * — inserting an image always leaves one. */
+/** The serializer's output, as it should be written to the file.
+ *
+ * An & is written out as &amp; and < > as &lt; &gt;, which look the same on the site but are not
+ * what the file said; they go back as they were, so that what someone typed — a "<" in a sentence,
+ * a <br>, a template tag a site expands itself — is still there the next time the file is read.
+ * (An &amp; followed by an entity name is left alone: it is how a file writes a literal &lt;.)
+ * Blank lines at the very start and end are dropped — inserting an image always leaves one. */
 export const cleanMarkdown = (md) =>
   md
     .replace(/&amp;(?![a-zA-Z]+;|#\d+;)/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/^(?:\s*&nbsp;\s*\n)+/, '')
     .replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');

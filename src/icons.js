@@ -20,6 +20,7 @@ export const icons = {
   trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>'),
   minus: svg('<path d="M5 12h14"/>'),
+  code: svg('<path d="m9 8-5 4 5 4M15 8l5 4-5 4"/>'),
   table: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9.5 9.5V20M15 9.5V20"/>'),
   alignLeft: svg('<path d="M4 6h16M4 12h9M4 18h13"/>'),
   alignCenter: svg('<path d="M4 6h16M7.5 12h9M5.5 18h13"/>'),

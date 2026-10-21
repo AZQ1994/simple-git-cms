@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { CONTENT_DIR, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
+import { CONTENT_DIR, EMBED, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -128,15 +128,30 @@ test('saving a draft leaves the site alone', async () => {
   assert.match(gh.commits.at(-1).message, /^\[skip ci\] /, 'a draft save should not trigger a build');
 });
 
-test('a table in a file comes back out of the editor byte for byte', async () => {
+test('a table and an HTML embed come back out of the editor byte for byte', async () => {
   await openArticle(0);
   assert.match(await page.evaluate(`document.querySelectorAll('#body table').length`) + '', /^1$/, 'the table should be drawn as a table');
   assert.equal(await page.evaluate(`document.querySelectorAll('#body th').length`), 3);
   // A table is the one thing in the body with a shape of its own; if the editor's idea of it and
   // the file's ever drift apart, every save of an untouched table would churn the file
+  assert.equal(await page.evaluate(`document.querySelectorAll('#body .html-block').length`), 1, 'the embed should be a box of its own');
+  assert.equal(await page.evaluate(`document.querySelector('#body .html-block textarea').value`), EMBED, 'showing what the file says');
   await setTitle('Spring term enrolment is open');
   await save();
-  assert.ok(gh.files.get(`${CONTENT_DIR}/202610150930.md`).includes(TABLE), 'the table should be written back exactly as it was read');
+  const file = gh.files.get(`${CONTENT_DIR}/202610150930.md`);
+  assert.ok(file.includes(TABLE), 'the table should be written back exactly as it was read');
+  assert.ok(file.includes(EMBED), 'and so should the embed, which the editor understands nothing about');
+});
+
+test('the HTML box can be edited, and that is what gets committed', async () => {
+  await openArticle(0);
+  await page.evaluate(`(() => {
+    const t = document.querySelector('#body .html-block textarea');
+    t.value = '<iframe src="https://www.youtube.com/embed/zzz" allowfullscreen></iframe>';
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await save();
+  assert.match(gh.files.get(`${CONTENT_DIR}/202610150930.md`), /embed\/zzz/);
 });
 
 test('a new article gets an id of its own', async () => {

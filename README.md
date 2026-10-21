@@ -22,6 +22,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   caption, place side by side, replace
 - **Tables**: add and remove rows and columns, align a column left, centre or right — written out
   as a plain GFM table that lines up in the file
+- **Nothing is quietly dropped**: anything in the file the editor has no buttons for — an embed, a
+  leftover `<div>`, a component your site expands itself — is shown as an HTML box whose source you
+  can edit, and written back exactly as it was
 - **A cover image**: uploaded, replaced, cropped or removed in the article's own form, and
   written to a frontmatter field of your choosing — what a site uses for list thumbnails and
   share images
@@ -131,6 +134,11 @@ The body, in Markdown. ![](/uploads/20261021/abc.webp "An image caption")
 
 Frontmatter fields the editor doesn't recognise are preserved untouched. A new article's filename —
 its id — is the year, month, day, hour and minute it was created.
+
+Anything else in the body that the editor has no node for — an `<iframe>`, a `<div>`, an HTML
+comment, a component your site expands — is held as a block of raw HTML and written back exactly as
+it was. It shows as a box with its source in it, which is also how to put something into an article
+that the toolbar has no button for.
 
 A table in the body is a plain GFM table, and only what GFM can express goes into one: a header row,
 one line of text per cell, no merged cells. A hand-written table is laid out once on the first save

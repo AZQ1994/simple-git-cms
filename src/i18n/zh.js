@@ -67,6 +67,8 @@ export default {
   'toolbar.blockquote': '引用',
   'toolbar.link': '链接',
   'toolbar.table': '插入表格',
+  'toolbar.html': '插入 HTML',
+  'html.placeholder': '写在这里的 HTML 会原样存进文件',
   'toolbar.image': '插入图片（可多选，多张会并排）',
   'toolbar.imageLabel': '图片',
   'toolbar.undo': '撤销（⌘Z）',

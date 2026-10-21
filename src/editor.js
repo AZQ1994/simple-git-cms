@@ -13,7 +13,8 @@ import { icons } from './icons.js';
 import { t } from './i18n/index.js';
 
 // Images are inline nodes, so several in one paragraph render side by side on the site. The
-// title attribute carries the caption.
+// title attribute carries the caption. This one node stays here rather than in schema.js because
+// its view needs the editor's own state — which of the images are not uploaded yet.
 const SiteImage = Image.extend({
   draggable: true,
   addNodeView() {
@@ -82,6 +83,7 @@ const commands = {
   orderedList: (c) => c.toggleOrderedList(),
   blockquote: (c) => c.toggleBlockquote(),
   table: (c) => c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
+  html: (c) => c.insertContent({ type: 'htmlBlock', attrs: { html: '' } }),
   undo: (c) => c.undo(),
   redo: (c) => c.redo(),
 };
@@ -94,6 +96,7 @@ const active = {
   blockquote: () => editor.isActive('blockquote'),
   link: () => editor.isActive('link'),
   table: () => editor.isActive('table'),
+  html: () => editor.isActive('htmlBlock'),
 };
 
 $('#toolbar').addEventListener('click', (e) => {

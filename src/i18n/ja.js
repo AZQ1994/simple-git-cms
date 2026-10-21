@@ -67,6 +67,8 @@ export default {
   'toolbar.blockquote': '引用',
   'toolbar.link': 'リンク',
   'toolbar.table': '表を挿入',
+  'toolbar.html': 'HTML を挿入',
+  'html.placeholder': 'ここに書いた HTML はそのままファイルに入ります',
   'toolbar.image': '画像を挿入（複数選ぶと横並びになります）',
   'toolbar.imageLabel': '画像',
   'toolbar.undo': '取り消し（⌘Z）',

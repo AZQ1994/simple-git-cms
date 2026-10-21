@@ -66,6 +66,8 @@ export default {
   'toolbar.blockquote': 'Quote',
   'toolbar.link': 'Link',
   'toolbar.table': 'Insert a table',
+  'toolbar.html': 'Insert raw HTML',
+  'html.placeholder': 'HTML, kept in the file exactly as written',
   'toolbar.image': 'Insert images (pick several to place them side by side)',
   'toolbar.imageLabel': 'Image',
   'toolbar.undo': 'Undo (⌘Z)',

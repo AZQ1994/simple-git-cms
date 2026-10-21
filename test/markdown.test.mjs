@@ -4,10 +4,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MarkdownManager } from '@tiptap/markdown';
-import { resolveExtensions } from '@tiptap/core';
 import { cleanMarkdown, schemaExtensions } from '../src/schema.js';
 
-const md = new MarkdownManager({ extensions: resolveExtensions(schemaExtensions) });
+const md = new MarkdownManager({ extensions: schemaExtensions });
 /** A file through the editor and back out again. */
 const roundTrip = (text) => cleanMarkdown(md.serialize(md.parse(text)));
 
@@ -74,5 +73,32 @@ test('an article with no table is written exactly as it was', () => {
 > quoted
 
 A [link](https://example.com) and **bold** and *italic*.`;
+  assert.equal(roundTrip(body), body);
+});
+
+// ---------- Raw HTML ----------
+
+const EMBED = '<iframe src="https://www.youtube.com/embed/abc" width="560" height="315" allowfullscreen></iframe>';
+
+test('HTML the editor has no node for is kept, not dropped', () => {
+  const body = `Before.\n\n${EMBED}\n\nAfter.`;
+  assert.equal(roundTrip(body), body);
+});
+
+test('a multi-line block, a component and a comment all survive', () => {
+  for (const html of ['<div class="note">\n  <p>Two lines</p>\n</div>', '<YouTube id="abc123" />', '<!-- more -->']) {
+    assert.equal(roundTrip(`A.\n\n${html}\n\nB.`), `A.\n\n${html}\n\nB.`);
+  }
+});
+
+test('what is typed between the angle brackets is what the file keeps', () => {
+  // These went in as &lt; and &gt; before, which the site then showed literally
+  for (const body of ['A line with a <br> inside it.', '{{< youtube abc123 >}}', 'Sizes: S < M < L.']) {
+    assert.equal(roundTrip(body), body);
+  }
+});
+
+test('an & that spells out an entity is still spelled out', () => {
+  const body = 'An ampersand & and an escaped &amp;lt; entity.';
   assert.equal(roundTrip(body), body);
 });
