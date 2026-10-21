@@ -2,6 +2,8 @@
 
 [English](README.md) · **简体中文** · [日本語](README.ja.md)
 
+![Simple Git CMS 编辑器：正在编辑一篇带图片说明的文章](docs/screenshot.png)
+
 以 **GitHub 仓库为后端**的静态网站内容编辑器。文章是仓库里的 Markdown 文件，编辑器是一个纯静态页面，
 在使用者的浏览器里直接通过 GitHub API 读写，**不需要自己的后端服务器和数据库**。
 

@@ -2,6 +2,8 @@
 
 **English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
 
+![The Simple Git CMS editor, showing an article with a captioned image](docs/screenshot.png)
+
 A content editor for static sites that uses a **GitHub repository as its backend**. Articles are
 Markdown files in the repository; the editor is a plain static page that reads and writes them
 through the GitHub API, straight from the editor's browser. **No server of your own, and no
