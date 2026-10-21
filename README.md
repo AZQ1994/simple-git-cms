@@ -36,7 +36,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 
 | Directory | What's in it |
 |---|---|
-| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), `app.js` (the interface) |
+| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js` and `preview-ui.js` — `app.js` reads the config and starts them up |
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |

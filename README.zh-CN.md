@@ -26,7 +26,7 @@
 
 | 目录 | 内容 |
 |---|---|
-| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）、`app.js`（界面） |
+| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`，`app.js` 只负责读配置和启动 |
 | `public/` | 页面、样式、`config.example.json` |
 | `auth/` | 「用 GitHub 登录」的中转。一个没有依赖的文件，可以跑在 Cloudflare Workers、Deno Deploy、Vercel、Netlify、Bun 或自己的 Node 服务器上（见[说明](auth/README.md)） |
 | `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件（见[说明](integrations/astro/README.md)） |

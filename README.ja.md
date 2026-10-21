@@ -34,7 +34,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 
 | ディレクトリ | 中身 |
 |---|---|
-| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）、`app.js`（画面） |
+| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js` に分かれていて、`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.md)） |
