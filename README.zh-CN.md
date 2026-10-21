@@ -35,7 +35,7 @@
 | `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`，`app.js` 只负责读配置和启动 |
 | `public/` | 页面、样式、`config.example.json` |
 | `auth/` | 「用 GitHub 登录」的中转。一个没有依赖的文件，可以跑在 Cloudflare Workers、Deno Deploy、Vercel、Netlify、Bun 或自己的 Node 服务器上（见[说明](auth/README.zh-CN.md)） |
-| `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件（见[说明](integrations/astro/README.md)） |
+| `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件（见[说明](integrations/astro/README.zh-CN.md)） |
 | `test/` | `npm test`，用假的 GitHub API 测试保存 / 冲突 / 重试，并检查翻译是否齐全，不访问网络。`npm run test:e2e` 则在真实浏览器里驱动构建出来的编辑器（[详情](test/e2e/README.md)） |
 | `www/` | 项目自己的站点 [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[详情](www/README.md)） |
 
@@ -77,7 +77,7 @@ Deno Deploy、Vercel、Netlify、Bun 和普通的 Node 服务器都能跑。
 
 ### 4. 网站端
 
-图片说明和并排的显示见 [integrations/astro/README.md](integrations/astro/README.md)。
+图片说明和并排的显示见 [integrations/astro/README.zh-CN.md](integrations/astro/README.zh-CN.md)。
 
 要用预览，在网站上加一个预览页：用文章页同样的排版，引入
 [`integrations/preview-client.js`](integrations/preview-client.js)，在

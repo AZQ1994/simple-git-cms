@@ -1,5 +1,7 @@
 # Image captions and side-by-side images on an Astro site
 
+**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md)
+
 The editor writes plain Markdown and uses two conventions for images:
 
 - a caption goes in the image's title: `![](/uploads/a.webp "The caption")`
