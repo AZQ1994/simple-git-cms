@@ -20,7 +20,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   again and the file is unchanged
 - **Images**: paste, drop or pick several at once, compressed to webp in the browser; crop, rotate,
   caption, place side by side, replace
-- **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft
+- **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft. The open
+  one is in the address bar, so reloading comes back to it and the link opens it for anyone else
+  who can sign in
 - **Saving**: the article and its new images go in as a single commit; if someone else changed the
   article while it was open, you are offered their version or yours
 - **Preview**: see the article in your own site's layout, at desktop or phone width, including

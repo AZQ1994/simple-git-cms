@@ -92,6 +92,22 @@ function autosizeTitle() {
   el.style.height = el.scrollHeight + 'px';
 }
 
+// Which article is open lives in the address bar, so reloading the page comes back to it — and
+// the address is a link to that article for anyone else who can sign in.
+const idInUrl = () => new URLSearchParams(location.search).get('id');
+
+function rememberOpen(id) {
+  history.replaceState(null, '', id ? `${location.pathname}?id=${encodeURIComponent(id)}` : location.pathname);
+}
+
+/** Reopen whatever was open before the reload. Called once the article list is in. */
+export function restoreOpen() {
+  const id = idInUrl();
+  if (!id) return;
+  if (state.articles.some((a) => a.id === id)) openArticle(id);
+  else rememberOpen(null); // it was deleted, or this is someone else's link to another repository
+}
+
 function load(a) {
   state.loading = true;
   state.current = a;
@@ -111,6 +127,7 @@ function load(a) {
   renderList();
   autosizeTitle();
   $('.main').scrollTop = 0;
+  rememberOpen(a.id);
 }
 
 function openArticle(id) {
@@ -185,6 +202,7 @@ async function save({ draft, force = false, label = t('save.saving') }) {
         state.articles.sort((a, b) => String(b.date).localeCompare(String(a.date)));
         state.current = saved;
         state.dirty = false;
+        rememberOpen(saved.id);
         updateBar();
         renderList();
         toast(skipCi ? t('save.draftSaved') : t(`done.${action}`));
@@ -217,6 +235,7 @@ $('#btn-delete').addEventListener('click', async () => {
     state.articles = state.articles.filter((a) => a.id !== state.current.id);
     state.current = null;
     state.dirty = false;
+    rememberOpen(null);
     $('#doc').hidden = true;
     $('#empty').hidden = false;
     updateBar();

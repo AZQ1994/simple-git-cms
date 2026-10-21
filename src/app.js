@@ -19,7 +19,7 @@ import { relabel } from './lang.js';
 import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from './auth.js';
 import { renderList } from './list.js';
 import { editor } from './editor.js';
-import { updateBar } from './doc.js';
+import { restoreOpen, updateBar } from './doc.js';
 import './preview-ui.js';
 import { resolveLocale, setLocale, t } from './i18n/index.js';
 
@@ -96,6 +96,7 @@ async function start() {
     $('#app').hidden = false;
     renderList();
     updateBar();
+    restoreOpen();
   });
 }
 
