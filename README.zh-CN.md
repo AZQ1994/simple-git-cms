@@ -4,6 +4,8 @@
 
 ![Simple Git CMS 编辑器：正在编辑一篇带图片说明的文章](docs/screenshot.png)
 
+**[在浏览器里试一下](https://simple-git-cms.azq1994.com/demo/)** — 就是这个编辑器本身，只是用 Service Worker 冒充了 GitHub。不用登录任何账号。
+
 以 **GitHub 仓库为后端**的静态网站内容编辑器。文章是仓库里的 Markdown 文件，编辑器是一个纯静态页面，
 在使用者的浏览器里直接通过 GitHub API 读写，**不需要自己的后端服务器和数据库**。
 

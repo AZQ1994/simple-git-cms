@@ -124,6 +124,8 @@ code { font-family: var(--mono); font-size: 0.88em; }
 .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 .btn-primary:hover { border-color: transparent; }
 .btn-sm { padding: 7px 13px; font-size: 14px; border-radius: 8px; }
+.btn-plain { border-color: transparent; background: none; color: var(--muted); }
+.btn-plain:hover { color: var(--ink); border-color: transparent; }
 .btn .icon { width: 16px; height: 16px; flex: none; }
 
 /* ---------- hero ---------- */
@@ -145,6 +147,7 @@ code { font-family: var(--mono); font-size: 0.88em; }
 .lead { margin-top: 22px; max-width: 62ch; font-size: clamp(1.02rem, 1.6vw, 1.18rem); color: var(--ink-soft); }
 .lead strong { color: var(--ink); font-weight: 650; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.demo-note { margin-top: 14px; font-size: 13.5px; color: var(--muted); max-width: 54ch; }
 .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; font-size: 13px; color: var(--muted); }
 .badges li { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; background: var(--surface); }
 

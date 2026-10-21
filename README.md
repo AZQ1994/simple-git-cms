@@ -4,6 +4,8 @@
 
 ![The Simple Git CMS editor, showing an article with a captioned image](docs/screenshot.png)
 
+**[Try it in your browser](https://simple-git-cms.azq1994.com/demo/)** — the real editor, with a service worker standing in for GitHub. Nothing to sign in to.
+
 A content editor for static sites that uses a **GitHub repository as its backend**. Articles are
 Markdown files in the repository; the editor is a plain static page that reads and writes them
 through the GitHub API, straight from the editor's browser. **No server of your own, and no

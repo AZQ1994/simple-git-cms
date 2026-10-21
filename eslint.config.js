@@ -4,7 +4,7 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 export default [
-  { ignores: ['dist/', 'node_modules/'] },
+  { ignores: ['**/dist/', '**/node_modules/'] },
   js.configs.recommended,
   {
     languageOptions: {
@@ -30,6 +30,15 @@ export default [
     files: ['scripts/**/*.mjs', 'test/**/*.mjs', 'www/**/*.mjs', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
     rules: { 'no-console': 'off' },
+  },
+  {
+    // The demo's own pages run in the browser; its stand-in for GitHub runs as a service worker
+    files: ['www/demo/**/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['www/demo/sw.js'],
+    languageOptions: { globals: globals.serviceworker },
   },
   {
     // The auth relay targets edge runtimes, and reads process/Deno only when they exist. It is

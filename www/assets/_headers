@@ -1,8 +1,25 @@
 /*
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
-  # 'self' plus the beacon Cloudflare Web Analytics injects into the page itself
+
+# The pages are static text and one image; nothing else is allowed to load or run. The demo needs
+# its own policy, so these name the pages one by one rather than using /* (a second matching rule
+# would send a second policy, and the browser enforces both at once).
+/
   Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; script-src https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/zh/*
+  Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; script-src https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/ja/*
+  Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; script-src https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+# The editor itself: its own scripts, a service worker, inline styles (TipTap and the cropper set
+# them), blob images while an upload is still pending, and api.github.com — which never gets there,
+# because the service worker answers it. frame-ancestors is 'self' rather than 'none' here: the
+# editor shows the preview page in an iframe.
+/demo/*
+  Content-Security-Policy: default-src 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' https://static.cloudflareinsights.com; worker-src 'self'; connect-src 'self' blob: https://api.github.com https://cloudflareinsights.com; frame-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'
 
 /site.css
   Cache-Control: public, max-age=3600
@@ -12,3 +29,6 @@
 
 /favicon.svg
   Cache-Control: public, max-age=86400
+
+/demo/sw.js
+  Cache-Control: no-cache

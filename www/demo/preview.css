@@ -1,0 +1,36 @@
+/* Deliberately not the editor's styles and not the marketing site's: this stands in for whatever
+   layout your own site has. */
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 48px 24px 96px;
+  background: #fffdfa; color: #20222a;
+  font: 17px/1.75 Georgia, "Hiragino Mincho ProN", "Songti SC", serif;
+}
+.standalone {
+  max-width: 640px; margin: 0 auto 40px; padding: 14px 18px;
+  background: #fff6e6; border: 1px solid #efdcbb; border-radius: 10px;
+  font: 14px/1.6 -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.post { max-width: 640px; margin: 0 auto; }
+.post h1 { font-size: clamp(1.8rem, 4.4vw, 2.5rem); line-height: 1.25; margin: 0 0 14px; letter-spacing: -0.01em; }
+.meta { margin: 0; color: #8a8072; font: 14px/1.5 -apple-system, BlinkMacSystemFont, sans-serif; }
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.tags li {
+  font: 12px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+  border: 1px solid #e3d9c8; border-radius: 999px; padding: 6px 11px; color: #6d6456;
+}
+.prose { margin-top: 34px; }
+.prose > :first-child { margin-top: 0; }
+.prose p { margin: 1.1em 0; }
+.prose h2 { font-size: 1.35rem; margin: 2em 0 .6em; letter-spacing: -0.01em; }
+.prose a { color: #1b2f6e; }
+.prose img { max-width: 100%; height: auto; border-radius: 6px; display: block; }
+.prose figure { margin: 24px 0; }
+.prose figcaption { margin-top: 8px; font: 14px/1.5 -apple-system, BlinkMacSystemFont, sans-serif; color: #8a8072; text-align: center; }
+.prose .gallery { display: grid; gap: 10px; margin: 24px 0; }
+.prose .gallery.cols-2 { grid-template-columns: 1fr 1fr; }
+.prose .gallery.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.prose .gallery figure { margin: 0; }
+.prose .gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+@media (max-width: 560px) { .prose .gallery.cols-3 { grid-template-columns: 1fr 1fr; } }

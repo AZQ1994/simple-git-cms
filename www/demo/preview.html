@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Preview</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./preview.css">
+</head>
+<body>
+<p class="standalone" id="standalone" hidden>
+  This is the page the demo's editor previews into — the article layout a site of your own would
+  have. <a href="/demo/">Back to the demo</a>
+</p>
+<article class="post">
+  <header>
+    <h1 id="title"></h1>
+    <p class="meta"><time id="date"></time></p>
+    <ul class="tags" id="tags"></ul>
+  </header>
+  <div class="prose" id="body"></div>
+</article>
+<script type="module" src="./preview-page.js"></script>
+</body>
+</html>
