@@ -63,12 +63,23 @@ export default {
   'toolbar.orderedList': '编号列表',
   'toolbar.blockquote': '引用',
   'toolbar.link': '链接',
+  'toolbar.table': '插入表格',
   'toolbar.image': '插入图片（可多选，多张会并排）',
   'toolbar.imageLabel': '图片',
   'toolbar.undo': '撤销（⌘Z）',
   'toolbar.redo': '重做（⇧⌘Z）',
   'toolbar.linkPrompt': '链接地址（留空表示取消链接）',
   'doc.footHint': '图片可以直接粘贴或拖进来；点一下图片可以裁剪、加说明、并排。',
+
+  // 表格
+  'table.row': '行',
+  'table.column': '列',
+  'table.rowAfter': '在下面加一行',
+  'table.rowDelete': '删除这一行',
+  'table.colAfter': '在右边加一列',
+  'table.colDelete': '删除这一列',
+  'table.align': '这一列的对齐方式（左 / 居中 / 右）',
+  'table.delete': '删除表格',
 
   // 图片
   'img.crop': '裁剪/旋转',

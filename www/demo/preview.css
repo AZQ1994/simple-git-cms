@@ -67,6 +67,13 @@ img { max-width: 100%; }
 .prose img { display: block; height: auto; }
 .prose figure { margin: 28px 0; }
 .prose figcaption { margin-top: 10px; font-size: 14px; color: var(--muted); text-align: center; }
+/* tables come out of the editor as plain GFM, so the site decides how they look */
+.prose table { width: 100%; margin: 28px 0; border-collapse: collapse; font-size: .95em; }
+.prose th, .prose td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+.prose thead th { border-bottom-width: 2px; font-weight: 600; white-space: nowrap; }
+.prose td[align='center'], .prose th[align='center'] { text-align: center; }
+.prose td[align='right'], .prose th[align='right'] { text-align: right; }
+
 /* the side-by-side images the editor can place, styled the way integrations/astro/README.md says */
 .prose .gallery { display: grid; gap: 10px; margin: 28px 0; }
 .prose .gallery.cols-2 { grid-template-columns: 1fr 1fr; }
@@ -141,6 +148,7 @@ html[data-template='magazine'] .prose > p:first-of-type::first-letter {
 /* the drop cap is a float, so anything after that first paragraph has to clear it */
 html[data-template='magazine'] .prose figure, html[data-template='magazine'] .prose .gallery { clear: both; }
 html[data-template='magazine'] .prose figcaption { font-style: italic; }
+html[data-template='magazine'] .prose table { font-family: var(--sans); font-size: .85em; }
 html[data-template='magazine'] .more { border-top: 3px double var(--line); text-align: center; }
 html[data-template='magazine'] .more h2 { letter-spacing: .14em; text-transform: uppercase; font-size: .85rem; font-family: var(--sans); color: var(--muted); }
 html[data-template='magazine'] .card-text { text-align: left; }
@@ -168,6 +176,7 @@ html[data-template='minimal'] .byline-text b { font-weight: 500; }
 html[data-template='minimal'] .tags { gap: 0; color: var(--muted); font-size: 13px; }
 html[data-template='minimal'] .tags li + li::before { content: '·'; margin: 0 7px; }
 html[data-template='minimal'] .prose figcaption { text-align: left; font-size: 13px; }
+html[data-template='minimal'] .prose table { font-family: var(--mono); font-size: .8em; }
 /* one column, thumbnail beside the title — a list rather than a grid */
 html[data-template='minimal'] .more { padding-block: 0 64px; }
 html[data-template='minimal'] .more h2 { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--muted); font-weight: 500; }

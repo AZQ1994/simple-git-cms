@@ -269,15 +269,25 @@ svg { flex: none; }
 .body p:has(> .img-node ~ .img-node) .img-node { flex: 1 1 0; min-width: 0; }
 .body .ProseMirror-selectednode { outline: none; }
 
-/* Image toolbar */
-.img-bar {
+.body .tableWrapper { overflow-x: auto; }
+.body table { width: 100%; border-collapse: collapse; font-size: 15.5px; line-height: 1.6; }
+.body th, .body td { min-width: 3em; padding: 7px 11px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+.body th { background: var(--surface); font-weight: 650; color: var(--ink); }
+.body th p, .body td p { margin: 0; }
+.body .selectedCell { background: var(--track); } /* a cell, or run of cells, the mouse has selected */
+.body .column-resize-handle { display: none; }
+
+/* The bars that appear over a selected image or the table the cursor is in */
+.node-bar {
   position: absolute; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; max-width: calc(100% - 16px);
   padding: 4px; border-radius: 10px; background: var(--pop-bg); color: var(--pop-ink); box-shadow: var(--shadow-pop);
 }
-.img-bar button { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px; border: 0; border-radius: 7px; background: none; color: inherit; cursor: pointer; font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: .85; }
-.img-bar button:hover { background: rgb(255 255 255 / 12%); opacity: 1; }
-.img-bar svg { width: 16px; height: 16px; }
-.img-bar .danger { color: #ff9a9f !important; }
+.node-bar button { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px; border: 0; border-radius: 7px; background: none; color: inherit; cursor: pointer; font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: .85; }
+.node-bar button:hover { background: rgb(255 255 255 / 12%); opacity: 1; }
+.node-bar svg { width: 16px; height: 16px; }
+.node-bar .danger { color: #ff9a9f !important; }
+.node-bar .bar-label { padding: 0 4px 0 6px; font-size: 12px; font-weight: 600; opacity: .7; }
+.node-bar .sep { width: 1px; height: 18px; margin: 0 4px; background: currentcolor; opacity: .25; }
 .caption-form { display: flex; gap: 4px; width: 100%; padding: 4px 2px 2px; }
 .caption-form input { flex: 1; min-width: 200px; height: 32px; padding: 0 10px; border: 0; border-radius: 6px; outline: 0; background: var(--surface); color: var(--ink); }
 .caption-form button { background: var(--navy) !important; color: var(--on-dark) !important; }

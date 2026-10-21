@@ -185,6 +185,7 @@ function load(a) {
   state.loading = false;
   state.dirty = !a.id;
   $('#img-bar').hidden = true;
+  $('#table-bar').hidden = true;
   updateBar();
   renderList();
   autosizeTitle();

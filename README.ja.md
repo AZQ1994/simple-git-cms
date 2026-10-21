@@ -19,6 +19,8 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
   ファイルは変わりません
 - **画像**：貼り付け・ドロップ・複数選択に対応し、ブラウザ内で webp に圧縮。切り抜き、回転、説明、
   横並び、差し替えができます
+- **表**：行と列の追加・削除、列ごとの左 / 中央 / 右揃え。ファイルには桁の揃った GFM の表として
+  書き出されます
 - **記事**：タイトル、日付、タグ、要約、下書き / 公開 / 下書きに戻す / 下書きの削除。開いている
   記事はアドレスバーに入るので、再読み込みしても元の記事に戻り、その URL はログインできる人への
   リンクにもなります
@@ -41,7 +43,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 
 | ディレクトリ | 中身 |
 |---|---|
-| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js` に分かれていて、`app.js` は設定の読み込みと起動だけを担当します |
+| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決めています。`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
@@ -121,6 +123,11 @@ draft: true            # 下書きのときだけ付きます
 
 frontmatter のうちエディターが知らない項目はそのまま残ります。新しい記事のファイル名（= id）は、
 作成したときの「年月日時分」です。
+
+本文の表は普通の GFM の表です。入れられるのは GFM で書けるものだけ——見出し行が 1 行、1 セルに
+1 行の文、セルの結合はなし。手で書いた表は最初の保存で一度だけ桁を揃え直し（列幅に合わせて空白を
+入れ、コロンも列幅に従います）、そのあとの保存では変わりません。サイト側に入れるものはありません。
+Astro などは最初から remark-gfm を通しているので、必要なのは表のスタイルだけです。
 
 ## 開発
 

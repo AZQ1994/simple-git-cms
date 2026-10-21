@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { CONTENT_DIR, MEDIA_DIR, startFakeGitHub } from './fake-github.mjs';
+import { CONTENT_DIR, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -127,6 +127,17 @@ test('saving a draft leaves the site alone', async () => {
   assert.match(gh.commits.at(-1).message, /^\[skip ci\] /, 'a draft save should not trigger a build');
 });
 
+test('a table in a file comes back out of the editor byte for byte', async () => {
+  await openArticle(0);
+  assert.match(await page.evaluate(`document.querySelectorAll('#body table').length`) + '', /^1$/, 'the table should be drawn as a table');
+  assert.equal(await page.evaluate(`document.querySelectorAll('#body th').length`), 3);
+  // A table is the one thing in the body with a shape of its own; if the editor's idea of it and
+  // the file's ever drift apart, every save of an untouched table would churn the file
+  await setTitle('Spring term enrolment is open');
+  await save();
+  assert.ok(gh.files.get(`${CONTENT_DIR}/202610150930.md`).includes(TABLE), 'the table should be written back exactly as it was read');
+});
+
 test('a new article gets an id of its own', async () => {
   await page.evaluate(`document.getElementById('new-article').click()`);
   await page.until(`document.getElementById('f-title').value === ''`, { label: 'an empty form' });
@@ -161,6 +172,32 @@ test('deleting takes the file with it', async () => {
 
   assert.equal(gh.files.has(`${CONTENT_DIR}/${id}.md`), false, 'the file should be gone');
   await page.until(`document.querySelectorAll('#list .item').length === 3`, { label: 'three articles again' });
+});
+
+test('a table built with the toolbar is saved as a GFM table', async () => {
+  await page.evaluate(`document.getElementById('new-article').click()`);
+  await page.until(`document.getElementById('f-title').value === ''`, { label: 'an empty form' });
+  await setTitle('Opening hours');
+  await typeBody('When the office is open:');
+
+  await page.evaluate(`document.querySelector('#toolbar [data-cmd="table"]').click()`);
+  await page.until(`!document.getElementById('table-bar').hidden`, { label: 'the table bar' });
+  // The cursor starts in the first header cell, so this centres the first column
+  await page.evaluate(`document.querySelector('#table-bar [data-table="align"]').click()`);
+
+  for (const cell of ['Day', 'Open', 'Close', 'Mon', '9:00', '17:00']) {
+    await page.send('Input.insertText', { text: cell });
+    await page.press('Tab');
+  }
+  // Tab left the cursor in the empty third row, which the bar can drop
+  await page.evaluate(`document.querySelector('#table-bar [data-table="rowDelete"]').click()`);
+  await save();
+
+  const id = await page.evaluate(`new URLSearchParams(location.search).get('id')`);
+  assert.ok(
+    gh.files.get(`${CONTENT_DIR}/${id}.md`).includes(['| Day | Open | Close |', '| :-: | ---- | ----- |', '| Mon | 9:00 | 17:00 |'].join('\n')),
+    `the table in the file was:\n${gh.files.get(`${CONTENT_DIR}/${id}.md`)}`,
+  );
 });
 
 test('nothing went wrong in the browser', async () => {

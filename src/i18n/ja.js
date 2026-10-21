@@ -63,12 +63,23 @@ export default {
   'toolbar.orderedList': '番号付きリスト',
   'toolbar.blockquote': '引用',
   'toolbar.link': 'リンク',
+  'toolbar.table': '表を挿入',
   'toolbar.image': '画像を挿入（複数選ぶと横並びになります）',
   'toolbar.imageLabel': '画像',
   'toolbar.undo': '取り消し（⌘Z）',
   'toolbar.redo': 'やり直し（⇧⌘Z）',
   'toolbar.linkPrompt': 'リンク先（空にするとリンクを解除します）',
   'doc.footHint': '画像はそのまま貼り付け／ドロップできます。画像をクリックすると切り抜き・説明・横並びができます。',
+
+  // 表
+  'table.row': '行',
+  'table.column': '列',
+  'table.rowAfter': '下に行を追加',
+  'table.rowDelete': 'この行を削除',
+  'table.colAfter': '右に列を追加',
+  'table.colDelete': 'この列を削除',
+  'table.align': 'この列の揃え方（左 / 中央 / 右）',
+  'table.delete': '表を削除',
 
   // 画像
   'img.crop': '切り抜き/回転',

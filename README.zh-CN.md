@@ -16,6 +16,7 @@
 
 - 所见即所得的编辑（基于 TipTap），保存为干净的 Markdown；已有文章打开再保存内容不变
 - 图片：粘贴 / 拖入 / 多选上传，浏览器里压缩成 webp；裁剪、旋转、说明、多张并排、替换
+- 表格：加减行列，整列左 / 居中 / 右对齐；写进文件的是对齐整齐的 GFM 表格
 - 文章：标题、日期、标签、摘要、草稿 / 发布 / 撤回 / 删除草稿。打开的是哪一篇写在地址栏里，所以
   刷新会回到原处，这个地址也可以直接发给另一个能登录的人
 - 保存：文章 + 新图片合成一个提交；文章在打开后被别人改过时提示冲突（载入对方版本 / 覆盖）
@@ -32,7 +33,7 @@
 
 | 目录 | 内容 |
 |---|---|
-| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`，`app.js` 只负责读配置和启动 |
+| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`；`schema.js` 规定正文能放什么、以及怎么写回 Markdown，`app.js` 只负责读配置和启动 |
 | `public/` | 页面、样式、`config.example.json` |
 | `auth/` | 「用 GitHub 登录」的中转。一个没有依赖的文件，可以跑在 Cloudflare Workers、Deno Deploy、Vercel、Netlify、Bun 或自己的 Node 服务器上（见[说明](auth/README.zh-CN.md)） |
 | `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件（见[说明](integrations/astro/README.zh-CN.md)） |
@@ -108,6 +109,10 @@ draft: true            # 草稿时才有
 ```
 
 frontmatter 里编辑器不认识的字段会原样保留。新文章的文件名（即 id）是创建时的「年月日时分」。
+
+正文里的表格就是普通的 GFM 表格。能放进表格的，也只有 GFM 能表达的那些：一行表头、每格一行文字，
+单元格不能合并。手写的表格第一次保存时会被重新排版一次（按列宽补空格，冒号跟着列宽走），之后再
+保存就不会再动。网站那边不需要装任何东西，Astro 等默认就带 remark-gfm，只是要自己写表格的样式。
 
 ## 本地开发
 

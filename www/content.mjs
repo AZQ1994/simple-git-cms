@@ -100,6 +100,7 @@ export const copy = {
       items: [
         { title: 'WYSIWYG that saves clean Markdown', body: 'Open an existing article, save it again, and the file is unchanged. No stray HTML, no reformatting.' },
         { title: 'Images without a trip to Photoshop', body: 'Paste, drop or pick several at once. Compressed to webp in the browser, then crop, rotate, caption, place side by side, replace.' },
+        { title: 'Tables that stay tables', body: 'Rows, columns and per-column alignment, written out as a GFM table whose columns line up in the file — Japanese text included.' },
         { title: 'Preview in your own layout', body: 'The article rendered by your site, at desktop or phone width, including the changes and images you haven’t saved yet.' },
         { title: 'Drafts, publishing, reverting', body: 'Title, date, tags, summary. Save a draft, publish it, revert it to a draft, or delete one — all of it ordinary commits.' },
         { title: 'Conflicts handled, not ignored', body: 'Saving checks the file hasn’t moved underneath you. When it has, you choose between their version and yours.' },
@@ -209,6 +210,7 @@ export const copy = {
       items: [
         { title: '所见即所得，存出干净的 Markdown', body: '打开一篇旧文章再存一次，文件一个字节都不会变。不会多出 HTML，也不会被重新排版。' },
         { title: '图片不用先过一遍修图软件', body: '粘贴、拖进来，或者一次选好几张。在浏览器里压成 webp，然后裁剪、旋转、加图注、并排摆放、替换。' },
+        { title: '表格就是表格', body: '加减行列、整列对齐，写进文件的是一张列宽对齐的 GFM 表格——中日文也一样齐。' },
         { title: '用你自己的版式预览', body: '文章由你的网站来渲染，可切桌面或手机宽度，连还没保存的改动和图片都算进去。' },
         { title: '草稿、发布、退回草稿', body: '标题、日期、标签、摘要。存草稿、发布、退回草稿、删掉草稿——全都只是普通的 commit。' },
         { title: '冲突是处理掉的，不是装作没有', body: '保存前会确认文件没在你背后被改动。真被改了，就让你在对方的版本和你的版本之间选。' },
@@ -318,6 +320,7 @@ export const copy = {
       items: [
         { title: 'WYSIWYG なのに、きれいな Markdown', body: '既存の記事を開いて保存し直しても、ファイルは 1 バイトも変わりません。余計な HTML も、勝手な整形もなし。' },
         { title: '画像のために別のアプリを開かない', body: '貼る、落とす、まとめて選ぶ。ブラウザーで webp に圧縮してから、切り抜き・回転・キャプション・横並び・差し替え。' },
+        { title: '表は表のまま', body: '行と列、列ごとの揃え方。ファイルには桁の揃った GFM の表として書き出されます。日本語でも崩れません。' },
         { title: '自分のレイアウトでプレビュー', body: '記事はあなたのサイト自身が描画します。デスクトップ幅と電話幅、まだ保存していない変更や画像も含めて。' },
         { title: '下書き、公開、下書きに戻す', body: 'タイトル・日付・タグ・要約。下書き保存、公開、下書きに戻す、削除——どれも普通のコミットです。' },
         { title: '衝突は見て見ぬふりをしない', body: '保存の前に、ファイルが裏で動いていないか確かめます。動いていたら、相手の版か自分の版かを選べます。' },

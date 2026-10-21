@@ -9,13 +9,20 @@ const sha = (s) => createHash('sha1').update(s).digest('hex');
 const article = (title, date, tags, body, draft) =>
   `---\ntitle: ${JSON.stringify(title)}\ndescription: ""\ndate: ${date}\ntags: [${tags.map((t) => JSON.stringify(t)).join(', ')}]\n${draft ? 'draft: true\n' : ''}---\n\n${body}\n`;
 
+/** Exactly as the editor writes a table, so a round trip through it can be compared byte for byte. */
+export const TABLE = `| Course | Starts |    Fee |
+| :----- | :----: | -----: |
+| A1     | April  | 42,000 |
+| A2     |  July  | 48,000 |`;
+
 export const CONTENT_DIR = 'site/content/news';
 export const MEDIA_DIR = 'site/public/uploads';
 
 /** The repository every test starts from. */
 export const seed = () =>
   new Map([
-    [`${CONTENT_DIR}/202610150930.md`, article('Spring term enrolment is open', '2026-10-15T09:30:00.000Z', ['notice'], 'Applications are open from today.', false)],
+    // This one carries a table, so a test can check that opening and saving leaves it alone
+    [`${CONTENT_DIR}/202610150930.md`, article('Spring term enrolment is open', '2026-10-15T09:30:00.000Z', ['notice'], `Applications are open from today.\n\n${TABLE}`, false)],
     [`${CONTENT_DIR}/202610120800.md`, article('Autumn festival photos', '2026-10-12T08:00:00.000Z', ['events'], 'Thank you to everyone who came.', false)],
     [`${CONTENT_DIR}/202610010000.md`, article('Draft: timetable changes', '2026-10-01T00:00:00.000Z', ['notice'], 'Still being finalised.', true)],
   ]);

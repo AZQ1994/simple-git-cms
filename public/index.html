@@ -113,6 +113,7 @@
             <button type="button" data-cmd="orderedList" data-i18n-title="toolbar.orderedList"><span data-icon="orderedList"></span></button>
             <button type="button" data-cmd="blockquote" data-i18n-title="toolbar.blockquote"><span data-icon="blockquote"></span></button>
             <button type="button" data-cmd="link" data-i18n-title="toolbar.link"><span data-icon="link"></span></button>
+            <button type="button" data-cmd="table" data-i18n-title="toolbar.table"><span data-icon="table"></span></button>
             <span class="sep"></span>
             <button type="button" data-cmd="image" data-i18n-title="toolbar.image"><span data-icon="image"></span><span class="tb-label" data-i18n="toolbar.imageLabel"></span></button>
             <span class="spacer"></span>
@@ -124,7 +125,7 @@
         </article>
 
         <!-- Toolbar shown while an image is selected -->
-        <div class="img-bar" id="img-bar" hidden>
+        <div class="node-bar" id="img-bar" hidden>
           <button type="button" data-img="crop"><span data-icon="crop"></span><span data-i18n="img.crop"></span></button>
           <button type="button" data-img="caption"><span data-icon="caption"></span><span data-i18n="img.caption"></span></button>
           <button type="button" data-img="layout"><span data-icon="columns"></span><span class="layout-label"></span></button>
@@ -134,6 +135,20 @@
             <input id="caption-input" data-i18n-placeholder="img.captionPlaceholder" />
             <button type="submit" data-i18n="img.captionSubmit"></button>
           </form>
+        </div>
+
+        <!-- Toolbar shown while the cursor is in a table -->
+        <div class="node-bar" id="table-bar" hidden>
+          <span class="bar-label" data-i18n="table.row"></span>
+          <button type="button" data-table="rowAfter" data-i18n-title="table.rowAfter"><span data-icon="plus"></span></button>
+          <button type="button" data-table="rowDelete" data-i18n-title="table.rowDelete"><span data-icon="minus"></span></button>
+          <span class="sep"></span>
+          <span class="bar-label" data-i18n="table.column"></span>
+          <button type="button" data-table="colAfter" data-i18n-title="table.colAfter"><span data-icon="plus"></span></button>
+          <button type="button" data-table="colDelete" data-i18n-title="table.colDelete"><span data-icon="minus"></span></button>
+          <span class="sep"></span>
+          <button type="button" data-table="align" data-i18n-title="table.align"><span data-icon="alignLeft"></span></button>
+          <button type="button" data-table="delete" class="danger" data-i18n-title="table.delete"><span data-icon="trash"></span></button>
         </div>
       </main>
     </div>

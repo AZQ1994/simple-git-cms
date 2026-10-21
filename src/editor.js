@@ -1,33 +1,16 @@
-// The editing surface: the TipTap instance, the formatting toolbar, and everything to do with
-// images inside the body — inserting, selecting, cropping, captioning and arranging them.
+// The editing surface: the TipTap instance, the formatting toolbar, and the bars that appear for
+// the two things that have structure of their own inside the body — images and tables.
 import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import Paragraph from '@tiptap/extension-paragraph';
-import { Markdown } from '@tiptap/markdown';
 import { Placeholder } from '@tiptap/extensions';
 import { NodeSelection } from '@tiptap/pm/state';
+import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { $, busy } from './dom.js';
+import { cleanMarkdown, schemaExtensions } from './schema.js';
 import { displaySrc, emit, on, pending } from './store.js';
 import { compressImage, newImagePath, openCropper } from './images.js';
 import { icons } from './icons.js';
 import { t } from './i18n/index.js';
-
-// Paragraphs: by default a paragraph holding a single image is unwrapped into a standalone image
-// node, which suits block-level images. Here images are inline, so the paragraph has to stay —
-// otherwise neighbouring image paragraphs collapse into one and end up side by side.
-const SiteParagraph = Paragraph.extend({
-  parseMarkdown: (token, helpers) => {
-    const tokens = token.tokens || [];
-    const content = helpers.parseInline(tokens);
-    const first = tokens[0];
-    const isEmpty = tokens.length === 1 && first.type === 'text' && ['&nbsp;', ' '].some((v) => first.raw === v || first.text === v);
-    return helpers.createNode('paragraph', undefined, isEmpty ? [] : content);
-  },
-  // An empty paragraph — a blank line left by pressing Enter — is written as &nbsp; so the site
-  // shows the same blank line. By default only the second of consecutive empties survives.
-  renderMarkdown: (node, h) => (node.content?.length ? h.renderChildren(node.content) : '&nbsp;'),
-});
 
 // Images are inline nodes, so several in one paragraph render side by side on the site. The
 // title attribute carries the caption.
@@ -61,10 +44,8 @@ const SiteImage = Image.extend({
 export const editor = new Editor({
   element: $('#body'),
   extensions: [
-    StarterKit.configure({ paragraph: false, heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true }, codeBlock: false, code: false }),
-    SiteParagraph,
+    ...schemaExtensions,
     SiteImage,
-    Markdown,
     // Only the empty-editor class is wanted here; the prompt itself is drawn by CSS from
     // --body-placeholder, so it follows the interface language without rebuilding the editor
     Placeholder.configure({ placeholder: '' }),
@@ -80,17 +61,10 @@ export const editor = new Editor({
 editor.on('selectionUpdate', onSelection);
 editor.on('transaction', () => {
   updateToolbar();
-  positionImageBar();
+  positionBars();
 });
 
-// An & is written out as &amp;, which looks the same but should go back as & in the file.
-// Blank lines at the very start and end are dropped — inserting an image always leaves one.
-export const toMarkdown = () =>
-  editor
-    .getMarkdown()
-    .replace(/&amp;(?![a-zA-Z]+;|#\d+;)/g, '&')
-    .replace(/^(?:\s*&nbsp;\s*\n)+/, '')
-    .replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');
+export const toMarkdown = () => cleanMarkdown(editor.getMarkdown());
 
 /** Put an article's body in the editor without entering the undo history, so Undo cannot step
  * back into the article that was open before. */
@@ -107,6 +81,7 @@ const commands = {
   bulletList: (c) => c.toggleBulletList(),
   orderedList: (c) => c.toggleOrderedList(),
   blockquote: (c) => c.toggleBlockquote(),
+  table: (c) => c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }),
   undo: (c) => c.undo(),
   redo: (c) => c.redo(),
 };
@@ -118,6 +93,7 @@ const active = {
   orderedList: () => editor.isActive('orderedList'),
   blockquote: () => editor.isActive('blockquote'),
   link: () => editor.isActive('link'),
+  table: () => editor.isActive('table'),
 };
 
 $('#toolbar').addEventListener('click', (e) => {
@@ -187,30 +163,45 @@ function selectedImage() {
 
 export function onSelection() {
   const img = selectedImage();
+  // An image can sit inside a cell, and then both bars would want the same spot. The image is
+  // the narrower thing the person just clicked, so it wins.
+  const table = img ? null : tableAt();
   $('#img-bar').hidden = !img;
+  $('#table-bar').hidden = !table;
   $('#caption-form').hidden = true;
-  if (!img) return;
-  const layout = $('#img-bar [data-img="layout"]');
-  layout.hidden = !img.inGroup && !img.prevIsImages;
-  layout.querySelector('.layout-label').textContent = img.inGroup ? t('img.layoutAlone') : t('img.layoutSide');
-  layout.querySelector('[data-icon]').innerHTML = img.inGroup ? icons.rows : icons.columns;
-  positionImageBar();
+  if (img) {
+    const layout = $('#img-bar [data-img="layout"]');
+    layout.hidden = !img.inGroup && !img.prevIsImages;
+    layout.querySelector('.layout-label').textContent = img.inGroup ? t('img.layoutAlone') : t('img.layoutSide');
+    layout.querySelector('[data-icon]').innerHTML = img.inGroup ? icons.rows : icons.columns;
+  }
+  if (table) $('#table-bar [data-table="align"] [data-icon]').innerHTML = icons[`align${capitalize(columnAlign() ?? 'left')}`];
+  positionBars();
 }
 
-function positionImageBar() {
-  const bar = $('#img-bar');
-  const img = selectedImage();
-  if (bar.hidden || !img) return;
-  const dom = editor.view.nodeDOM(img.pos);
-  if (!dom) return;
+const capitalize = (s) => s[0].toUpperCase() + s.slice(1);
+
+/** Put a bar above the node it belongs to, inside the scrolling area and never off either edge.
+ * A table is as wide as the text, so its bar goes to the right rather than over the middle of
+ * whatever line sits above it. */
+function placeBar(bar, dom, { toTheRight = false } = {}) {
+  if (bar.hidden || !dom) return;
   const r = dom.getBoundingClientRect();
   const main = $('.main').getBoundingClientRect();
   const top = Math.max(r.top - main.top + $('.main').scrollTop - bar.offsetHeight - 10, $('.main').scrollTop + 64);
+  const left = toTheRight ? r.right - main.left - bar.offsetWidth : r.left - main.left + r.width / 2 - bar.offsetWidth / 2;
   bar.style.top = `${top}px`;
-  bar.style.left = `${Math.min(Math.max(r.left - main.left + r.width / 2 - bar.offsetWidth / 2, 8), main.width - bar.offsetWidth - 8)}px`;
+  bar.style.left = `${Math.min(Math.max(left, 8), main.width - bar.offsetWidth - 8)}px`;
 }
-$('.main').addEventListener('scroll', positionImageBar);
-addEventListener('resize', positionImageBar);
+
+function positionBars() {
+  const img = selectedImage();
+  if (img) placeBar($('#img-bar'), editor.view.nodeDOM(img.pos));
+  const table = tableAt();
+  if (table) placeBar($('#table-bar'), editor.view.nodeDOM(table.pos), { toTheRight: true });
+}
+$('.main').addEventListener('scroll', positionBars);
+addEventListener('resize', positionBars);
 
 $('#img-bar').addEventListener('mousedown', (e) => e.target.closest('input') || e.preventDefault()); // keep the image selected
 $('#img-bar').addEventListener('click', async (e) => {
@@ -226,7 +217,7 @@ $('#img-bar').addEventListener('click', async (e) => {
     form.hidden = !form.hidden;
     $('#caption-input').value = img.node.attrs.title ?? '';
     if (!form.hidden) $('#caption-input').focus();
-    return positionImageBar();
+    return positionBars();
   }
   if (act === 'crop') {
     const blob = await openCropper(displaySrc(img.node.attrs.src));
@@ -267,6 +258,58 @@ $('#caption-form').addEventListener('submit', (e) => {
   const title = $('#caption-input').value.trim().replace(/"/g, '”') || null;
   editor.chain().command(({ tr }) => (tr.setNodeMarkup(img.pos, undefined, { ...img.node.attrs, title }), true)).setNodeSelection(img.pos).run();
   $('#caption-form').hidden = true;
+});
+
+// ---------- Tables ----------
+//
+// Only what a GFM table can hold: rows, columns, and one alignment per column — no merged cells,
+// and the first row is always the header. The bar sets alignment on the whole column, because
+// that is the only place the file has to put it.
+
+const ALIGN = ['left', 'center', 'right'];
+
+/** The table the cursor is in, if any. */
+function tableAt() {
+  const { $anchor } = editor.state.selection;
+  for (let d = $anchor.depth; d > 0; d--) if ($anchor.node(d).type.name === 'table') return { node: $anchor.node(d), pos: $anchor.before(d) };
+  return null;
+}
+
+/** The alignment of the column the cursor is in, as the file spells it — null when it says nothing,
+ * which browsers draw the same as left. */
+function columnAlign() {
+  if (!isInTable(editor.state)) return null;
+  const { map, table, left } = selectedRect(editor.state);
+  return table.nodeAt(map.map[left])?.attrs.align ?? null;
+}
+
+function setColumnAlign(align) {
+  const { map, left, tableStart } = selectedRect(editor.state);
+  const { tr } = editor.state;
+  for (let row = 0; row < map.height; row++) {
+    const pos = tableStart + map.map[row * map.width + left];
+    const cell = tr.doc.nodeAt(pos);
+    if (cell) tr.setNodeMarkup(pos, undefined, { ...cell.attrs, align });
+  }
+  editor.view.dispatch(tr);
+  editor.view.focus();
+}
+
+const tableCommands = {
+  rowAfter: (c) => c.addRowAfter(),
+  rowDelete: (c) => c.deleteRow(),
+  colAfter: (c) => c.addColumnAfter(),
+  colDelete: (c) => c.deleteColumn(),
+  delete: (c) => c.deleteTable(),
+};
+
+$('#table-bar').addEventListener('mousedown', (e) => e.preventDefault()); // keep the cursor in its cell
+$('#table-bar').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-table]');
+  if (!b || !isInTable(editor.state)) return;
+  // A column with no marker is drawn left-aligned, so that is what the button shows and steps on from
+  if (b.dataset.table === 'align') return setColumnAlign(ALIGN[(ALIGN.indexOf(columnAlign() ?? 'left') + 1) % ALIGN.length]);
+  tableCommands[b.dataset.table](editor.chain().focus()).run();
 });
 
 on('relabel', onSelection);

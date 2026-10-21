@@ -21,6 +21,9 @@ export function findChrome() {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Keys the page's own handlers look at the code of, not only the character
+const KEYS = { Tab: 9, Enter: 13, Escape: 27 };
+
 /** Start headless Chrome on a throwaway profile and wait for its debugging port. */
 export async function launchChrome(port = 9333) {
   const binary = findChrome();
@@ -121,6 +124,12 @@ export async function openPage(port) {
     async navigate(url) {
       await send('Page.navigate', { url });
       await sleep(400);
+    },
+    /** Press a key the way a person would, so the page's keymaps see it. */
+    async press(key) {
+      const vk = KEYS[key] ?? 0;
+      for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+      await sleep(80);
     },
     /** Poll until the expression is truthy, so the tests don't depend on fixed waits. */
     async until(expression, { timeout = 10000, label = expression } = {}) {

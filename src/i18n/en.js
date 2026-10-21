@@ -62,12 +62,23 @@ export default {
   'toolbar.orderedList': 'Numbered list',
   'toolbar.blockquote': 'Quote',
   'toolbar.link': 'Link',
+  'toolbar.table': 'Insert a table',
   'toolbar.image': 'Insert images (pick several to place them side by side)',
   'toolbar.imageLabel': 'Image',
   'toolbar.undo': 'Undo (⌘Z)',
   'toolbar.redo': 'Redo (⇧⌘Z)',
   'toolbar.linkPrompt': 'Link address (leave empty to remove the link)',
   'doc.footHint': 'Paste or drop images straight in. Click an image to crop it, add a caption, or place it side by side.',
+
+  // Tables
+  'table.row': 'Row',
+  'table.column': 'Column',
+  'table.rowAfter': 'Add a row below',
+  'table.rowDelete': 'Delete this row',
+  'table.colAfter': 'Add a column to the right',
+  'table.colDelete': 'Delete this column',
+  'table.align': 'Align this column (left, centre, right)',
+  'table.delete': 'Delete the table',
 
   // Images
   'img.crop': 'Crop / rotate',

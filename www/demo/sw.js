@@ -28,7 +28,7 @@ const seed = () => ({
   files: {
     [`${CONTENT_DIR}/202610150930.md`]: {
       t: article('Spring term enrolment is open', '2026-10-15T09:30:00.000Z', ['notice', 'enrolment'],
-        'Applications for the spring term are open from today.\n\nPlaces are limited, so apply early. The office is open on weekdays from 9:00 to 17:00.\n\n## How to apply\n\nBring your identification and the completed form to the front desk, or send it by post.', false),
+        'Applications for the spring term are open from today.\n\nPlaces are limited, so apply early. The office is open on weekdays from 9:00 to 17:00.\n\n| Intake | Applications close | Term starts |\n| :----- | :----------------: | ----------: |\n| Spring |    20 February     |     1 April |\n| Summer |       20 May       |      1 July |\n\n## How to apply\n\nBring your identification and the completed form to the front desk, or send it by post.', false),
     },
     [`${CONTENT_DIR}/202610120800.md`]: {
       t: article('Autumn festival photos', '2026-10-12T08:00:00.000Z', ['events'],

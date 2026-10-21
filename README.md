@@ -20,6 +20,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   again and the file is unchanged
 - **Images**: paste, drop or pick several at once, compressed to webp in the browser; crop, rotate,
   caption, place side by side, replace
+- **Tables**: add and remove rows and columns, align a column left, centre or right — written out
+  as a plain GFM table that lines up in the file
 - **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft. The open
   one is in the address bar, so reloading comes back to it and the link opens it for anyone else
   who can sign in
@@ -44,7 +46,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 
 | Directory | What's in it |
 |---|---|
-| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js` and `preview-ui.js` — `app.js` reads the config and starts them up |
+| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js` and `preview-ui.js`; `schema.js` says what a document may contain and how it is written back as Markdown — `app.js` reads the config and starts them up |
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
@@ -125,6 +127,12 @@ The body, in Markdown. ![](/uploads/20261021/abc.webp "An image caption")
 
 Frontmatter fields the editor doesn't recognise are preserved untouched. A new article's filename —
 its id — is the year, month, day, hour and minute it was created.
+
+A table in the body is a plain GFM table, and only what GFM can express goes into one: a header row,
+one line of text per cell, no merged cells. A hand-written table is laid out once on the first save
+— padded to the column widths, with the colons following them — and left alone after that. The site
+needs nothing installed to show it, since Astro and friends run remark-gfm already; it will want
+some CSS of its own.
 
 ## Developing
 
