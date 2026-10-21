@@ -27,8 +27,13 @@ installs it anywhere else — the bundle there is the one `npm run build` produc
 What makes it a demo is `demo/sw.js`, a service worker that answers every request to
 `api.github.com` out of a repository it invents, kept in the Cache API so it survives a reload.
 `demo/index.html` registers it before handing over to the editor; `demo/banner.js` adds the bar
-that says so; `demo/preview/` is a site-side preview page, the same one the README tells you to
-write. Nothing under `src/` knows the demo exists.
+that says so. Nothing under `src/` knows the demo exists.
+
+`demo/preview.html` + `demo/preview-page.js` are the site-side preview page, the same one the
+README tells you to write — that pair is meant to be read as the example. `demo/templates.js` and
+the three looks in `demo/preview.css` are demo furniture on top of it: switching between a school
+site, a magazine and a personal blog is the quickest way to show that the preview is rendered by
+*your* site's layout and the editor has no say in it.
 
 Deploying needs `wrangler login` once. `wrangler.toml` claims the hostname as a custom domain, so
 Cloudflare adds the DNS record itself the first time.

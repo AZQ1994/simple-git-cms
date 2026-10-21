@@ -47,6 +47,7 @@ for (const [from, to] of [
   ['preview.html', 'preview/index.html'],
   ['preview.css', 'preview/preview.css'],
   ['preview-page.js', 'preview/preview-page.js'],
+  ['templates.js', 'preview/templates.js'],
 ]) {
   await cp(join(demo, from), join(demo, to));
   await rm(join(demo, from));

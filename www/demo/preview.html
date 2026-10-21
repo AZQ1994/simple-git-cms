@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-template="school">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,14 +13,46 @@
   This is the page the demo's editor previews into — the article layout a site of your own would
   have. <a href="/demo/">Back to the demo</a>
 </p>
-<article class="post">
-  <header>
+
+<div class="accent-bar"></div>
+
+<header class="site-head">
+  <a class="site-name" id="site-name" href="#"><span class="site-mark" id="site-mark"></span><span id="site-title"></span></a>
+  <nav class="site-nav" id="site-nav"></nav>
+</header>
+
+<main class="site-main">
+  <article class="post">
+    <p class="kicker" id="kicker"></p>
     <h1 id="title"></h1>
     <p class="meta"><time id="date"></time></p>
+    <div class="byline">
+      <span class="avatar" id="avatar"></span>
+      <span class="byline-text"><b id="author"></b><span id="read"></span></span>
+    </div>
     <ul class="tags" id="tags"></ul>
-  </header>
-  <div class="prose" id="body"></div>
-</article>
+    <div class="prose" id="body"></div>
+  </article>
+
+  <section class="more" id="more" aria-labelledby="more-head">
+    <h2 id="more-head"></h2>
+    <div class="cards" id="cards"></div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="foot-in">
+    <div class="foot-brand"><span class="site-mark" id="foot-mark"></span><span id="site-foot"></span></div>
+    <nav class="foot-links" id="foot-links"></nav>
+  </div>
+</footer>
+
+<div class="tpl" id="tpl" hidden>
+  <span class="tpl-label" id="tpl-label"></span>
+  <div class="tpl-buttons" id="tpl-buttons"></div>
+</div>
+
 <script type="module" src="./preview-page.js"></script>
+<script type="module" src="./templates.js"></script>
 </body>
 </html>
