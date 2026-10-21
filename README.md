@@ -20,6 +20,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   again and the file is unchanged
 - **Images**: paste, drop or pick several at once, compressed to webp in the browser; crop, rotate,
   caption, place side by side, replace
+- **Code**: `inline code` and fenced blocks, which keep their language and are left alone by
+  everything else the editor does to text
 - **Tables**: add and remove rows and columns, align a column left, centre or right — written out
   as a plain GFM table that lines up in the file
 - **Attachments**: a PDF or anything else goes into the repository as it is, linked from the body

@@ -115,3 +115,24 @@ test('an attachment keeps a name worth reading in the address, and cannot overwr
   assert.match(newFilePath('no-extension'), /no-extension-[a-z0-9]{4}$/);
   assert.match(newFilePath('.hidden'), /\/hidden-[a-z0-9]{4}$/, 'a name that is all extension is just a name');
 });
+
+// ---------- Code ----------
+
+test('a fenced block keeps its language and its contents, angle brackets and all', () => {
+  const body = 'Before.\n\n```js\nconst a = 1 < 2;\nconsole.log(a && b);\n```\n\nAfter.';
+  assert.equal(roundTrip(body), body);
+});
+
+test('inline code survives, in a sentence, a list and a table cell', () => {
+  assert.equal(roundTrip('Run `npm test` first.'), 'Run `npm test` first.');
+  assert.equal(roundTrip('- a list\n- with `code` in it'), '- a list\n- with `code` in it');
+  assert.equal(roundTrip('| a   | b   |\n| --- | --- |\n| `x` | 2   |'), '| a   | b   |\n| --- | --- |\n| `x` | 2   |');
+});
+
+test('an entity quoted inside code stays an entity, not the character it stands for', () => {
+  // The rule that puts & < > back has to stop at the backticks, or an article about HTML
+  // rewrites itself into the HTML it was describing
+  for (const body of ['An entity in code: `&lt;div&gt;` and `&amp;`.', '```html\n<div>&lt;escaped&gt;</div>\n```', '<div class="note">Say &lt;p&gt; here.</div>']) {
+    assert.equal(roundTrip(body), body);
+  }
+});

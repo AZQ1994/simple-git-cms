@@ -252,6 +252,7 @@ svg { flex: none; }
 .toolbar button:hover { background: var(--bg-side); color: var(--ink); }
 .toolbar button.on { background: var(--navy-soft); color: var(--navy); }
 .toolbar .tb-label { font-size: 13px; font-weight: 600; }
+.toolbar .tb-mono { font: 600 11.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .03em; }
 .toolbar .sep { width: 1px; height: 18px; margin: 0 6px; background: var(--line); }
 .toolbar .spacer { flex: 1; }
 .foot-hint { margin-top: 28px; color: var(--faint); font-size: 12px; text-align: center; }
@@ -282,6 +283,10 @@ svg { flex: none; }
 .body p:has(> .img-node ~ .img-node) .img-node img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .body p:has(> .img-node ~ .img-node) .img-node { flex: 1 1 0; min-width: 0; }
 .body .ProseMirror-selectednode { outline: none; }
+
+.body code { padding: .1em .35em; border-radius: 5px; background: var(--track); font: .88em/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.body pre { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); overflow-x: auto; }
+.body pre code { padding: 0; background: none; font-size: 13px; line-height: 1.7; white-space: pre; }
 
 .body .tableWrapper { overflow-x: auto; }
 .body table { width: 100%; border-collapse: collapse; font-size: 15.5px; line-height: 1.6; }

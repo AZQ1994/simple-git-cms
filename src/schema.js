@@ -147,7 +147,7 @@ export const HtmlBlock = Node.create({
 
 /** Everything the document is made of, bar the image node, which needs the browser. */
 export const schemaExtensions = [
-  StarterKit.configure({ paragraph: false, heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true }, codeBlock: false, code: false }),
+  StarterKit.configure({ paragraph: false, heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true } }),
   SiteParagraph,
   SiteTable,
   TableRow,
@@ -157,17 +157,30 @@ export const schemaExtensions = [
   Markdown,
 ];
 
-/** The serializer's output, as it should be written to the file.
- *
- * An & is written out as &amp; and < > as &lt; &gt;, which look the same on the site but are not
- * what the file said; they go back as they were, so that what someone typed — a "<" in a sentence,
+/** Stretches of the output that are literal: fenced and inline code, and a block of raw HTML.
+ * Everything a writer typed has been escaped by this point, so a `<` at the start of a line can
+ * only be one of the HTML blocks above. */
+const LITERAL = /```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`+[^`\n]*`+|^<[\s\S]*?(?=\n\n|$)/gm;
+
+/** An & is written out as &amp; and < > as &lt; &gt;, which look the same on the site but are not
+ * what the file said. They go back as they were, so that what someone typed — a "<" in a sentence,
  * a <br>, a template tag a site expands itself — is still there the next time the file is read.
- * (An &amp; followed by an entity name is left alone: it is how a file writes a literal &lt;.)
- * Blank lines at the very start and end are dropped — inserting an image always leaves one. */
-export const cleanMarkdown = (md) =>
-  md
+ * (An &amp; followed by an entity name is left alone: it is how a file writes a literal &lt;.) */
+const unescape = (text) =>
+  text
     .replace(/&amp;(?![a-zA-Z]+;|#\d+;)/g, '&')
     .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/^(?:\s*&nbsp;\s*\n)+/, '')
-    .replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');
+    .replace(/&gt;/g, '>');
+
+/** The serializer's output, as it should be written to the file: entities put back, except where
+ * the file is quoting something and &lt; means those four characters. Blank lines at the very
+ * start and end are dropped — inserting an image always leaves one. */
+export function cleanMarkdown(md) {
+  let out = '';
+  let at = 0;
+  for (const m of md.matchAll(LITERAL)) {
+    out += unescape(md.slice(at, m.index)) + m[0];
+    at = m.index + m[0].length;
+  }
+  return (out + unescape(md.slice(at))).replace(/^(?:\s*&nbsp;\s*\n)+/, '').replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');
+}
