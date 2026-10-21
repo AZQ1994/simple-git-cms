@@ -97,7 +97,6 @@ export default {
   // 入力チェック
   'validate.title': 'タイトルを入力してください',
   'validate.body': '本文を入力してください',
-  'validate.tags': 'タグを 1 つ以上追加してください',
   'validate.externalImage': '本文に外部の画像アドレス（他のページから貼り付けたもの）があります。ダウンロードして「画像」ボタンから改めてアップロードしてください。',
 
   // 保存

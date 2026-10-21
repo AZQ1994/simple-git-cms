@@ -148,7 +148,6 @@ export function collect() {
 function validate(a) {
   if (!a.title) return t('validate.title');
   if (!a.body.trim()) return t('validate.body');
-  if (!a.tags.length) return t('validate.tags');
   const externalImage = new RegExp(`!\\[[^\\]]*\\]\\((?!${CONFIG.media.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/)[^)]+\\)`);
   if (externalImage.test(a.body)) return t('validate.externalImage');
   return null;

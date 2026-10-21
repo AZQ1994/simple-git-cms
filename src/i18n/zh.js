@@ -97,7 +97,6 @@ export default {
   // 校验
   'validate.title': '请填写标题',
   'validate.body': '请填写正文',
-  'validate.tags': '请至少添加一个标签',
   'validate.externalImage': '正文里有外部图片地址（可能是从别处粘贴的），请下载后用「图片」按钮重新上传',
 
   // 保存

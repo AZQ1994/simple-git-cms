@@ -96,7 +96,6 @@ export default {
   // Validation
   'validate.title': 'Please fill in the title.',
   'validate.body': 'Please write the article.',
-  'validate.tags': 'Please add at least one tag.',
   'validate.externalImage': 'The article links to an image hosted elsewhere (probably pasted from another page). Download it and upload it again with the Image button.',
 
   // Saving
