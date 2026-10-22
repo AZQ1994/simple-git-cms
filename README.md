@@ -158,7 +158,9 @@ its id — is the year, month, day, hour and minute it was created.
 Anything else in the body that the editor has no node for — an `<iframe>`, a `<div>`, an HTML
 comment, a component your site expands — is held as a block of raw HTML and written back exactly as
 it was. It shows as a box with its source in it, which is also how to put something into an article
-that the toolbar has no button for. Everything inside such a box belongs to the box, which is what
+that the toolbar has no button for. Pasting markup into the body does the same: an embed pasted
+from a video service arrives as the card or the box the file would have given it, rather than as
+the text of a tag — or as nothing, which is what an editor does with a tag it has no node for. Everything inside such a box belongs to the box, which is what
 makes it editable — so each one carries its own way in and out: the arrow keys reach it, Enter
 steps in, Esc steps back out, and the × in its corner or Backspace in an empty one takes it away.
 

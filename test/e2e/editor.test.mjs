@@ -255,10 +255,41 @@ test('two paragraphs in a block stay one block, instead of stranding the closing
   assert.equal(gh.files.get(`${CONTENT_DIR}/202610010000.md`), file, 'and saving it again leaves the file alone');
 });
 
+test('an embed pasted straight into the body lands as the thing it is', async () => {
+  await openArticle(2); // the draft
+  const paste = (text) =>
+    page.evaluate(`(() => {
+      const dt = new DataTransfer();
+      dt.setData('text/plain', ${JSON.stringify(text)});
+      document.querySelector('#body .ProseMirror').focus();
+      document.querySelector('#body .ProseMirror').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    })()`);
+
+  // <iframe> is not in the editor's schema, so pasting this used to leave nothing at all
+  const cards = await page.evaluate(`document.querySelectorAll('#body .block-card').length`);
+  await paste(VIDEO);
+  await page.until(`document.querySelectorAll('#body .block-card').length === ${cards + 1}`, { label: 'the video card' });
+
+  // and markup no definition claims is pasted as the box of source it would be read as
+  const boxes = await page.evaluate(`document.querySelectorAll('#body .html-block').length`);
+  await paste('<div class="gallery">someone else’s markup</div>');
+  await page.until(`document.querySelectorAll('#body .html-block').length === ${boxes + 1}`, { label: 'the source box' });
+
+  // Ordinary text is still ordinary text
+  await paste('A sentence about <b> and other tags.');
+  await sleep(200);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#body .html-block').length`), boxes + 1, 'not everything with a bracket in it is markup');
+
+  await save();
+  const file = gh.files.get(`${CONTENT_DIR}/202610010000.md`);
+  assert.ok(file.includes(VIDEO), 'the embed goes in exactly as it was pasted');
+  assert.ok(file.includes('<div class="gallery">someone else’s markup</div>'));
+});
+
 test('a box can be taken out again: Backspace in an empty one, or the × on it', async () => {
   await openArticle(2); // the draft, which by now has a block or two in it
-  const cards = () => page.evaluate(`document.querySelectorAll('#body .block-card').length`);
-  const before = await cards();
+  const count = (what) => page.evaluate(`document.querySelectorAll('#body ${what}').length`);
+  const [cardsBefore, boxesBefore] = [await count('.block-card'), await count('.html-block')];
 
   // An empty HTML box: everything typed in it belongs to the text area, so Backspace never
   // reached the editor and the box could not be deleted at all
@@ -266,13 +297,14 @@ test('a box can be taken out again: Backspace in an empty one, or the × on it',
   await page.until(`!document.getElementById('insert-list').hidden`, { label: 'the insert menu' });
   await page.evaluate(`document.querySelector('#insert-list [data-cmd="html"]').click()`);
   await page.until(`document.querySelector('#body .html-block textarea')`, { label: 'the box' });
-  await page.evaluate(`document.querySelector('#body .html-block textarea').focus()`);
+  await page.until(`document.querySelectorAll('#body .html-block').length === ${boxesBefore + 1}`, { label: 'one box more' });
+  await page.evaluate(`[...document.querySelectorAll('#body .html-block textarea')].find((t) => !t.value).focus()`);
   await page.press('Backspace');
-  await page.until(`!document.querySelector('#body .html-block')`, { label: 'the box to go' });
+  await page.until(`document.querySelectorAll('#body .html-block').length === ${boxesBefore}`, { label: 'the box to go' });
 
   // And the × takes a filled-in one out, which the mouse otherwise cannot reach
   await page.evaluate(`document.querySelector('#body .block-card .node-remove').click()`);
-  await page.until(`document.querySelectorAll('#body .block-card').length === ${before - 1}`, { label: 'one card fewer' });
+  await page.until(`document.querySelectorAll('#body .block-card').length === ${cardsBefore - 1}`, { label: 'one card fewer' });
 });
 
 test('the keyboard can get into a box and back out of it', async () => {

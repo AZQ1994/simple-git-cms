@@ -7,7 +7,7 @@ import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { $, busy, toast } from './dom.js';
 import { blockNamed, blocks, emptyElement, tableBlock } from './blocks.js';
-import { cleanMarkdown, schemaExtensions } from './schema.js';
+import { cleanMarkdown, nodeFromHtml, schemaExtensions } from './schema.js';
 import { addPending, displaySrc, emit, on } from './store.js';
 import { checkFileSize, compressImage, newFilePath, newImagePath, openCropper } from './images.js';
 import { icons } from './icons.js';
@@ -56,7 +56,7 @@ export const editor = new Editor({
   content: '',
   onUpdate: () => emit('doc:edited'),
   editorProps: {
-    handlePaste: (_v, e) => insertFiles([...(e.clipboardData?.files ?? [])]),
+    handlePaste: (_v, e) => insertFiles([...(e.clipboardData?.files ?? [])]) || insertHtml(e.clipboardData?.getData('text/plain')),
     handleDrop: (_v, e) => insertFiles([...(e.dataTransfer?.files ?? [])]),
   },
 });
@@ -226,6 +226,21 @@ function insertFiles(files) {
     for (const f of imgs) nodes.push({ type: 'image', attrs: { src: hold(await compressImage(f)), alt: '' } });
     editor.chain().focus().insertContent([{ type: 'paragraph', content: nodes }, { type: 'paragraph' }]).run();
   });
+  return true;
+}
+
+// What a pasted run of markup has to look like to be treated as markup: one tag at the front, a
+// closing bracket at the back. A sentence that happens to mention <b> is a sentence.
+const MARKUP = /^<[a-zA-Z][\w:-]*(\s|\/?>)[\s\S]*>$/;
+
+/** Markup pasted into the body goes in as markup — the card or the source box the same thing would
+ * get from a file. The editor has no node for an <iframe>, so otherwise it is simply dropped. */
+function insertHtml(text) {
+  const html = (text ?? '').trim();
+  if (!MARKUP.test(html)) return false;
+  stepPastSelection();
+  editor.chain().focus().insertContent(nodeFromHtml(html)).run();
+  stepPastSelection(); // a card is left selected, and the next thing pasted would replace it
   return true;
 }
 

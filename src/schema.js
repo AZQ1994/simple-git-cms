@@ -177,6 +177,10 @@ const claimed = (html) => {
   return found ? { type: 'customBlock', attrs: found } : null;
 };
 
+/** The node a run of HTML belongs in: a card, a table, or the source box. The reader decides this
+ * when a file is opened; pasting markup into the editor is the same question. */
+export const nodeFromHtml = (html) => claimed(html) ?? { type: 'htmlBlock', attrs: { html: html.trim() } };
+
 export const CustomBlock = Node.create({
   name: 'customBlock',
   group: 'block',
