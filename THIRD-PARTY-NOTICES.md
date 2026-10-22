@@ -23,6 +23,7 @@ Regenerate this file with `npm run licenses`.
 | [@tiptap/extension-list](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
 | [@tiptap/extension-paragraph](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
 | [@tiptap/extension-strike](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
+| [@tiptap/extension-table](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
 | [@tiptap/extension-text](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
 | [@tiptap/extension-underline](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
 | [@tiptap/extensions](https://tiptap.dev) | 3.32.0 | MIT | Copyright (c) 2025, Tiptap GmbH |
@@ -103,6 +104,7 @@ Regenerate this file with `npm run licenses`.
 | [prosemirror-model](https://www.npmjs.com/package/prosemirror-model) | 1.25.12 | MIT | Copyright (C) 2015-2017 by Marijn Haverbeke <marijn@haverbeke.berlin> and others |
 | [prosemirror-schema-list](https://www.npmjs.com/package/prosemirror-schema-list) | 1.5.1 | MIT | Copyright (C) 2015-2017 by Marijn Haverbeke <marijn@haverbeke.berlin> and others |
 | [prosemirror-state](https://www.npmjs.com/package/prosemirror-state) | 1.4.4 | MIT | Copyright (C) 2015-2017 by Marijn Haverbeke <marijn@haverbeke.berlin> and others |
+| [prosemirror-tables](https://www.npmjs.com/package/prosemirror-tables) | 1.8.5 | MIT | Copyright (C) 2015-2016 by Marijn Haverbeke <marijnh@gmail.com> and others |
 | [prosemirror-transform](https://www.npmjs.com/package/prosemirror-transform) | 1.12.2 | MIT | Copyright (C) 2015-2017 by Marijn Haverbeke <marijn@haverbeke.berlin> and others |
 | [prosemirror-view](https://www.npmjs.com/package/prosemirror-view) | 1.42.6 | MIT | Copyright (C) 2015-2017 by Marijn Haverbeke <marijn@haverbeke.berlin> and others |
 | [rehype-raw](https://www.npmjs.com/package/rehype-raw) | 7.0.0 | MIT | Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com> |
