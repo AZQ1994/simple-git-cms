@@ -1,6 +1,6 @@
 {
   "name": "simple-git-cms",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A content editor for static sites that uses a GitHub repository as its backend — no server, no database.",
   "keywords": [
     "cms",
