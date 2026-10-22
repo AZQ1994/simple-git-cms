@@ -42,7 +42,9 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-horizontal-rule": "^3.32.0",
     "@tiptap/extension-image": "^3.32.0",
+    "@tiptap/extension-list": "^3.32.0",
     "@tiptap/extension-paragraph": "^3.32.0",
     "@tiptap/extension-table": "^3.32.0",
     "@tiptap/extensions": "^3.32.0",

@@ -64,6 +64,34 @@ test('the blank lines a writer leaves between paragraphs are kept', () => {
   assert.equal(roundTrip(body), body);
 });
 
+test('extra blank lines are one blank line, not an empty paragraph the site would show', () => {
+  assert.equal(roundTrip('One.\n\n\n\n&nbsp;\n\nTwo.'), 'One.\n\n&nbsp;\n\nTwo.');
+  assert.equal(roundTrip('One.\n\n\n\nTwo.'), 'One.\n\nTwo.');
+  assert.equal(roundTrip('- a\n- b\n\n\n\nAfter.'), '- a\n- b\n\nAfter.');
+});
+
+test('a loose list stays loose, and keeps the spaces after its markers', () => {
+  // what turndown writes, and so what an article imported from elsewhere looks like
+  for (const list of [
+    '-   one\n\n-   two\n\nAfter.',
+    '1.  one\n\n2.  two',
+    '-   a\n\n-   b\n    -   c\n    -   d',
+    '1.  a\n\n    more\n\n2.  b',
+  ]) {
+    assert.equal(roundTrip(list), list);
+  }
+});
+
+test('a tight list stays tight, even with a blank line inside one of its items', () => {
+  for (const list of ['- a\n- b', '3. one\n4. two', '- a\n\n  more\n- b', '1. a\n   - c\n   - d\n2. b']) {
+    assert.equal(roundTrip(list), list);
+  }
+});
+
+test('a rule keeps the spelling it was found in', () => {
+  for (const body of ['One.\n\n* * *\n\nTwo.', 'One.\n\n---\n\nTwo.', 'One.\n\n___\n\nTwo.']) assert.equal(roundTrip(body), body);
+});
+
 test('an article with no table is written exactly as it was', () => {
   const body = `A first paragraph.
 

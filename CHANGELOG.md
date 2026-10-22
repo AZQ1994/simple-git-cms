@@ -3,6 +3,16 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## Unreleased
+
+- **Lists keep their spacing.** A list with a blank line between its items — the way turndown and
+  so most imported articles write them — was saved as a tight one, which the site draws closer
+  together. It stays loose now, and keeps the spaces after its markers (`-   `), so it goes back
+  byte for byte. A rule keeps its spelling too (`* * *`).
+- **Extra blank lines are no longer an empty paragraph.** Three blank lines in a row were read as a
+  blank line of their own and saved as `&nbsp;`, adding space to the page that was never there.
+  They are one blank line now, which is all the site ever made of them.
+
 ## 0.4.0 — 2026-10-23
 
 The release that made the editor usable for a real article rather than a plain one: tables,

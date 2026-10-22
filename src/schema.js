@@ -1,12 +1,14 @@
 // What a document may contain, and how each part is written back as Markdown. Kept apart from the
 // editor itself because nothing here reaches for the DOM as it loads — the one node view below
 // only runs in a browser — so the whole Markdown round-trip can be tested in Node.
-import { Node } from '@tiptap/core';
+import { Node, renderNestedMarkdownContent } from '@tiptap/core';
 import { NodeSelection, Plugin } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Paragraph from '@tiptap/extension-paragraph';
-import { Markdown } from '@tiptap/markdown';
+import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import { BulletList, ListItem, OrderedList, getListMarker } from '@tiptap/extension-list';
+import { Markdown, MarkdownManager } from '@tiptap/markdown';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import { blockFields, blockNamed, claimFor, fillBlock, fillTemplate, matchBlock, wholeElement } from './blocks.js';
 import { needsHtml, parseHtmlTable, writeHtmlTable } from './html-table.js';
@@ -27,6 +29,73 @@ export const SiteParagraph = Paragraph.extend({
   // An empty paragraph — a blank line left by pressing Enter — is written as &nbsp; so the site
   // shows the same blank line. By default only the second of consecutive empties survives.
   renderMarkdown: (node, h) => (node.content?.length ? h.renderChildren(node.content) : '&nbsp;'),
+});
+
+// Blank lines beyond the one between two paragraphs are read by default as that many empty
+// paragraphs, which would then be written back as &nbsp; — a blank line on the site that was never
+// there, since Markdown takes any number of blank lines as one. Here a blank line the writer meant
+// is spelled &nbsp;, so extra blank lines in a file are just that, and are read as nothing.
+MarkdownManager.prototype.createImplicitEmptyParagraphsFromSpace = () => [];
+
+// ---------- Lists ----------
+//
+// A list with a blank line between its items is a loose one: each item becomes a paragraph of its
+// own on the site, spaced further apart. That is part of what the file says, not of how it happens
+// to be spelled, so it is kept — and so is the run of spaces after the marker (`-   ` is what
+// turndown writes), so that a list read from a file goes back exactly as it came.
+
+const MARKER = /^([ \t]*)(?:[-*+]|[0-9a-zA-Z]+[.)])( {1,4})(?=\S)/;
+
+/** How a list was written: whether a blank line stands between two of its own items, and how many
+ * spaces follow the marker. Only what differs from the default goes into the node. */
+function listShape(raw = '') {
+  const first = MARKER.exec(raw);
+  if (!first) return {};
+  const [, indent, gap] = first;
+  const loose = new RegExp(`\\n[ \\t]*\\n${indent}(?:[-*+]|[0-9a-zA-Z]+[.)]) `).test(raw);
+  return { ...(loose && { loose }), ...(gap.length > 1 && { gap: gap.length }) };
+}
+
+const shapeAttrs = () => ({ loose: { default: false, rendered: false }, gap: { default: 1, rendered: false } });
+
+const keepShape = (parse) => (token, helpers) => {
+  const node = parse(token, helpers);
+  const shape = listShape(token.raw);
+  return node && !Array.isArray(node) && Object.keys(shape).length ? { ...node, attrs: { ...node.attrs, ...shape } } : node;
+};
+
+const renderItems = (node, h) => (node.content ? h.renderChildren(node.content, node.attrs?.loose ? '\n\n' : '\n') : '');
+
+export const SiteBulletList = BulletList.extend({
+  addAttributes: shapeAttrs,
+  parseMarkdown: keepShape(BulletList.config.parseMarkdown),
+  renderMarkdown: renderItems,
+});
+
+export const SiteOrderedList = OrderedList.extend({
+  addAttributes() {
+    return { ...this.parent?.(), ...shapeAttrs() };
+  },
+  parseMarkdown: keepShape(OrderedList.config.parseMarkdown),
+  renderMarkdown: renderItems,
+});
+
+// A rule has as many spellings as there are lists — turndown writes `* * *` — and is kept in the
+// one it was found in. One drawn in the editor is written `---`.
+export const SiteHorizontalRule = HorizontalRule.extend({
+  addAttributes: () => ({ raw: { default: null, rendered: false } }),
+  parseMarkdown: (token, helpers) => helpers.createNode('horizontalRule', { raw: token.raw?.trim() || null }),
+  renderMarkdown: (node) => node.attrs?.raw ?? '---',
+});
+
+// What follows an item's first line is indented to where its text starts, so it stays in the item
+// whatever the gap after the marker
+export const SiteListItem = ListItem.extend({
+  renderMarkdown: (node, h, ctx) => {
+    const list = ctx?.meta?.parentAttrs ?? {};
+    const marker = ctx?.parentType === 'orderedList' ? getListMarker(list.type, (list.start || 1) - 1 + (ctx.index || 0), '.') : '-';
+    return renderNestedMarkdownContent(node, h, marker + ' '.repeat(list.gap ?? 1), ctx, { alignNestedToPrefix: true });
+  },
 });
 
 // ---------- Tables ----------
@@ -439,8 +508,20 @@ export const HtmlBlock = Node.create({
 /** Everything the document is made of, bar the image node, which needs the browser. */
 export const schemaExtensions = [
   CustomBlock,
-  StarterKit.configure({ paragraph: false, heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true } }),
+  StarterKit.configure({
+    paragraph: false,
+    bulletList: false,
+    orderedList: false,
+    listItem: false,
+    horizontalRule: false,
+    heading: { levels: [2, 3] },
+    link: { openOnClick: false, autolink: true },
+  }),
   SiteParagraph,
+  SiteBulletList,
+  SiteOrderedList,
+  SiteListItem,
+  SiteHorizontalRule,
   SiteTable,
   TableRow,
   SiteTableCell,
