@@ -3,7 +3,10 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
-## Unreleased
+## 0.5.0 — 2026-10-23
+
+Articles imported from another system now come back exactly as they went in, and the preview is
+sent the cover image and the rest of the frontmatter.
 
 - **Lists keep their spacing.** A list with a blank line between its items — the way turndown and
   so most imported articles write them — was saved as a tight one, which the site draws closer
