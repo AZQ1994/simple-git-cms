@@ -68,9 +68,24 @@ curl -X PUT -H "Authorization: Bearer $CF_API_TOKEN" \
 **你自己的服务器.** `node auth/server.js`，三个变量放环境变量里，想换端口就设 `PORT`（默认 8788）。
 前面放一个做 TLS 终止的反向代理——OAuth 的回调必须是 `https`。
 
-最后给中转一个域名，把它写进编辑器 `config.json` 的 `auth.base`。
+**放在网站的某个路径下，不单独占域名.** 中转可以和网站共用域名，比如 `https://example.com/cms-auth`。
+把 `PUBLIC_URL` 设成这个地址：中转就在这个路径下应答（反向代理去不去掉前缀都行），回调地址是
+`https://example.com/cms-auth/callback`（GitHub App 的 Callback URL 要填这个），cookie 也只在这个路径下。nginx：
+
+```nginx
+location /cms-auth/ {
+    proxy_pass http://127.0.0.1:8788;
+}
+```
+
+反向代理把请求以 `http` 转给中转、回调地址算错的时候，也是设 `PUBLIC_URL` 来解决。这种方式要用你自己的服务器：
+边缘运行环境只能用在它自己托管的域名上。
+
+最后给中转一个域名（或上面的路径），把它写进编辑器 `config.json` 的 `auth.base`。
 
 一个中转可以服务好几个站点：把每个域名都列进 `ALLOWED_DOMAINS`，并且把 GitHub App 装到每个仓库上。
+这些站点共用一个 App：从任何一个站点登录拿到的令牌，都能访问 App 装过的、这个人有写权限的所有仓库；
+列出的任何一个域名被注入了脚本，都能借它发起登录。测试站、归属不同的站点，请各用一套中转和 App。
 
 ## 登录不成功的时候
 
@@ -102,3 +117,5 @@ access token 过期后，编辑器会 POST 到 `/refresh` 换一个新的，然�
 | `GET` | `/auth`（或 `/oauth/authorize`） | 开始登录。带 `redirect_uri` 就走整页跳转模式。 |
 | `GET` | `/callback`（或 `/oauth/redirect`） | OAuth 回调；把 token 交给编辑器。 |
 | `POST` | `/refresh` | 用 refresh token 换一个新的 access token。 |
+
+设了 `PUBLIC_URL` 时，这些路径都在它的路径下，比如 `/cms-auth/auth`。

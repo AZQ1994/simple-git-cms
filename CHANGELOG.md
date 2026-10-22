@@ -3,6 +3,17 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## 0.7.0 — 2026-10-23
+
+The sign-in relay can live under a site's own path.
+
+- **`PUBLIC_URL` for the relay.** Set it to where the browser reaches the relay — e.g.
+  `https://example.com/cms-auth` — and the relay answers under that path, sends sign-in back to
+  `…/cms-auth/callback`, and keeps its cookies to that path. So the relay can run on the site's own
+  server without a domain of its own, and a reverse proxy that hands it plain `http` no longer
+  puts the wrong address in the callback. Without it, nothing changes. See
+  [auth/README.md](auth/README.md).
+
 ## 0.6.0 — 2026-10-23
 
 The editor is on npm.

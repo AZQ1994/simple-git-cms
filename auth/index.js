@@ -110,6 +110,34 @@ const getDomainPatterns = (allowedDomains) =>
 const serialize = (value) => JSON.stringify(value ?? null).replaceAll('<', '\\u003c');
 
 /**
+ * [simple-git-cms] The path the relay is served under, from `PUBLIC_URL` — e.g. `/cms-auth` for
+ * `https://example.com/cms-auth`, or an empty string when it has a host of its own.
+ * @param {{ [key: string]: string }} env - Environment variables.
+ * @returns {string} Path prefix without a trailing slash.
+ */
+const getBasePath = (env) => (env.PUBLIC_URL ? new URL(env.PUBLIC_URL).pathname.replace(/\/+$/, '') : '');
+
+/**
+ * [simple-git-cms] The address the browser reaches the relay at, which is where OAuth sends it back
+ * to. Without `PUBLIC_URL` that is the address the request came in on; behind a reverse proxy the
+ * request can arrive as plain http, or under a path the relay knows nothing about, so `PUBLIC_URL`
+ * says what the browser sees instead.
+ * @param {Request} request - HTTP request.
+ * @param {{ [key: string]: string }} env - Environment variables.
+ * @returns {string} Origin plus any path prefix, without a trailing slash.
+ */
+const getPublicBase = (request, env) =>
+  env.PUBLIC_URL ? `${new URL(env.PUBLIC_URL).origin}${getBasePath(env)}` : new URL(request.url).origin;
+
+/**
+ * [simple-git-cms] Cookie attributes shared by every cookie the relay sets. They are scoped to the
+ * relay's own path, so a relay under a site's path doesn't send them along with the rest of the site.
+ * @param {{ [key: string]: string }} env - Environment variables.
+ * @returns {string} `HttpOnly; Path=…; SameSite=Lax; Secure`.
+ */
+const cookieAttributes = (env) => `HttpOnly; Path=${getBasePath(env) || '/'}; SameSite=Lax; Secure`;
+
+/**
  * Output HTML response that communicates with the window opener.
  * @param {object} args - Options.
  * @param {string} [args.provider] - Backend name, e,g. `github`.
@@ -167,7 +195,7 @@ const outputHTML = ({ provider = 'unknown', token, error, errorCode, env = {} })
       headers: {
         'Content-Type': 'text/html;charset=UTF-8',
         // Delete CSRF token
-        'Set-Cookie': `csrf-token=deleted; HttpOnly; Max-Age=0; Path=/; SameSite=Lax; Secure`,
+        'Set-Cookie': `csrf-token=deleted; Max-Age=0; ${cookieAttributes(env)}`,
       },
     },
   );
@@ -181,7 +209,8 @@ const outputHTML = ({ provider = 'unknown', token, error, errorCode, env = {} })
  */
 const handleAuth = async (request, env) => {
   const { url } = request;
-  const { origin, searchParams } = new URL(url);
+  const { searchParams } = new URL(url);
+  const origin = getPublicBase(request, env);
   const {
     provider,
     site_id: domain,
@@ -243,7 +272,7 @@ const handleAuth = async (request, env) => {
       return new Response('redirect_uri is not allowed', { status: 400 });
     }
 
-    returnCookie = `return-to=${encodeURIComponent(returnTo)}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`;
+    returnCookie = `return-to=${encodeURIComponent(returnTo)}; Max-Age=600; ${cookieAttributes(env)}`;
   }
 
   // Generate a random string for CSRF protection
@@ -299,12 +328,12 @@ const handleAuth = async (request, env) => {
   // browser after redirect
   authHeaders.append(
     'Set-Cookie',
-    `csrf-token=${provider}_${csrfToken}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax; Secure`,
+    `csrf-token=${provider}_${csrfToken}; Max-Age=600; ${cookieAttributes(env)}`,
   );
   // Clear any return-to left over from a previous sign-in when not in redirect mode
   authHeaders.append(
     'Set-Cookie',
-    returnCookie || 'return-to=deleted; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure',
+    returnCookie || `return-to=deleted; Max-Age=0; ${cookieAttributes(env)}`,
   );
 
   return new Response('', { status: 302, headers: authHeaders });
@@ -318,7 +347,8 @@ const handleAuth = async (request, env) => {
  */
 const handleCallback = async (request, env) => {
   const { url, headers } = request;
-  const { origin, searchParams } = new URL(url);
+  const { searchParams } = new URL(url);
+  const origin = getPublicBase(request, env);
   const { code, state } = Object.fromEntries(searchParams);
 
   const [, provider, csrfToken] =
@@ -455,8 +485,8 @@ const handleCallback = async (request, env) => {
       'Cache-Control': 'no-store',
     });
 
-    backHeaders.append('Set-Cookie', 'return-to=deleted; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure');
-    backHeaders.append('Set-Cookie', 'csrf-token=deleted; HttpOnly; Path=/; Max-Age=0; SameSite=Lax; Secure');
+    backHeaders.append('Set-Cookie', `return-to=deleted; Max-Age=0; ${cookieAttributes(env)}`);
+    backHeaders.append('Set-Cookie', `csrf-token=deleted; Max-Age=0; ${cookieAttributes(env)}`);
 
     return new Response('', { status: 302, headers: backHeaders });
   }
@@ -553,7 +583,13 @@ const handleRefresh = async (request, env) => {
  */
 export const handleRequest = async (request, env) => {
   const { method, url } = request;
-  const { pathname } = new URL(url);
+  const basePath = getBasePath(env);
+  let { pathname } = new URL(url);
+
+  // [simple-git-cms] Under `PUBLIC_URL`'s path, take the prefix off; a proxy may have done so already
+  if (basePath && (pathname === basePath || pathname.startsWith(`${basePath}/`))) {
+    pathname = pathname.slice(basePath.length);
+  }
 
   if (method === 'GET' && ['/auth', '/oauth/authorize'].includes(pathname)) {
     return handleAuth(request, env);

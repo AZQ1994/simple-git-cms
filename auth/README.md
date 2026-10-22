@@ -74,10 +74,29 @@ variables in the dashboard. No build step, no dependencies.
 `PORT` if you want something other than 8788. Put it behind a reverse proxy that terminates TLS —
 the OAuth callback has to be `https`.
 
-Finally, give the relay a domain name and put it in the editor's `config.json` as `auth.base`.
+**Under your site's path instead of a domain of its own.** The relay can share the site's domain,
+e.g. at `https://example.com/cms-auth`. Set `PUBLIC_URL` to that address: the relay then answers
+under that path (whether or not the proxy strips it), sends the browser back to
+`https://example.com/cms-auth/callback` — which is what the GitHub App's Callback URL has to be —
+and keeps its cookies to that path. With nginx:
+
+```nginx
+location /cms-auth/ {
+    proxy_pass http://127.0.0.1:8788;
+}
+```
+
+`PUBLIC_URL` is also the fix when a proxy hands the relay plain `http` and the callback comes out
+wrong. This needs your own server: an edge runtime only gets a path on a domain it serves.
+
+Finally, give the relay a domain name (or the path above) and put it in the editor's `config.json`
+as `auth.base`.
 
 One relay can serve several sites: list every domain in `ALLOWED_DOMAINS` and install the GitHub
-App on each repository.
+App on each repository. They then share one App, so a token signed in from any of them reaches
+every repository it is installed on that the person can write to, and a script injected into any
+listed domain could start a sign-in. Give a test site, or sites with different owners, a relay and
+App of their own.
 
 ## When sign-in doesn't work
 
@@ -113,3 +132,5 @@ disuse, after which signing in again is needed.
 | `GET` | `/auth` (or `/oauth/authorize`) | Start sign-in. `redirect_uri` opts into full-page redirect mode. |
 | `GET` | `/callback` (or `/oauth/redirect`) | OAuth callback; hands the token to the editor. |
 | `POST` | `/refresh` | Trade a refresh token for a fresh access token. |
+
+With `PUBLIC_URL` set, each path is under its path, e.g. `/cms-auth/auth`.
