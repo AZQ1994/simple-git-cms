@@ -76,14 +76,19 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 
 ### 1. Build and install the editor
 
+In your site's repository:
+
 ```bash
-npm install
-npm run build
-node scripts/install.mjs ../my-site/public/editor   # a static directory, so the URL is /editor/
+npm install --save-dev simple-git-cms
+npx simple-git-cms install public/editor   # a static directory, so the URL is /editor/
 ```
 
 Installing only overwrites the editor's own files; `config.json` and `logo.png` in the target
-directory are left alone. To upgrade, repeat those two steps.
+directory are left alone. To upgrade, `npm update simple-git-cms` and install again.
+
+The package is the editor already built, plus the two pieces your site imports (below). From a
+clone of this repository it is `npm install`, `npm run build`, then
+`node scripts/install.mjs ../my-site/public/editor`.
 
 ### 2. Write `config.json`
 
@@ -132,7 +137,8 @@ See [integrations/astro/README.md](integrations/astro/README.md) for captions an
 images.
 
 For the preview, add a page to your site that uses your normal article layout, import
-[`integrations/preview-client.js`](integrations/preview-client.js), and fill in the title, date,
+`connectPreview` from `simple-git-cms/preview-client` ([source](integrations/preview-client.js)),
+and fill in the title, date,
 tags and `article.html` inside `connectPreview(article => …)`. The editor converts the body through
 the same pipeline your site uses (remark-gfm, smartypants, rehype-figures) and posts the HTML over;
 the preview page only has to display it.

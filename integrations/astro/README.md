@@ -8,8 +8,8 @@ The editor writes plain Markdown and uses two conventions for images:
 - several images in one paragraph means side by side: `![](/uploads/a.webp)![](/uploads/b.webp)`
 
 `rehype-figures.mjs` turns those into `<figure><figcaption>` and `<div class="gallery cols-N">`.
-It is a standard rehype plugin with no dependencies — copy the file into your site, for example to
-`src/lib/rehype-figures.mjs`.
+It is a standard rehype plugin with no dependencies, imported from `simple-git-cms/rehype-figures`
+once the package is installed — or copy the file into your site if you would rather not add it.
 
 ## Setup
 
@@ -25,7 +25,7 @@ npm install @astrojs/markdown-remark
 // astro.config.mjs
 import { defineConfig } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
-import rehypeFigures from './src/lib/rehype-figures.mjs';
+import rehypeFigures from 'simple-git-cms/rehype-figures';
 
 export default defineConfig({
   markdown: {

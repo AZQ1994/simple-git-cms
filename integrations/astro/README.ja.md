@@ -8,8 +8,8 @@
 - 1 つの段落に画像が複数あれば横並びです：`![](/uploads/a.webp)![](/uploads/b.webp)`
 
 `rehype-figures.mjs` は、これらを `<figure><figcaption>` と `<div class="gallery cols-N">` に
-変換します。依存のない普通の rehype プラグインなので、ファイルをサイトにコピーするだけです。
-置き場所はたとえば `src/lib/rehype-figures.mjs`。
+変換します。依存のない普通の rehype プラグインで、`simple-git-cms` パッケージを入れていれば
+`simple-git-cms/rehype-figures` から読み込めます。パッケージを足したくなければ、ファイルをサイトにコピーしても同じです。
 
 ## つなぎ方
 
@@ -26,7 +26,7 @@ npm install @astrojs/markdown-remark
 // astro.config.mjs
 import { defineConfig } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
-import rehypeFigures from './src/lib/rehype-figures.mjs';
+import rehypeFigures from 'simple-git-cms/rehype-figures';
 
 export default defineConfig({
   markdown: {

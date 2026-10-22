@@ -55,13 +55,18 @@
 
 ### 1. 构建并安装编辑器
 
+在网站的仓库里：
+
 ```bash
-npm install
-npm run build
-node scripts/install.mjs ../my-site/public/editor   # 复制到网站的静态目录，网址就是 /editor/
+npm install --save-dev simple-git-cms
+npx simple-git-cms install public/editor   # 复制到网站的静态目录，网址就是 /editor/
 ```
 
-安装只覆盖编辑器文件，不动目标目录里的 `config.json` 和 `logo.png`。升级时重复这两步。
+安装只覆盖编辑器文件，不动目标目录里的 `config.json` 和 `logo.png`。升级时
+`npm update simple-git-cms` 后再安装一次。
+
+这个包里是已经构建好的编辑器，加上网站要引入的两个文件（见下文）。从本仓库的 clone 安装的话，
+就是 `npm install`、`npm run build`，再 `node scripts/install.mjs ../my-site/public/editor`。
 
 ### 2. 写 `config.json`
 
@@ -106,7 +111,7 @@ Deno Deploy、Vercel、Netlify、Bun 和普通的 Node 服务器都能跑。
 图片说明和并排的显示见 [integrations/astro/README.zh-CN.md](integrations/astro/README.zh-CN.md)。
 
 要用预览，在网站上加一个预览页：用文章页同样的排版，引入
-[`integrations/preview-client.js`](integrations/preview-client.js)，在
+`simple-git-cms/preview-client` 里的 `connectPreview`（[源码](integrations/preview-client.js)），在
 `connectPreview(article => …)` 里把标题、日期、标签和 `article.html` 填进去。
 编辑器把正文按网站相同的流程（remark-gfm、smartypants、rehype-figures）转成 HTML 发过去，
 预览页只负责显示。

@@ -10,9 +10,8 @@ export const pages = [
   { lang: 'ja', path: 'ja/', hreflang: 'ja', label: '日本語' },
 ];
 
-const install = `npm install
-npm run build
-node scripts/install.mjs ../my-site/public/editor`;
+const install = `npm install --save-dev simple-git-cms
+npx simple-git-cms install public/editor`;
 
 const config = `{
   "repo": "owner/repo",
@@ -113,7 +112,7 @@ export const copy = {
       heading: 'Putting it on a site',
       lead: 'Four steps, and the longest one is writing a config file.',
       steps: [
-        { n: '1', title: 'Build and install the editor', body: 'Into any static directory of your site, so the URL is <code>/editor/</code>. Upgrading is the same two commands; your <code>config.json</code> and logo are left alone.', code: install, codeLang: 'bash' },
+        { n: '1', title: 'Install the editor', body: 'From npm, already built, into any static directory of your site, so the URL is <code>/editor/</code>. To upgrade, <code>npm update simple-git-cms</code> and install again; your <code>config.json</code> and logo are left alone.', code: install, codeLang: 'bash' },
         { n: '2', title: 'Write config.json', body: 'Next to the editor’s <code>index.html</code>. Where the content lives, where images go, what the interface calls itself.', code: config, codeLang: 'json' },
         { n: '3', title: 'Deploy the sign-in relay', body: 'One file, one GitHub App. Cloudflare Workers is the documented route; anything with <code>fetch</code> works.', code: null },
         { n: '4', title: 'Add your editors', body: 'A GitHub account, write access to the repository, and the App installed on it. That’s the whole permission model.', code: null },
@@ -225,7 +224,7 @@ export const copy = {
       heading: '装到网站上',
       lead: '四步，其中最费时间的是写一个配置文件。',
       steps: [
-        { n: '1', title: '构建并安装编辑器', body: '装到网站任意一个静态目录里，于是地址就是 <code>/editor/</code>。升级还是这两条命令，你的 <code>config.json</code> 和 logo 不会被动。', code: install, codeLang: 'bash' },
+        { n: '1', title: '安装编辑器', body: '从 npm 装，已经构建好，放进网站任意一个静态目录，地址就是 <code>/editor/</code>。升级时 <code>npm update simple-git-cms</code> 再安装一次，你的 <code>config.json</code> 和 logo 不会被动。', code: install, codeLang: 'bash' },
         { n: '2', title: '写 config.json', body: '放在编辑器的 <code>index.html</code> 旁边。内容在哪、图片放哪、界面怎么称呼自己。', code: config, codeLang: 'json' },
         { n: '3', title: '部署登录中转', body: '一个文件，一个 GitHub App。文档里写的是 Cloudflare Workers，任何有 <code>fetch</code> 的环境都行。', code: null },
         { n: '4', title: '把编辑的人加进来', body: '一个 GitHub 账号、仓库的写权限、App 装在这个仓库上。权限模型就这么多。', code: null },
@@ -337,7 +336,7 @@ export const copy = {
       heading: 'サイトへの入れ方',
       lead: '4 ステップ。一番時間がかかるのは設定ファイルを書くところです。',
       steps: [
-        { n: '1', title: 'エディターをビルドして入れる', body: 'サイトの静的ディレクトリのどこかへ。URL は <code>/editor/</code> になります。更新も同じ 2 コマンドで、<code>config.json</code> とロゴはそのまま残ります。', code: install, codeLang: 'bash' },
+        { n: '1', title: 'エディターを入れる', body: 'ビルド済みのものを npm から、サイトの静的ディレクトリのどこかへ。URL は <code>/editor/</code> になります。更新は <code>npm update simple-git-cms</code> してからもう一度インストール。<code>config.json</code> とロゴはそのまま残ります。', code: install, codeLang: 'bash' },
         { n: '2', title: 'config.json を書く', body: 'エディターの <code>index.html</code> の隣に。コンテンツの場所、画像の置き場所、インターフェースの名乗り方。', code: config, codeLang: 'json' },
         { n: '3', title: 'ログイン中継をデプロイ', body: '1 ファイルと GitHub App 1 つ。ドキュメントは Cloudflare Workers ですが、<code>fetch</code> がある環境ならどこでも。', code: null },
         { n: '4', title: '書く人を追加する', body: 'GitHub アカウント、リポジトリの書き込み権限、そのリポジトリに入れた App。権限の仕組みはこれだけです。', code: null },

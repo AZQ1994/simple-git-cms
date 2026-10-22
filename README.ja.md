@@ -68,14 +68,20 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 
 ### 1. ビルドしてインストール
 
+サイトのリポジトリで：
+
 ```bash
-npm install
-npm run build
-node scripts/install.mjs ../my-site/public/editor   # サイトの静的ディレクトリ。URL は /editor/ になります
+npm install --save-dev simple-git-cms
+npx simple-git-cms install public/editor   # サイトの静的ディレクトリ。URL は /editor/ になります
 ```
 
 インストールで上書きされるのはエディター自身のファイルだけで、インストール先の `config.json` と
-`logo.png` はそのまま残ります。更新するときはこの 2 つを繰り返してください。
+`logo.png` はそのまま残ります。更新するときは `npm update simple-git-cms` してから、もう一度
+インストールしてください。
+
+パッケージに入っているのはビルド済みのエディターと、サイトが読み込む 2 つのファイル（後述）です。
+このリポジトリを clone して使う場合は `npm install`、`npm run build` のあと
+`node scripts/install.mjs ../my-site/public/editor` です。
 
 ### 2. `config.json` を書く
 
@@ -123,7 +129,7 @@ GitHub へ直接送ります——ので、効いてくるのはサイトをど�
 画像の説明と横並びの表示は [integrations/astro/README.ja.md](integrations/astro/README.ja.md) を参照。
 
 プレビューを使うには、記事ページと同じレイアウトのページをサイトに 1 枚足して、
-[`integrations/preview-client.js`](integrations/preview-client.js) を読み込み、
+`simple-git-cms/preview-client` の `connectPreview`（[ソース](integrations/preview-client.js)）を読み込み、
 `connectPreview(article => …)` の中でタイトル・日付・タグ・`article.html` をページに入れてください。
 エディターは本文をサイトと同じ流れ（remark-gfm、smartypants、rehype-figures）で HTML に変換して送るので、
 プレビューページは表示するだけで済みます。

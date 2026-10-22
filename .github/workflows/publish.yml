@@ -1,0 +1,45 @@
+name: Publish to npm
+
+# Pushing a tag like v0.5.1 publishes that version. There is no npm token anywhere: npm trusts this
+# workflow by name (trusted publishing, set up on npmjs.com), and adds a provenance statement
+# saying the package was built here, from that commit.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write # what npm checks instead of a token
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '26' # trusted publishing needs npm 11.5.1 or later, which Node 26 ships with
+          registry-url: https://registry.npmjs.org
+
+      - name: The tag is the version in package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, package.json $version"; exit 1; }
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:e2e
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      # A version already on npm — the first one was published by hand, and a re-run is a no-op
+      - name: Publish
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if npm view "simple-git-cms@$version" version >/dev/null 2>&1; then
+            echo "simple-git-cms@$version is already on npm"
+          else
+            npm publish
+          fi

@@ -1,4 +1,7 @@
-// Copy the built editor into a site's static directory: node scripts/install.mjs <target>
+#!/usr/bin/env node
+// Copy the built editor into a site's static directory. From the npm package it is
+//   npx simple-git-cms install <target>
+// and from a clone of the repository, after a build, node scripts/install.mjs <target>.
 // Only the editor's own files are overwritten; config.json and the logo already there are left
 // alone.
 import fs from 'node:fs';
@@ -6,9 +9,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const target = process.argv[2];
+const args = process.argv.slice(2);
+if (args[0] === 'install') args.shift(); // `simple-git-cms install <target>` reads better than without
+const target = args[0];
 if (!target) {
-  console.error('Usage: node scripts/install.mjs <editor directory inside the site, e.g. ../site/public/editor>');
+  console.error('Usage: simple-git-cms install <editor directory inside the site, e.g. public/editor>');
   process.exit(1);
 }
 const dist = path.join(root, 'dist');

@@ -8,8 +8,8 @@
 - 同一个段落里有多张图，就是并排：`![](/uploads/a.webp)![](/uploads/b.webp)`
 
 `rehype-figures.mjs` 把这两样变成 `<figure><figcaption>` 和 `<div class="gallery cols-N">`。
-它是一个标准的 rehype 插件，没有依赖——把这个文件复制进你的网站就行，比如放到
-`src/lib/rehype-figures.mjs`。
+它是一个标准的 rehype 插件，没有依赖，装了 `simple-git-cms` 包就能从
+`simple-git-cms/rehype-figures` 引入；不想加这个包的话，把文件复制进网站也一样。
 
 ## 接上
 
@@ -25,7 +25,7 @@ npm install @astrojs/markdown-remark
 // astro.config.mjs
 import { defineConfig } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
-import rehypeFigures from './src/lib/rehype-figures.mjs';
+import rehypeFigures from 'simple-git-cms/rehype-figures';
 
 export default defineConfig({
   markdown: {

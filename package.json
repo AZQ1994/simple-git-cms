@@ -23,13 +23,30 @@
   "bugs": {
     "url": "https://github.com/AZQ1994/simple-git-cms/issues"
   },
-  "private": true,
   "type": "module",
+  "bin": {
+    "simple-git-cms": "scripts/install.mjs"
+  },
+  "exports": {
+    "./preview-client": "./integrations/preview-client.js",
+    "./rehype-figures": "./integrations/astro/rehype-figures.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "integrations/",
+    "scripts/install.mjs",
+    "CHANGELOG.md",
+    "README.zh-CN.md",
+    "README.ja.md",
+    "THIRD-PARTY-NOTICES.md"
+  ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
     "dev": "node scripts/dev.mjs",
     "test": "node --test test/*.test.mjs",
     "test:e2e": "node --test --test-force-exit test/e2e/*.test.mjs",
