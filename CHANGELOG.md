@@ -3,14 +3,16 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
-## Unreleased
+## 0.6.0 — 2026-10-23
+
+The editor is on npm.
 
 - **On npm.** `npm install --save-dev simple-git-cms`, then `npx simple-git-cms install
   public/editor`: the editor comes already built, and upgrading is `npm update` and installing
   again. The preview client and the rehype plugin are imported from the package
-  (`simple-git-cms/preview-client`, `simple-git-cms/rehype-figures`) instead of copied in. Each
-  release is published from GitHub Actions, with a provenance statement linking it to the commit
-  it was built from.
+  (`simple-git-cms/preview-client`, `simple-git-cms/rehype-figures`) instead of copied in. After
+  this first one, releases are published from GitHub Actions, with a provenance statement linking
+  each to the commit it was built from.
 
 ## 0.5.0 — 2026-10-23
 
