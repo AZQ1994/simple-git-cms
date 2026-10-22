@@ -20,20 +20,22 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   again and the file is unchanged
 - **Images**: paste, drop or pick several at once, compressed to webp in the browser; crop, rotate,
   caption, place side by side, replace
-- **Blocks of your own**: a video, a notice box, anything your site already renders — described
-  in `config.json` as a template, and the editor gives it a button and a small form
+- **Blocks of your own**: a video, a notice box, a table with merged cells — anything your site
+  already renders. Name the tag in `config.json` and it joins the insert menu with an editor of
+  its own: a small form, the table editor, or its own HTML
 - **Code**: `inline code` and fenced blocks, which keep their language and are left alone by
   everything else the editor does to text
 - **Tables**: add and remove rows and columns, align a column left, centre or right — written out
-  as a plain GFM table that lines up in the file
+  as a plain GFM table that lines up in the file. Anything beyond that, such as a cell spanning two
+  columns, is an HTML table, which is a block your site defines
 - **Attachments**: a PDF or anything else goes into the repository as it is, linked from the body
   under the name it came with, up to a size you set
 - **Nothing is quietly dropped**: anything in the file the editor has no buttons for — an embed, a
   leftover `<div>`, a component your site expands itself — is shown as an HTML box whose source you
   can edit, and written back exactly as it was
-- **A cover image**: uploaded, replaced, cropped or removed in the article's own form, and
-  written to a frontmatter field of your choosing — what a site uses for list thumbnails and
-  share images
+- **A cover image**: taken from the pictures the article already has, or uploaded; replaced,
+  cropped or removed in the article's own form, and written to a frontmatter field of your
+  choosing — what a site uses for list thumbnails and share images
 - **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft. The open
   one is in the address bar, so reloading comes back to it and the link opens it for anyone else
   who can sign in
@@ -158,14 +160,18 @@ it was. It shows as a box with its source in it, which is also how to put someth
 that the toolbar has no button for.
 
 A table in the body is a plain GFM table: a header row, one line of text per cell, no merged
-cells. A table that needs more than that is written as HTML — `<table>` passes through Markdown
-untouched — and the editor still shows it as a table you can edit, with a button to merge and
-split cells. Merging turns a pipe table into an HTML one, because pipes have no way of saying it.
-An HTML table with anything the editor could not write back exactly, such as a class of its own,
-stays a block of raw HTML instead. A hand-written table is laid out once on the first save
-— padded to the column widths, with the colons following them — and left alone after that. The site
-needs nothing installed to show it, since Astro and friends run remark-gfm already; it will want
-some CSS of its own.
+cells. A hand-written one is laid out once on the first save — padded to the column widths, with
+the colons following them — and left alone after that. The site needs nothing installed to show it,
+since Astro and friends run remark-gfm already; it will want some CSS of its own.
+
+A table that needs more than a pipe table can say is written as HTML, which Markdown passes
+through untouched. Whether the editor treats those as tables or as source is your site's call: a
+`{ "tag": "table", "edit": "table" }` block (below) adds an **advanced table** to the insert menu,
+turns the HTML tables already in your articles into tables you can edit, and adds a button for
+merging and splitting cells. Without it an HTML table is a box of source, like any other markup
+the editor was not told about. Either way nothing is lost — and an HTML table with anything the
+editor could not write back exactly, such as a class of its own, stays a box of source even with
+the block defined.
 
 ## Developing
 
@@ -192,40 +198,60 @@ language can't ship half-done.
 
 ## Blocks of your own
 
-A site usually has a few things in its articles that are neither prose nor pictures: a video, a
-notice box, whatever your layout already knows how to render. Rather than the editor guessing at
-them, you say in `config.json` how one is written, and it becomes a button:
+Markdown here is Markdown plus HTML — `<table>`, `<iframe>` and anything your pipeline already
+passes through. The editor shows a tag it has never heard of as a box of source. Name the tag in
+`config.json` and it joins the insert menu with an editor of its own:
 
 ```json
 "blocks": [
   {
-    "name": "youtube",
+    "tag": "YouTube",
     "label": "YouTube",
-    "template": "<YouTube id=\"{id}\" />",
     "preview": "https://i.ytimg.com/vi/{id}/hqdefault.jpg",
     "fields": [{ "name": "id", "label": "Video ID", "placeholder": "dQw4w9WgXcQ" }]
+  },
+  {
+    "tag": "aside",
+    "name": "notice",
+    "label": "Notice",
+    "attrs": { "class": "notice" },
+    "fields": [{ "name": "text", "from": "content", "multiline": true }]
+  },
+  {
+    "tag": "table",
+    "label": "Advanced table",
+    "edit": "table"
   }
 ]
 ```
 
-The template does both jobs: the editor recognises that shape in a file and shows it as a small
-form, and writes it back through the same template. Nothing in the editor knows what YouTube is.
+The element's attributes are the fields; nothing in the editor knows what YouTube is. Anything it
+doesn't claim keeps the behaviour it had: plain HTML, edited as source.
 
 | Key | What it does |
 |---|---|
-| `name` | A name of its own, used nowhere but here |
-| `label` | What the toolbar button says. Defaults to the name |
-| `template` | How it is written in the file. `{placeholders}` are the parts someone fills in |
-| `preview` | Optional picture shown in the editor, with the same placeholders. A preview from another site has to be allowed by `img-src` in the policy below |
-| `fields` | Only needed to give a placeholder a label, a hint (`placeholder`), or room for several lines (`multiline`) |
+| `tag` | The element, e.g. `YouTube` or `aside` |
+| `label` | What the insert menu says. Defaults to the tag |
+| `name` | Only needed when two definitions share a tag |
+| `edit` | Which editor this block gets: `fields` (the default) is a small form, `table` is the table editor — rows, columns, alignment and merged cells — and `source` is the element's own HTML in a box with this block's name on it |
+| `attrs` | Attributes an element must have to be this block, and which are always written — how `<aside class="notice">` is told apart from any other `<aside>` |
+| `fields` | The attributes someone fills in. `from: "content"` makes a field what sits between the tags instead, and `multiline` gives it room |
+| `preview` | Optional picture shown in the editor, with `{field}` placeholders. A picture from another site has to be allowed by `img-src` in the policy below |
 
-The template doesn't have to be HTML — `{{< youtube {id} >}}` or a `:::notice` block works the same
-way, since the editor only matches text and puts text back. It does have to be a block of its own,
-on its own lines, and it has to be recognisable: a template that matches ordinary prose will turn
-that prose into a block.
+An attribute the file has that `fields` never mentions is kept and offered as a field anyway, so
+nothing is editable only by hand. An element that says something the form could not hold — content
+with no field for it — stays plain HTML rather than being read into a form that would lose it.
+
+A declared tag is also read as one element even when the file writes it across blank lines.
+Markdown ends a block of HTML at the first blank line, so a notice with two paragraphs in it would
+otherwise arrive as an opening tag, a paragraph, and a stray `</aside>` sitting in the text.
+
+A form is not the right shape for everything, which is what `edit` is for: `table` gives `<table>`
+the table editor, and `source` is for markup worth naming but not worth a form — it is the HTML
+box, with your label on it and the element already written out when you insert one.
 
 Showing it on the site is your site's business, as it already was. The editor's preview renders
-Markdown in the browser, so a block your site expands itself will not appear there.
+Markdown in the browser, so a tag your site expands itself will not appear there.
 
 ## Locking the editor down
 

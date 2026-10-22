@@ -46,7 +46,11 @@ before(async () => {
       auth: { base: 'http://auth.invalid' },
       collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
-      blocks: [{ name: 'youtube', label: 'YouTube', template: '<YouTube id="{id}" />', fields: [{ name: 'id', label: 'Video' }] }],
+      blocks: [
+        { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }] },
+        { tag: 'table', label: 'Advanced table', edit: 'table' },
+        { tag: 'aside', name: 'notice', label: 'Notice', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content', multiline: true }] },
+      ],
     },
   });
   chrome = await launchChrome();
@@ -153,17 +157,24 @@ test('a table, an HTML embed and a block the site defined come back out byte for
   assert.ok(file.includes(BLOCK), 'and the block, which exists only because config.json describes it');
 });
 
-test('merging cells turns a pipe table into an HTML one, since pipes cannot say it', async () => {
+test('a plain table offers no merging; the advanced one does, and is written as HTML', async () => {
   await openArticle(2); // the draft, which has nothing in it yet
   await page.evaluate(`document.querySelector('#toolbar [data-cmd="table"]').click()`);
   await page.until(`!document.getElementById('table-bar').hidden`, { label: 'the table bar' });
-  assert.equal(await page.evaluate(`document.querySelector('#table-bar [data-table="format"] .tb-mono').textContent`), 'MD');
+  // A pipe table cannot say that a cell spans two, so the bar does not pretend it can
+  assert.equal(await page.evaluate(`document.querySelector('#table-bar [data-table="merge"]').hidden`), true);
+  assert.equal(
+    await page.evaluate(`document.querySelector('#table-bar [data-table="advanced"] .tb-label').textContent`),
+    'Advanced table',
+    'the way to a table that can is the block the site defined',
+  );
 
+  await page.evaluate(`document.querySelector('#table-bar [data-table="advanced"]').click()`);
+  await page.until(`!document.querySelector('#table-bar [data-table="merge"]').hidden`, { label: 'the merge button' });
   // drag across the first two header cells, which is how a person selects them
   await page.drag(await middleOf('#body th', 0), await middleOf('#body th', 1));
   await page.evaluate(`document.querySelector('#table-bar [data-table="merge"]').click()`);
   await page.until(`document.querySelector('#body th[colspan="2"]')`, { label: 'a merged cell' });
-  assert.equal(await page.evaluate(`document.querySelector('#table-bar [data-table="format"] .tb-mono').textContent`), 'HTML');
 
   await save();
   assert.match(gh.files.get(`${CONTENT_DIR}/202610010000.md`), /<th colspan="2">/);
@@ -183,10 +194,13 @@ test('a block defined in config.json is a card with its own fields', async () =>
   assert.match(gh.files.get(`${CONTENT_DIR}/202610150930.md`), /<YouTube id="zzz" \/>/, 'the template is how it goes back');
 });
 
-test('the toolbar offers the blocks the site defined, and inserting one writes the template', async () => {
+test('the insert menu offers the blocks the site defined, and inserting one writes the template', async () => {
   await openArticle(2); // the draft
-  await page.evaluate(`document.querySelector('#toolbar [data-block="youtube"]').click()`);
+  await page.evaluate(`document.querySelector('#toolbar [data-menu]').click()`);
+  await page.until(`!document.getElementById('insert-list').hidden`, { label: 'the insert menu' });
+  await page.evaluate(`document.querySelector('#insert-list [data-block="YouTube"]').click()`);
   await page.until(`document.querySelectorAll('#body .block-card').length === 1`, { label: 'the card' });
+  assert.equal(await page.evaluate(`document.getElementById('insert-list').hidden`), true, 'and the menu closes behind it');
   await page.evaluate(`(() => {
     const i = document.querySelector('#body .block-card input');
     i.value = 'newly-added';
@@ -194,6 +208,33 @@ test('the toolbar offers the blocks the site defined, and inserting one writes t
   })()`);
   await save();
   assert.match(gh.files.get(`${CONTENT_DIR}/202610010000.md`), /<YouTube id="newly-added" \/>/);
+});
+
+test('two paragraphs in a block stay one block, instead of stranding the closing tag', async () => {
+  await openArticle(2); // the draft
+  await page.evaluate(`document.querySelector('#toolbar [data-menu]').click()`);
+  await page.until(`!document.getElementById('insert-list').hidden`, { label: 'the insert menu' });
+  await page.evaluate(`document.querySelector('#insert-list [data-block="notice"]').click()`);
+  await page.until(`document.querySelector('#body .block-card textarea')`, { label: 'the notice' });
+  await page.evaluate(`(() => {
+    const t = document.querySelector('#body .block-card textarea');
+    t.value = 'Rooms are not confirmed.\\n\\nMore to follow.';
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await save();
+
+  const file = gh.files.get(`${CONTENT_DIR}/202610010000.md`);
+  assert.match(file, /<aside class="notice">Rooms are not confirmed\.\n\nMore to follow\.<\/aside>/);
+
+  // Markdown ends a block of HTML at a blank line, so opening this again is where it used to fall
+  // apart: an opening tag in a box, and </aside> sitting in the text
+  await openArticle(0);
+  await openArticle(2);
+  await page.until(`document.querySelector('#body .block-card textarea')`, { label: 'the notice again' });
+  assert.equal(await page.evaluate(`document.querySelectorAll('#body .block-card').length`), 2, 'the notice and the block that was already there, and nothing broken off either');
+  assert.doesNotMatch(await page.evaluate(`document.getElementById('body').textContent`), /<\/aside>/, 'no closing tag in the text');
+  await save();
+  assert.equal(gh.files.get(`${CONTENT_DIR}/202610010000.md`), file, 'and saving it again leaves the file alone');
 });
 
 test('the HTML box can be edited, and that is what gets committed', async () => {
@@ -293,6 +334,34 @@ test('a cover image is uploaded with the article and named in the frontmatter', 
   await page.evaluate(`document.querySelector('#cover-acts [data-cover="remove"]').click()`);
   await save();
   assert.doesNotMatch(gh.files.get(`${CONTENT_DIR}/${id}.md`), /^image:/m);
+});
+
+test('a cover can be a picture the article already has, rather than a second copy of it', async () => {
+  const file = join(tmpdir(), 'sgcms-body.png');
+  writeFileSync(file, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGM4YaMBRwzEcQDxwxLBXOwG1wAAAABJRU5ErkJggg==', 'base64'));
+
+  const id = await page.evaluate(`new URLSearchParams(location.search).get('id')`);
+  await page.evaluate(`document.querySelector('#toolbar [data-cmd="image"]').click()`);
+  await page.chooseFile('#file-input', file);
+  await page.until(`document.querySelector('#body .img-node img')`, { label: 'the image in the body' });
+
+  // The cover control offers what the article has before it offers a file chooser
+  await page.evaluate(`document.getElementById('cover-pick').click()`);
+  await page.until(`!document.getElementById('media-modal').hidden`, { label: 'the picker' });
+  assert.equal(await page.evaluate(`document.querySelectorAll('#media-grid .media-tile').length`), 1, 'the one image this article has');
+  await page.evaluate(`document.querySelector('#media-grid .media-tile').click()`);
+  await page.until(`document.getElementById('media-modal').hidden`, { label: 'the picker to close' });
+  await page.until(`!document.getElementById('cover-img').hidden`, { label: 'the cover thumbnail' });
+
+  const uploads = () => [...gh.files.keys()].filter((k) => k.startsWith(MEDIA_DIR)).length;
+  const before = uploads();
+  await save();
+
+  const saved = gh.files.get(`${CONTENT_DIR}/${id}.md`);
+  const [, path] = saved.match(/^image: (.+)$/m) ?? [];
+  assert.ok(path, `the frontmatter should name the cover:\n${saved}`);
+  assert.ok(saved.includes(`](${path})`), 'and it is the image the body points at, not another one');
+  assert.equal(uploads(), before + 1, 'one picture, one file on the site');
 });
 
 test('a file is attached as it is, and linked from the body', async () => {

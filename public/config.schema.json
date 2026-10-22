@@ -156,34 +156,50 @@
     },
     "blocks": {
       "type": "array",
-      "description": "Blocks this site defines for itself, each a template the editor recognises in a file and writes back.",
+      "description": "Blocks this site defines for itself: HTML tags the editor should show as a small form instead of as source.",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "name",
-          "template"
+          "tag"
         ],
         "properties": {
+          "tag": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][\\w:-]*$",
+            "description": "The element, e.g. YouTube or aside."
+          },
           "name": {
             "type": "string",
-            "description": "A name of its own, used nowhere but here."
+            "description": "Only needed when two definitions share a tag."
           },
           "label": {
             "type": "string",
-            "description": "What the button says. Defaults to the name."
+            "description": "What the insert menu says. Defaults to the tag."
           },
-          "template": {
-            "type": "string",
-            "description": "How it is written in the file, with {placeholders} for the parts someone fills in, e.g. <YouTube id=\"{id}\" />."
+          "edit": {
+            "enum": [
+              "fields",
+              "table",
+              "source"
+            ],
+            "default": "fields",
+            "description": "How this block is edited: fields is a small form, table is the table editor (rows, columns, merged cells), source is the element's own HTML in a box with this block's name on it."
+          },
+          "attrs": {
+            "type": "object",
+            "description": "Attributes an element must have to be this block, and which are always written, e.g. { \"class\": \"notice\" }.",
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "preview": {
             "type": "string",
-            "description": "Optional image address shown in the editor, with the same {placeholders}."
+            "description": "Optional image address shown in the editor, with {field} placeholders."
           },
           "fields": {
             "type": "array",
-            "description": "Only needed to give a placeholder a label, a hint, or room for several lines.",
+            "description": "The attributes someone fills in. An attribute the file has but this list does not mention is still kept and still editable.",
             "items": {
               "type": "object",
               "additionalProperties": false,
@@ -193,7 +209,7 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "The placeholder this describes."
+                  "description": "The attribute this field edits."
                 },
                 "label": {
                   "type": "string"
@@ -204,6 +220,10 @@
                 "multiline": {
                   "type": "boolean",
                   "default": false
+                },
+                "from": {
+                  "const": "content",
+                  "description": "This field is what sits between the tags, not an attribute."
                 }
               }
             }

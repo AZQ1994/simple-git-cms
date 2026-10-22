@@ -32,11 +32,22 @@
 
   "blocks": [
     {
-      "name": "youtube",
+      "tag": "YouTube",
       "label": "YouTube",
-      "template": "<YouTube id=\"{id}\" />",
       "preview": "https://i.ytimg.com/vi/{id}/hqdefault.jpg",
       "fields": [{ "name": "id", "label": "Video ID", "placeholder": "dQw4w9WgXcQ" }]
+    },
+    {
+      "tag": "aside",
+      "name": "notice",
+      "label": "Notice",
+      "attrs": { "class": "notice" },
+      "fields": [{ "name": "text", "from": "content", "multiline": true }]
+    },
+    {
+      "tag": "table",
+      "label": "Advanced table",
+      "edit": "table"
     }
   ],
 

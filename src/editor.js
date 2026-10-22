@@ -3,10 +3,10 @@
 import { Editor } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import { Placeholder } from '@tiptap/extensions';
-import { NodeSelection } from '@tiptap/pm/state';
+import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import { $, busy, toast } from './dom.js';
-import { blocks } from './blocks.js';
+import { blockNamed, blocks, emptyElement, tableBlock } from './blocks.js';
 import { cleanMarkdown, schemaExtensions } from './schema.js';
 import { addPending, displaySrc, emit, on } from './store.js';
 import { checkFileSize, compressImage, newFilePath, newImagePath, openCropper } from './images.js';
@@ -105,12 +105,14 @@ const active = {
 };
 
 $('#toolbar').addEventListener('click', (e) => {
+  if (e.target.closest('[data-menu]')) return showMenu($('#insert-list').hidden);
   const b = e.target.closest('[data-cmd]');
   if (!b) return;
   const cmd = b.dataset.cmd;
+  if (cmd === 'table') stepPastSelection();
   if (cmd === 'image') return pickFiles((files) => insertFiles(files));
   if (cmd === 'attach') return pickFiles(([f]) => attach(f), { multiple: false, accept: '' });
-  if (cmd === 'block') return editor.chain().focus().insertContent({ type: 'customBlock', attrs: { block: b.dataset.block, values: {}, raw: '' } }).run();
+  if (cmd === 'block') return insertBlock(blockNamed(b.dataset.block));
   if (cmd === 'link') {
     const prev = editor.getAttributes('link').href ?? '';
     const href = prompt(t('toolbar.linkPrompt'), prev);
@@ -121,18 +123,77 @@ $('#toolbar').addEventListener('click', (e) => {
   commands[cmd](editor.chain().focus()).run();
 });
 
-/** A button for each block the site has defined for itself. Called once, after the config is in. */
-export function addBlockButtons() {
+/** The insert menu: one line per block the site has defined for itself, and raw HTML at the
+ * bottom for everything no definition covers. Called once, after the config is in. */
+export function addBlockMenu() {
+  const list = $('#insert-list');
   for (const def of blocks()) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.dataset.cmd = 'block';
-    b.dataset.block = def.name;
-    b.title = def.label;
-    b.append(Object.assign(document.createElement('span'), { className: 'tb-label', textContent: def.label }));
-    $('#toolbar .spacer').before(b);
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'menu-item';
+    item.dataset.cmd = 'block';
+    item.dataset.block = def.name;
+    item.textContent = def.label;
+    list.append(item);
   }
+  // Its label is the interface's, so it is filled in by relabel() rather than written here
+  const html = document.createElement('button');
+  html.type = 'button';
+  html.className = 'menu-item';
+  html.dataset.cmd = 'html';
+  html.dataset.i18n = 'toolbar.htmlItem';
+  list.append(html);
 }
+
+$('#insert-list').addEventListener('click', (e) => {
+  const item = e.target.closest('[data-cmd]');
+  if (!item) return;
+  showMenu(false);
+  if (item.dataset.cmd === 'block') return insertBlock(blockNamed(item.dataset.block));
+  stepPastSelection();
+  return commands.html(editor.chain().focus()).run();
+});
+
+/** A block is one thing you can select, and inserting anything while a node is selected replaces
+ * it. So before inserting, step past whatever is selected: adding a block next to a card has no
+ * business deleting the card. */
+function stepPastSelection() {
+  const { selection, tr } = editor.state;
+  if (selection instanceof NodeSelection) editor.view.dispatch(tr.setSelection(TextSelection.near(tr.doc.resolve(selection.to))));
+}
+
+/** Put a block in, in whatever shape its definition asks to be edited in. */
+function insertBlock(def) {
+  if (!def) return;
+  stepPastSelection();
+  if (def.edit === 'source') {
+    editor.chain().focus().insertContent({ type: 'htmlBlock', attrs: { html: emptyElement(def) } }).run();
+    return;
+  }
+  if (def.edit !== 'table') {
+    editor.chain().focus().insertContent({ type: 'customBlock', attrs: { block: def.name, values: {}, raw: '' } }).run();
+    return;
+  }
+  // A table block is the same table, written as HTML — which is the spelling that can merge cells
+  editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  setFormat('html');
+}
+
+function showMenu(open) {
+  const list = $('#insert-list');
+  const button = $('#insert-menu');
+  // Placed from here rather than by CSS: the list sits outside the toolbar, which scrolls
+  // sideways on a phone and blurs what is behind it
+  list.hidden = !open;
+  button.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  const r = button.getBoundingClientRect();
+  list.style.top = `${r.bottom + 4}px`;
+  list.style.left = `${Math.max(8, Math.min(r.left, innerWidth - list.offsetWidth - 8))}px`;
+}
+// A menu that stays open after the click that was meant for the page behind it is a nuisance
+addEventListener('pointerdown', (e) => !e.target.closest('#insert-menu, #insert-list') && showMenu(false));
+addEventListener('keydown', (e) => e.key === 'Escape' && showMenu(false));
 
 function updateToolbar() {
   for (const b of document.querySelectorAll('#toolbar [data-cmd]')) b.classList.toggle('on', Boolean(active[b.dataset.cmd]?.()));
@@ -211,8 +272,19 @@ export function onSelection() {
   }
   if (table) {
     $('#table-bar [data-table="align"] [data-icon]').innerHTML = icons[`align${capitalize(columnAlign() ?? 'left')}`];
-    // Say which of the two spellings this table is written in, since it decides what it can hold
-    $('#table-bar [data-table="format"] .tb-mono').textContent = table.node.attrs.format === 'html' || hasMergedCells(table.node) ? 'HTML' : 'MD';
+    // What a table can hold depends on which of the two spellings it is written in, so the bar
+    // says which — and offers the other one, when the site has defined a block for it
+    const def = tableBlock();
+    const html = isHtmlTable(table.node);
+    const advanced = $('#table-bar [data-table="advanced"]');
+    advanced.hidden = !def;
+    advanced.classList.toggle('on', html);
+    if (def) {
+      advanced.querySelector('.tb-label').textContent = def.label;
+      advanced.title = t(html ? 'table.plain' : 'table.advanced', { label: def.label });
+    }
+    // Merging is the thing only an HTML table can do, so it is only offered on one
+    $('#table-bar [data-table="merge"]').hidden = !html;
   }
   positionBars();
 }
@@ -238,7 +310,10 @@ function positionBars() {
   const table = tableAt();
   if (table) placeBar($('#table-bar'), editor.view.nodeDOM(table.pos), { toTheRight: true });
 }
-$('.main').addEventListener('scroll', positionBars);
+$('.main').addEventListener('scroll', () => {
+  positionBars();
+  showMenu(false); // the list is placed against the button, which has just moved
+});
 addEventListener('resize', positionBars);
 
 $('#img-bar').addEventListener('mousedown', (e) => e.target.closest('input') || e.preventDefault()); // keep the image selected
@@ -351,14 +426,25 @@ function hasMergedCells(table) {
   return merged;
 }
 
-/** Switch a table between the two spellings: a pipe table, or HTML. */
-function toggleFormat() {
+/** Whether the table the cursor is in is written as HTML — because it says so, or because it
+ * holds something a pipe table cannot say. */
+const isHtmlTable = (node) => node.attrs.format === 'html' || hasMergedCells(node);
+
+/** Write this table in one spelling or the other. */
+function setFormat(format) {
   const table = tableAt();
   if (!table) return;
-  const next = table.node.attrs.format === 'html' ? 'gfm' : 'html';
-  if (next === 'gfm' && hasMergedCells(table.node)) return toast(t('table.needsHtml'), 'error');
-  editor.view.dispatch(editor.state.tr.setNodeMarkup(table.pos, undefined, { ...table.node.attrs, format: next }));
+  editor.view.dispatch(editor.state.tr.setNodeMarkup(table.pos, undefined, { ...table.node.attrs, format }));
   editor.view.focus();
+  onSelection();
+}
+
+/** The advanced-table button: the same table, written as HTML and back again. */
+function toggleAdvanced() {
+  const table = tableAt();
+  if (!table) return;
+  if (isHtmlTable(table.node) && hasMergedCells(table.node)) return toast(t('table.needsHtml'), 'error');
+  setFormat(isHtmlTable(table.node) ? 'gfm' : 'html');
   return undefined;
 }
 
@@ -367,7 +453,7 @@ $('#table-bar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-table]');
   if (!b || !isInTable(editor.state)) return;
   // A column with no marker is drawn left-aligned, so that is what the button shows and steps on from
-  if (b.dataset.table === 'format') return toggleFormat();
+  if (b.dataset.table === 'advanced') return toggleAdvanced();
   if (b.dataset.table === 'align') return setColumnAlign(ALIGN[(ALIGN.indexOf(columnAlign() ?? 'left') + 1) % ALIGN.length]);
   tableCommands[b.dataset.table](editor.chain().focus()).run();
 });

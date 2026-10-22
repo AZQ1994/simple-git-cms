@@ -79,11 +79,13 @@ await writeFile(
       media: { dir: 'site/public/uploads', url: '/uploads', maxWidth: 1600, quality: 0.82 },
       blocks: [
         {
+          tag: 'aside',
           name: 'notice',
           label: 'Notice',
-          template: '<aside class="notice">{text}</aside>',
-          fields: [{ name: 'text', label: 'Text', multiline: true, placeholder: 'Applications close on 20 February.' }],
+          attrs: { class: 'notice' },
+          fields: [{ name: 'text', from: 'content', label: 'Text', multiline: true, placeholder: 'Applications close on 20 February.' }],
         },
+        { tag: 'table', label: 'Advanced table', edit: 'table' },
       ],
       preview: { url: '/demo/preview/' },
       deploy: { skipCiForDrafts: true },

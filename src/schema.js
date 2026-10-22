@@ -6,7 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Paragraph from '@tiptap/extension-paragraph';
 import { Markdown } from '@tiptap/markdown';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
-import { blockNamed, fillBlock, fillTemplate, matchBlock } from './blocks.js';
+import { blockFields, blockNamed, claimFor, fillBlock, fillTemplate, matchBlock, wholeElement } from './blocks.js';
 import { needsHtml, parseHtmlTable, writeHtmlTable } from './html-table.js';
 import { t } from './i18n/index.js';
 
@@ -15,8 +15,6 @@ import { t } from './i18n/index.js';
 // otherwise neighbouring image paragraphs collapse into one and end up side by side.
 export const SiteParagraph = Paragraph.extend({
   parseMarkdown: (token, helpers) => {
-    const block = asBlock(token); // a paragraph may be one of the site's own blocks
-    if (block) return block;
     const tokens = token.tokens || [];
     const content = helpers.parseInline(tokens);
     const first = tokens[0];
@@ -31,8 +29,9 @@ export const SiteParagraph = Paragraph.extend({
 // ---------- Tables ----------
 //
 // A GFM table is flat: one header row, one line per row, inline content in the cells. So the cells
-// here hold exactly one paragraph — not the block content the extension allows by default — and
-// cells are never merged. Nothing can be built in the editor that the file cannot carry back.
+// here hold exactly one paragraph — not the block content the extension allows by default.
+// Merging cells is beyond a pipe table, so it belongs to a `table` block (config.blocks), which is
+// the same node written as HTML. Nothing can be built in the editor that the file cannot carry back.
 
 const oneParagraph = { content: 'paragraph' };
 export const SiteTableCell = TableCell.extend(oneParagraph);
@@ -95,14 +94,19 @@ export const SiteTable = Table.extend({
 
 // ---------- Blocks a site defines for itself ----------
 //
-// config.blocks says what they look like in the file; blocks.js turns each template into
-// something that recognises itself. Here they become one node type with a small form in it, so
-// that adding a YouTube embed to a site is a line of config rather than a change to the editor.
+// config.blocks says which tags are the site's own; blocks.js decides whether a piece of HTML is
+// one of them. Here they become a node, so that adding a YouTube embed to a site is a line of
+// config rather than a change to the editor.
 
-/** Whatever a block looks like, it arrives as a run of HTML or as a paragraph of text, so both of
- * those handlers ask this first. */
-const asBlock = (token) => {
-  const found = matchBlock(token.raw ?? '');
+/** What a definition makes of a run of HTML, by the editor it asks for: a card of fields, a table
+ * the editor can edit as a table, or — for `source`, and for HTML nothing claims — nothing, which
+ * leaves it as the box of source below. */
+const claimed = (html) => {
+  const def = claimFor(html);
+  if (!def) return null;
+  if (def.edit === 'table') return parseHtmlTable(html);
+  if (def.edit !== 'fields') return null;
+  const found = matchBlock(html);
   return found ? { type: 'customBlock', attrs: found } : null;
 };
 
@@ -144,7 +148,7 @@ export const CustomBlock = Node.create({
         if (src) shot.src = src;
       };
 
-      for (const field of def?.fields ?? []) {
+      for (const field of def ? blockFields(def, node.attrs.values) : []) {
         const row = document.createElement('label');
         row.className = 'block-field';
         const name = document.createElement('span');
@@ -195,13 +199,27 @@ export const HtmlBlock = Node.create({
   parseHTML: () => [{ tag: 'div[data-html-block]', getAttrs: (el) => ({ html: el.getAttribute('data-html') ?? el.textContent ?? '' }) }],
   renderHTML: ({ HTMLAttributes }) => ['div', { 'data-html-block': '', 'data-html': HTMLAttributes.html ?? '' }],
   markdownTokenName: 'html',
+  // Markdown ends a block of HTML at the first blank line, so an element the site declared that
+  // was written across one — a notice with two paragraphs in it — would arrive as an opening tag,
+  // a paragraph, and a closing tag stranded in the text. This reads it back as the one element it
+  // is. Everything else keeps Markdown's own rules.
+  markdownTokenizer: {
+    name: 'siteElement',
+    level: 'block',
+    // Only where one really begins, so nothing else about where a paragraph ends changes
+    start: (src) => [...src.matchAll(/^</gm)].find((m) => wholeElement(src.slice(m.index)))?.index ?? -1,
+    tokenize: (src) => {
+      const raw = wholeElement(src);
+      return raw ? { type: 'html', raw, block: true, pre: false, text: raw } : undefined;
+    },
+  },
   // Inline HTML — a <br> in the middle of a sentence — is not a block and is left to the usual
   // parsing; returning nothing hands the token back to it.
   parseMarkdown: (token) =>
     token.block === false || !token.raw?.trim()
       ? null
-      : // a block of the site's own, then a table the editor can edit as a table, then the source
-        asBlock(token) ?? parseHtmlTable(token.raw) ?? { type: 'htmlBlock', attrs: { html: token.raw.trim() } },
+      : // whatever the site's own definitions make of it, and the source itself when none do
+        claimed(token.raw) ?? { type: 'htmlBlock', attrs: { html: token.raw.replace(/\s+$/, '') } },
   renderMarkdown: (node) => node.attrs.html ?? '',
   // The box the editor draws for it: the source in a text area, so whatever the toolbar has no
   // button for can still be written by hand and read back later.
@@ -211,8 +229,10 @@ export const HtmlBlock = Node.create({
       dom.className = 'html-block';
       const label = document.createElement('span');
       label.className = 'html-label';
-      label.textContent = 'HTML';
       const area = document.createElement('textarea');
+      // A definition can claim a tag and still ask to be edited as source — then the box carries
+      // the block's name rather than the bare word HTML
+      const name = () => claimFor(area.value)?.label ?? 'HTML';
       area.spellcheck = false;
       area.value = node.attrs.html;
       area.placeholder = t('html.placeholder');
@@ -222,9 +242,11 @@ export const HtmlBlock = Node.create({
       };
       area.addEventListener('input', () => {
         fit();
+        label.textContent = name();
         const pos = getPos();
         if (pos != null) editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { html: area.value }));
       });
+      label.textContent = name();
       dom.append(label, area);
       requestAnimationFrame(fit);
       return {
@@ -233,6 +255,7 @@ export const HtmlBlock = Node.create({
           if (n.type.name !== 'htmlBlock') return false;
           if (document.activeElement !== area && n.attrs.html !== area.value) {
             area.value = n.attrs.html;
+            label.textContent = name();
             fit();
           }
           return true;
@@ -261,9 +284,10 @@ export const schemaExtensions = [
 ];
 
 /** Stretches of the output that are literal: fenced and inline code, and a block of raw HTML.
- * Everything a writer typed has been escaped by this point, so a `<` at the start of a line can
- * only be one of the HTML blocks above. */
-const LITERAL = /```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`+[^`\n]*`+|^<[\s\S]*?(?=\n\n|$)/gm;
+ * Everything a writer typed has been escaped by this point, so a `<` at the start of a line — or
+ * just inside it, since a block of HTML may be written indented — can only be one of the HTML
+ * blocks above. */
+const LITERAL = /```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`+[^`\n]*`+|^ {0,3}<[\s\S]*?(?=\n\n|$)/gm;
 
 /** An & is written out as &amp; and < > as &lt; &gt;, which look the same on the site but are not
  * what the file said. They go back as they were, so that what someone typed — a "<" in a sentence,
@@ -279,11 +303,18 @@ const unescape = (text) =>
  * the file is quoting something and &lt; means those four characters. Blank lines at the very
  * start and end are dropped — inserting an image always leaves one. */
 export function cleanMarkdown(md) {
+  const literal = new RegExp(LITERAL.source, 'gm'); // its own, since the loop moves lastIndex
   let out = '';
-  let at = 0;
-  for (const m of md.matchAll(LITERAL)) {
-    out += unescape(md.slice(at, m.index)) + m[0];
-    at = m.index + m[0].length;
+  let from = 0;
+  for (let m = literal.exec(md); m; m = literal.exec(md)) {
+    // A block the site declared runs past a blank line, and all of it is the file quoting itself
+    const at = m.index + /^[ \t]*/.exec(m[0])[0].length;
+    const whole = md[at] === '<' ? wholeElement(md.slice(at)) : null;
+    const longer = whole && at + whole.length > m.index + m[0].length;
+    const text = longer ? md.slice(m.index, at) + whole : m[0];
+    out += unescape(md.slice(from, m.index)) + text;
+    from = m.index + text.length;
+    literal.lastIndex = from;
   }
-  return (out + unescape(md.slice(at))).replace(/^(?:\s*&nbsp;\s*\n)+/, '').replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');
+  return (out + unescape(md.slice(from))).replace(/^(?:\s*&nbsp;\s*\n)+/, '').replace(/(?:\n\s*&nbsp;\s*)+\s*$/, '\n');
 }

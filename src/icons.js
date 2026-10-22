@@ -24,6 +24,7 @@ export const icons = {
   codeBlock: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m10 10-2.5 2L10 14M14 10l2.5 2-2.5 2"/>'),
   paperclip: svg('<path d="M20 11.5 12 19.5a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7.5-7.5"/>'),
   merge: svg('<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M12 5v3M12 16v3"/><path d="m9.5 10.5 2.5 2 2.5-2"/>'),
+  tableMerged: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M12 9.5V20M3 15h9"/>'),
   table: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M9.5 9.5V20M15 9.5V20"/>'),
   alignLeft: svg('<path d="M4 6h16M4 12h9M4 18h13"/>'),
   alignCenter: svg('<path d="M4 6h16M7.5 12h9M5.5 18h13"/>'),

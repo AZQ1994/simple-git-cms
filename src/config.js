@@ -47,11 +47,13 @@ const SPEC = {
   },
   blocks: {
     each: {
-      name: { ...str, required: true },
+      tag: { ...str, required: true, pattern: /^[a-zA-Z][\w:-]*$/, hint: 'config.blockTag' },
+      name: str,
       label: str,
-      template: { ...str, required: true, wants: '{', hint: 'config.blockTemplate' },
+      edit: { ...str, oneOf: ['fields', 'table', 'source'] },
+      attrs: { free: true },
       preview: str,
-      fields: { each: { name: { ...str, required: true }, label: str, placeholder: str, multiline: { type: 'boolean' } } },
+      fields: { each: { name: { ...str, required: true }, label: str, placeholder: str, multiline: { type: 'boolean' }, from: { ...str, oneOf: ['content'] } } },
     },
   },
   preview: { fields: { url: { ...str, slash: true } } },
@@ -135,6 +137,10 @@ export function checkConfig(raw, t) {
             if (item === null || typeof item !== 'object' || Array.isArray(item)) add(problems, path, 'config.mustBe', { type: t('config.type.group') });
             else walk(item, rule.each, `${path}.`);
           });
+        continue;
+      }
+      if (rule.free) {
+        if (value === null || typeof value !== 'object' || Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.group') });
         continue;
       }
       if (rule.fields) {

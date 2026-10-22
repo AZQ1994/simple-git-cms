@@ -21,7 +21,7 @@ import { API_BASE, CONFIG, isLocal, on, setConfig, setStore, state, store } from
 import { relabel } from './lang.js';
 import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from './auth.js';
 import { renderList } from './list.js';
-import { addBlockButtons, editor } from './editor.js';
+import { addBlockMenu, editor } from './editor.js';
 import { restoreOpen, updateBar } from './doc.js';
 import './preview-ui.js';
 import './theme.js';
@@ -67,7 +67,7 @@ async function loadConfig() {
   setConfig(config, c);
   setImageOptions({ ...config.media, timeZone: config.timeZone });
   setBlocks(config.blocks);
-  addBlockButtons();
+  addBlockMenu();
 
   for (const img of document.querySelectorAll('.brand-logo')) {
     img.src = config.logo;

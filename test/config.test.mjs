@@ -2,6 +2,7 @@
 // is wrong with it. These check the awkward cases, which is most of them.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { checkConfig } from '../src/config.js';
 import { setLocale, t } from '../src/i18n/index.js';
 
@@ -119,10 +120,21 @@ test('$schema is allowed, since it is what gives an editor autocomplete', () => 
 
 test('a block is checked the way everything else is', () => {
   const blocks = (list) => keys({ ...good(), blocks: list });
-  assert.deepEqual(blocks([{ name: 'youtube', template: '<YouTube id="{id}" />' }]), []);
+  assert.deepEqual(blocks([{ tag: 'YouTube', fields: [{ name: 'id' }] }]), []);
+  assert.deepEqual(blocks([{ tag: 'aside', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content' }] }]), []);
   assert.equal(blocks('youtube').length, 1, 'blocks is a list');
-  assert.deepEqual(blocks([{ template: '<X/>' }]), ['blocks[0].name']);
-  assert.deepEqual(blocks([{ name: 'x' }]), ['blocks[0].template']);
-  assert.deepEqual(blocks([{ name: 'x', template: '<X/>', colour: 'red' }]), ['blocks[0].colour']);
-  assert.deepEqual(blocks([{ name: 'x', template: '<X {a}/>', fields: [{ label: 'A' }] }]), ['blocks[0].fields[0].name']);
+  assert.deepEqual(blocks([{ label: 'YouTube' }]), ['blocks[0].tag']);
+  assert.deepEqual(blocks([{ tag: '<YouTube />' }]), ['blocks[0].tag'], 'a tag, not the markup around it');
+  assert.deepEqual(blocks([{ tag: 'X', colour: 'red' }]), ['blocks[0].colour']);
+  assert.deepEqual(blocks([{ tag: 'X', fields: [{ label: 'A' }] }]), ['blocks[0].fields[0].name']);
+  assert.deepEqual(blocks([{ tag: 'X', fields: [{ name: 'a', from: 'nowhere' }] }]), ['blocks[0].fields[0].from']);
+  assert.deepEqual(blocks([{ tag: 'table', edit: 'table' }]), [], 'a table may be edited as a table');
+  assert.deepEqual(blocks([{ tag: 'X', edit: 'form' }]), ['blocks[0].edit'], 'and only in one of the ways there are');
+});
+
+test('the example config shipped with the editor is one the editor accepts', () => {
+  // It is the file people copy, so a setting renamed here and not there would be their first
+  // experience of this
+  const example = JSON.parse(readFileSync(new URL('../public/config.example.json', import.meta.url), 'utf8'));
+  assert.deepEqual(keys(example), []);
 });

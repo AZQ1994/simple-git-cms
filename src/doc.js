@@ -224,6 +224,9 @@ $('#new-article').addEventListener('click', () => {
 // The site uses it as the article's thumbnail and its share image, so it lives in the frontmatter
 // rather than in the body. Which field it goes in is up to config.collection.imageField; when
 // that is empty there is no cover and no control.
+//
+// It is usually a picture the article already has, so choosing one offers those first: picking one
+// points the frontmatter at the same file instead of uploading a second copy of it.
 
 let cover = null; // the path on the site, or null
 
@@ -249,7 +252,7 @@ function setCover(path) {
 }
 
 // A file chooser of its own, so a cover never lands in the body by mistake
-const pickCover = () => {
+const pickFile = () => {
   $('#cover-input').value = '';
   $('#cover-input').click();
 };
@@ -257,6 +260,66 @@ $('#cover-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) busy(t('img.processingOne'), async () => setCover(addPending(newImagePath(), await compressImage(file))));
 });
+
+/** Every image this article already has, in the order it uses them. An article's cover is usually
+ * one of them, and uploading the same picture twice is a second file on the site for nothing. */
+function bodyImages() {
+  const seen = new Set();
+  const found = [];
+  editor.state.doc.descendants((node) => {
+    const src = node.type.name === 'image' ? node.attrs.src : null;
+    if (src && !seen.has(src)) {
+      seen.add(src);
+      found.push({ src, text: node.attrs.title || node.attrs.alt || '' });
+    }
+  });
+  return found;
+}
+
+/** Choose a cover: one of the article's own images, or a new file. With nothing in the body to
+ * choose from there is nothing to show, so this is the file chooser. */
+function pickCover() {
+  const images = bodyImages();
+  if (!images.length) return pickFile();
+  const grid = $('#media-grid');
+  grid.replaceChildren(
+    ...images.map(({ src, text }) => {
+      const tile = document.createElement('button');
+      tile.type = 'button';
+      tile.className = 'media-tile';
+      tile.dataset.src = src;
+      tile.title = text || src;
+      const img = document.createElement('img');
+      img.src = displaySrc(src);
+      img.alt = text;
+      tile.append(img);
+      if (src === cover) {
+        tile.classList.add('on');
+        tile.append(Object.assign(document.createElement('span'), { className: 'media-current', textContent: t('media.current') }));
+      }
+      return tile;
+    }),
+  );
+  $('#media-modal').hidden = false;
+  return undefined;
+}
+
+const closeMedia = () => ($('#media-modal').hidden = true);
+
+$('#media-modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget || e.target.closest('[data-media="close"]')) return closeMedia();
+  if (e.target.closest('[data-media="upload"]')) {
+    closeMedia();
+    return pickFile();
+  }
+  const tile = e.target.closest('.media-tile');
+  if (tile) {
+    setCover(tile.dataset.src);
+    closeMedia();
+  }
+  return undefined;
+});
+addEventListener('keydown', (e) => e.key === 'Escape' && !$('#media-modal').hidden && closeMedia());
 
 $('#cover-pick').addEventListener('click', pickCover);
 $('#cover-acts').addEventListener('click', async (e) => {
@@ -268,6 +331,7 @@ $('#cover-acts').addEventListener('click', async (e) => {
     const blob = await openCropper(displaySrc(cover));
     if (blob) setCover(addPending(newImagePath(), blob));
   }
+  return undefined;
 });
 
 // ---------- Saving ----------

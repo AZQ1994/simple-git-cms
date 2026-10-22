@@ -149,29 +149,71 @@ const withBlocks = (list, fn) => {
   }
 };
 
-test('a block defined in config.json is read and written through its own template', () => {
-  withBlocks([{ name: 'youtube', template: '<YouTube id="{id}" />' }], () => {
+test('an element a definition claims is read as a block and written back as that element', () => {
+  withBlocks([{ tag: 'YouTube', fields: [{ name: 'id' }] }], () => {
     const body = 'Before.\n\n<YouTube id="dQw4w9WgXcQ" />\n\nAfter.';
     assert.equal(roundTrip(body), body);
   });
 });
 
-test('a template that is not HTML is recognised just the same', () => {
-  withBlocks([{ name: 'video', template: '{{< youtube {id} >}}' }, { name: 'notice', template: ':::notice\n{body}\n:::' }], () => {
-    for (const body of ['{{< youtube abc123 >}}', 'A.\n\n:::notice\nTwo\nlines\n:::\n\nB.']) {
-      assert.equal(roundTrip(body), body);
-    }
+test('a block with something between its tags', () => {
+  withBlocks([{ tag: 'aside', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content', multiline: true }] }], () => {
+    const body = '<aside class="notice">Applications close on 20 February.</aside>';
+    assert.equal(roundTrip(body), body);
   });
 });
 
-test('defining a block changes nothing about the rest of an article', () => {
-  withBlocks([{ name: 'youtube', template: '<YouTube id="{id}" />' }], () => {
+const NOTICE = [{ tag: 'aside', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content', multiline: true }] }];
+
+test('a block written across a blank line is one block, not an open tag and a stray closing one', () => {
+  // Markdown ends a block of HTML at the first blank line, so this is what someone writing two
+  // paragraphs in a notice gets — and the closing tag used to end up in the text
+  withBlocks(NOTICE, () => {
+    const body = '<aside class="notice">Rooms are not confirmed.\n\nMore to follow.</aside>';
+    const doc = md.parse(body);
+    assert.deepEqual(doc.content.map((n) => n.type), ['customBlock']);
+    assert.equal(doc.content[0].attrs.values.text, 'Rooms are not confirmed.\n\nMore to follow.');
+    assert.equal(roundTrip(body), body);
+  });
+});
+
+test('what is around such a block is still read as Markdown, and entities in it stay as written', () => {
+  withBlocks(NOTICE, () => {
+    const body = 'Before.\n\n<aside class="notice">A.\n\n&lt;b&gt; stays.</aside>\n\nAfter.';
+    const doc = md.parse(body);
+    assert.deepEqual(doc.content.map((n) => n.type), ['paragraph', 'customBlock', 'paragraph']);
+    assert.equal(roundTrip(body), body);
+  });
+});
+
+test('an element that is never closed is left exactly as Markdown reads it', () => {
+  withBlocks(NOTICE, () => {
+    const body = '<aside class="notice">A.\n\nB.';
+    assert.equal(roundTrip(body), body);
+  });
+});
+
+test('a tag no definition claims keeps Markdown’s rules, and is still written back to the byte', () => {
+  // Two blocks, because the blank line says so — but the indentation of the second is not ours to
+  // drop, which is what used to happen
+  const body = '<table>\n  <tr>\n    <td>a</td>\n  </tr>\n\n  <tr>\n    <td>b</td>\n  </tr>\n</table>';
+  assert.equal(roundTrip(body), body);
+});
+
+test('an element no definition claims is still plain HTML, and so is everything else', () => {
+  withBlocks([{ tag: 'YouTube', fields: [{ name: 'id' }] }], () => {
     const body = 'An ordinary paragraph.\n\n<iframe src="x"></iframe>\n\n```js\nconst a = 1;\n```';
-    assert.equal(roundTrip(body), body, 'raw HTML that is not one of the blocks stays raw HTML');
+    assert.equal(roundTrip(body), body);
   });
 });
 
 // ---------- Tables written as HTML ----------
+//
+// A pipe table is the plain one, and that is all the table button makes. Everything beyond it —
+// a header across two columns — is HTML, which the editor only edits as a table when config.json
+// has said so: `{ "tag": "table", "edit": "table" }`.
+
+const TABLE_BLOCK = [{ tag: 'table', label: 'Advanced table', edit: 'table' }];
 
 const HTML_TABLE = `<table>
   <tr>
@@ -186,6 +228,13 @@ const HTML_TABLE = `<table>
 </table>`;
 
 test('a table written as HTML is read as a table and written back as HTML', () => {
+  withBlocks(TABLE_BLOCK, () => {
+    const body = `Before.\n\n${HTML_TABLE}\n\nAfter.`;
+    assert.equal(roundTrip(body), body);
+  });
+});
+
+test('without that definition an HTML table is source, and still comes back unchanged', () => {
   const body = `Before.\n\n${HTML_TABLE}\n\nAfter.`;
   assert.equal(roundTrip(body), body);
 });
@@ -198,6 +247,8 @@ test('a pipe table with a merged cell becomes HTML, because pipes cannot say it'
 });
 
 test('an HTML table the editor could not write back stays raw HTML', () => {
-  const body = '<table class="wide"><tr><td>a</td></tr></table>';
-  assert.equal(roundTrip(body), body);
+  withBlocks(TABLE_BLOCK, () => {
+    const body = '<table class="wide"><tr><td>a</td></tr></table>';
+    assert.equal(roundTrip(body), body);
+  });
 });

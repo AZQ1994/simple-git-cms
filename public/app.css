@@ -252,9 +252,21 @@ svg { flex: none; }
 .toolbar button:hover { background: var(--bg-side); color: var(--ink); }
 .toolbar button.on { background: var(--navy-soft); color: var(--navy); }
 .toolbar .tb-label { font-size: 13px; font-weight: 600; }
-.toolbar .tb-mono { font: 600 11.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .03em; }
 .toolbar .sep { width: 1px; height: 18px; margin: 0 6px; background: var(--line); }
 .toolbar .spacer { flex: 1; }
+/* The insert menu: the blocks this site has defined for itself. Its list is placed from script and
+   sits above the page, since the toolbar itself scrolls sideways on a phone. */
+.toolbar .caret { width: 0; height: 0; margin-left: 1px; border: 4px solid transparent; border-top-color: currentcolor; border-bottom: 0; }
+.menu-list {
+  position: fixed; z-index: 25; min-width: 180px; max-width: 280px; padding: 6px; display: grid; gap: 2px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-lg);
+}
+.menu-item {
+  display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 7px; background: none;
+  color: var(--ink); cursor: pointer; font-size: 13px; font-weight: 600; text-align: left; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.menu-item:hover { background: var(--hover); }
 .foot-hint { margin-top: 28px; color: var(--faint); font-size: 12px; text-align: center; }
 
 /* Body text, matching the article layout on the site */
@@ -327,6 +339,7 @@ svg { flex: none; }
 }
 .node-bar button { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px; border: 0; border-radius: 7px; background: none; color: inherit; cursor: pointer; font-size: 12.5px; font-weight: 600; white-space: nowrap; opacity: .85; }
 .node-bar button:hover { background: rgb(255 255 255 / 12%); opacity: 1; }
+.node-bar button.on { background: rgb(255 255 255 / 20%); opacity: 1; }
 .node-bar svg { width: 16px; height: 16px; }
 .node-bar .danger { color: #ff9a9f !important; }
 .node-bar .bar-label { padding: 0 4px 0 6px; font-size: 12px; font-weight: 600; opacity: .7; }
@@ -359,6 +372,16 @@ svg { flex: none; }
 .seg.small { width: auto; }
 .seg.small button { flex: none; padding: 0 12px; }
 .crop-rotate, .crop-actions { display: flex; align-items: center; gap: 6px; }
+
+/* Choosing a cover from the pictures the article already has */
+#media-modal .modal-card { max-width: 560px; padding: 22px; }
+#media-modal .muted { margin-top: 4px; font-size: 13px; }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-height: min(52vh, 420px); margin-top: 16px; padding: 2px; overflow-y: auto; }
+.media-tile { position: relative; padding: 0; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--bg-side); cursor: pointer; }
+.media-tile:hover { border-color: var(--navy); }
+.media-tile.on { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy-soft); }
+.media-tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.media-current { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 6px; background: var(--pop-bg); color: var(--pop-ink); font-size: 11px; font-weight: 600; }
 
 /* ---------- Notices ---------- */
 /* When config.json is wrong the page can't become the editor, so it becomes the explanation */

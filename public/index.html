@@ -128,10 +128,15 @@
             <button type="button" data-cmd="link" data-i18n-title="toolbar.link"><span data-icon="link"></span></button>
             <button type="button" data-cmd="table" data-i18n-title="toolbar.table"><span data-icon="table"></span></button>
             <button type="button" data-cmd="codeBlock" data-i18n-title="toolbar.codeBlock"><span data-icon="codeBlock"></span></button>
-            <button type="button" data-cmd="html" data-i18n-title="toolbar.html"><span class="tb-mono">HTML</span></button>
             <span class="sep"></span>
             <button type="button" data-cmd="image" data-i18n-title="toolbar.image"><span data-icon="image"></span><span class="tb-label" data-i18n="toolbar.imageLabel"></span></button>
             <button type="button" data-cmd="attach" data-i18n-title="toolbar.attach"><span data-icon="paperclip"></span><span class="tb-label" data-i18n="toolbar.attachLabel"></span></button>
+            <!-- The blocks this site has defined for itself, plus raw HTML. Its list is near the
+                 bottom of this file: the toolbar blurs what is behind it, and anything inside it
+                 can only be placed against the toolbar itself. -->
+            <button type="button" id="insert-menu" data-menu="insert" data-i18n-title="toolbar.insert" aria-haspopup="menu" aria-expanded="false">
+              <span data-icon="plus"></span><span class="tb-label" data-i18n="toolbar.insertLabel"></span><span class="caret" aria-hidden="true"></span>
+            </button>
             <span class="spacer"></span>
             <button type="button" data-cmd="undo" data-i18n-title="toolbar.undo"><span data-icon="undo"></span></button>
             <button type="button" data-cmd="redo" data-i18n-title="toolbar.redo"><span data-icon="redo"></span></button>
@@ -164,15 +169,31 @@
           <button type="button" data-table="colDelete" data-i18n-title="table.colDelete"><span data-icon="minus"></span></button>
           <span class="sep"></span>
           <button type="button" data-table="align" data-i18n-title="table.align"><span data-icon="alignLeft"></span></button>
-          <button type="button" data-table="merge" data-i18n-title="table.merge"><span data-icon="merge"></span></button>
-          <button type="button" data-table="format" data-i18n-title="table.format"><span class="tb-mono"></span></button>
+          <button type="button" data-table="merge" data-i18n-title="table.merge" hidden><span data-icon="merge"></span></button>
+          <button type="button" data-table="advanced" hidden><span data-icon="tableMerged"></span><span class="tb-label"></span></button>
           <button type="button" data-table="delete" class="danger" data-i18n-title="table.delete"><span data-icon="trash"></span></button>
         </div>
       </main>
     </div>
 
+    <!-- What the insert button offers; filled in from config.json -->
+    <div class="menu-list" id="insert-list" role="menu" hidden></div>
+
     <input type="file" id="file-input" accept="image/*" multiple hidden />
     <input type="file" id="cover-input" accept="image/*" hidden />
+
+    <!-- Picking a cover: the article's own images, or a new file -->
+    <div class="modal" id="media-modal" hidden>
+      <div class="modal-card">
+        <h2 data-i18n="media.title"></h2>
+        <p class="muted" data-i18n="media.hint"></p>
+        <div class="media-grid" id="media-grid"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" data-media="close" data-i18n="media.close"></button>
+          <button type="button" class="btn primary" data-media="upload"><span data-icon="image"></span><span data-i18n="media.upload"></span></button>
+        </div>
+      </div>
+    </div>
 
     <!-- Crop window -->
     <div class="modal" id="crop-modal" hidden>
