@@ -307,6 +307,83 @@ test('a box can be taken out again: Backspace in an empty one, or the × on it',
   await page.until(`document.querySelectorAll('#body .block-card').length === ${cardsBefore - 1}`, { label: 'one card fewer' });
 });
 
+test('the mouse selects words inside a box instead of dragging the box', async () => {
+  await openArticle(0);
+  const box = `document.querySelector('#body .html-block')`;
+  assert.equal(await page.evaluate(`${box}.draggable`), true, 'a box is draggable, which is how it is moved');
+
+  // A draggable element swallows the mouse, so it stops being one while the mouse is down inside
+  await page.evaluate(`${box}.scrollIntoView({ block: 'center' })`);
+  await sleep(200);
+  const at = await middleOf('#body .html-block textarea', 0);
+  await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...at, button: 'left', buttons: 1, clickCount: 1 });
+  assert.equal(await page.evaluate(`${box}.draggable`), false, 'not while a word is being selected');
+  await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...at, button: 'left', buttons: 1, clickCount: 1 });
+  await sleep(100);
+  assert.equal(await page.evaluate(`${box}.draggable`), true, 'and draggable again afterwards');
+
+  // and the sweep itself selects words, which is the whole point
+  const text = await middleOf('#body .html-block textarea', 0);
+  await page.drag({ x: text.x - 60, y: text.y }, { x: text.x + 60, y: text.y });
+  const picked = await page.evaluate(`(() => { const t = document.querySelector('#body .html-block textarea'); return t.value.slice(t.selectionStart, t.selectionEnd); })()`);
+  assert.ok(picked.length > 2, `the mouse should have selected some of the source, but picked ${JSON.stringify(picked)}`);
+
+  // Pressing anywhere else in the box still drags it
+  const frame = await middleOf('#body .html-block .html-label', 0);
+  await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...frame, button: 'left', buttons: 1, clickCount: 1 });
+  assert.equal(await page.evaluate(`${box}.draggable`), true);
+  await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...frame, button: 'left', buttons: 1, clickCount: 1 });
+});
+
+test('dragging a box moves the box, and nothing else that happened to be selected', async () => {
+  await openArticle(0);
+  const dragFrom = (selector) =>
+    page.evaluate(`(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      el.dispatchEvent(new DragEvent('dragstart', { dataTransfer: new DataTransfer(), bubbles: true, cancelable: true }));
+      const d = window.cmsEditor.view.dragging;
+      const out = JSON.stringify({ dragging: Boolean(d), blocks: d?.slice.content.childCount ?? 0, first: d?.slice.content.firstChild?.type.name ?? null });
+      el.dispatchEvent(new DragEvent('dragend', { bubbles: true }));
+      window.cmsEditor.view.dragging = null;
+      return out;
+    })()`);
+
+  // Select a stretch of the article first: that selection is what used to be dragged instead
+  await page.evaluate(`window.cmsEditor.commands.selectAll()`);
+  assert.deepEqual(JSON.parse(await dragFrom('#body .html-block')), { dragging: true, blocks: 1, first: 'htmlBlock' }, 'the one box');
+
+  // A drag that starts inside the text area is the text area moving its own words
+  assert.deepEqual(JSON.parse(await dragFrom('#body .html-block textarea')), { dragging: false, blocks: 0, first: null });
+});
+
+test('pressing a box selects the box, so that is what the mouse carries', async () => {
+  await openArticle(0);
+  // Whatever was selected before: the browser puts it back when the press moves the keyboard into
+  // the editor, and then it is in the picture under the mouse too
+  await page.evaluate(`window.cmsEditor.commands.selectAll()`);
+  await page.evaluate(`document.querySelector('#body .html-block').scrollIntoView({ block: 'center' })`);
+  await sleep(200);
+
+  const frame = await middleOf('#body .html-block .html-label', 0);
+  await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...frame, button: 'left', buttons: 1, clickCount: 1 });
+  // What the browser would draw under the mouse is what it has selected, so that has to be the box
+  const picture = await page.evaluate(`(() => {
+    const box = document.querySelector('#body .html-block');
+    const s = getSelection();
+    const r = s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+    const b = box.getBoundingClientRect();
+    return JSON.stringify({
+      selected: window.cmsEditor.state.selection.node?.type.name ?? null,
+      top: r ? Math.round(r.top - b.top) : null,
+      bottom: r ? Math.round(r.bottom - b.bottom) : null,
+    });
+  })()`);
+  await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...frame, button: 'left', buttons: 0, clickCount: 1 });
+
+  assert.deepEqual(JSON.parse(picture), { selected: 'htmlBlock', top: 0, bottom: 0 }, 'the box, and nothing under it');
+  await page.evaluate(`window.cmsEditor.commands.focus('end')`); // the box is selected now; leave the caret in the text
+});
+
 test('the keyboard can get into a box and back out of it', async () => {
   // A paragraph and a box under it, which is the shape this is about
   await page.evaluate(`document.getElementById('new-article').click()`);
@@ -381,6 +458,7 @@ test('a tag that is never closed is marked, and saving says what it would do to 
 
   // The same tag typed into the sentence itself, which is where someone writing by hand puts it
   await setBox('');
+  await page.evaluate(`window.cmsEditor.commands.focus('end')`); // where the typing below goes
   await typeBody('<div style="color: red">aaaaaa');
   await page.until(`document.querySelector('#body .html-broken-tag')`, { label: 'the tag to be marked where it stands' });
   assert.equal(

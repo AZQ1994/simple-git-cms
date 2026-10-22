@@ -112,6 +112,33 @@ const removeNode = (editor, getPos) => {
   editor.chain().setNodeSelection(pos).deleteSelection().focus().run();
 };
 
+/** Everything inside a box belongs to the box — that is what makes the text area typable — with
+ * one exception: the drag that moves the box. The editor has to see that one, or the browser drags
+ * the box natively while the editor, knowing nothing about it, drops whatever it had selected
+ * somewhere else. A drag that starts in a field is the field's own and stays inside. */
+const DRAG = /^drag|^drop$/;
+const stopEvent = (e) => !DRAG.test(e.type) || Boolean(e.target?.closest?.('textarea, input'));
+
+/** A box is draggable, which is how it is moved around the article — but a draggable element
+ * swallows the mouse: pressing inside a text area and sweeping across it drags the whole box
+ * instead of selecting the words. While the mouse is down in a field, the box is not draggable.
+ *
+ * Pressing the box anywhere else selects it, there and then. The box keeps the mouse to itself,
+ * so without this the editor's selection stays wherever it last was — and when the press moves
+ * the keyboard into the editor, the browser's own selection jumps back to that, which is then
+ * part of the picture dragged under the mouse: the box, and whatever else was still selected
+ * below it. Selecting the box first leaves the two agreeing on what is being moved. */
+const pressSelectsTheBox = (dom, editor, getPos) =>
+  dom.addEventListener('mousedown', (e) => {
+    if (e.target.closest('textarea, input')) {
+      dom.draggable = false;
+      addEventListener('mouseup', () => (dom.draggable = true), { once: true });
+      return;
+    }
+    const pos = getPos();
+    if (pos != null) editor.chain().setNodeSelection(pos).run();
+  });
+
 /** What to press to get out again, shown while the box has the keyboard. */
 function escapeHint() {
   const hint = document.createElement('span');
@@ -203,6 +230,7 @@ export const CustomBlock = Node.create({
       const remove = () => removeNode(editor, getPos);
       const dom = document.createElement('div');
       dom.className = 'block-card';
+      pressSelectsTheBox(dom, editor, getPos);
       const label = document.createElement('span');
       label.className = 'html-label';
       label.textContent = def?.label ?? node.attrs.block;
@@ -270,7 +298,7 @@ export const CustomBlock = Node.create({
         },
         selectNode: () => dom.classList.add('selected'),
         deselectNode: () => dom.classList.remove('selected'),
-        stopEvent: () => true,
+        stopEvent,
         ignoreMutation: () => true,
       };
     };
@@ -362,6 +390,7 @@ export const HtmlBlock = Node.create({
       const remove = () => removeNode(editor, getPos);
       const dom = document.createElement('div');
       dom.className = 'html-block';
+      pressSelectsTheBox(dom, editor, getPos);
       const label = document.createElement('span');
       label.className = 'html-label';
       const area = document.createElement('textarea');
@@ -399,7 +428,7 @@ export const HtmlBlock = Node.create({
         },
         selectNode: () => dom.classList.add('selected'),
         deselectNode: () => dom.classList.remove('selected'),
-        stopEvent: () => true, // everything inside the box belongs to the text area
+        stopEvent,
         ignoreMutation: () => true,
       };
     };
