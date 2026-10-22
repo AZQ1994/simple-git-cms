@@ -18,7 +18,7 @@
     const t = COPY[pick()];
     const bar = document.createElement('div');
     bar.className = 'demo-bar';
-    bar.innerHTML = '<b></b><span></span><button type="button" class="demo-reset"></button><a class="demo-back" href="/"></a><button type="button" class="demo-close"></button>';
+    bar.innerHTML = '<b></b><span></span><button type="button" class="demo-reset"></button><a class="demo-back" href="/"></a><a class="demo-repo" href="https://github.com/AZQ1994/simple-git-cms">GitHub</a><button type="button" class="demo-close"></button>';
     bar.querySelector('b').textContent = t.label;
     bar.querySelector('span').textContent = t.note;
     bar.querySelector('.demo-reset').textContent = t.reset;
