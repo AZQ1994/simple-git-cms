@@ -416,8 +416,10 @@ async function save({ draft, force = false, label = t('save.saving') }) {
         rememberOpen(saved.id);
         updateBar();
         renderList();
-        toast(skipCi ? t('save.draftSaved') : t(`done.${action}`));
-        if (!skipCi) watchDeploy(r.commit);
+        // Locally there is no site to wait for, so the usual "it will be live in a minute" is wrong
+        toast(store.local ? t('done.local') : skipCi ? t('save.draftSaved') : t(`done.${action}`));
+        if (store.local) showLocalSave(r);
+        else if (!skipCi) watchDeploy(r.commit);
         return true;
       } catch (e) {
         if (e instanceof ConflictError) {
@@ -502,6 +504,16 @@ export function updateBar() {
 }
 
 let deployTimer;
+/** Locally there is no deployment to wait for: what there is to say is whether the save became a
+ * commit, and when it didn't, why. */
+function showLocalSave({ commit, why }) {
+  const el = $('#deploy');
+  el.hidden = false;
+  el.className = commit ? 'deploy ok' : 'deploy pending';
+  el.textContent = commit ? t('deploy.committed', { sha: commit.slice(0, 7) }) : t('deploy.written');
+  el.title = commit ? t('deploy.pushHint') : t(why === 'busy' ? 'deploy.repoBusy' : 'deploy.notCommitted');
+}
+
 function watchDeploy(commit) {
   clearTimeout(deployTimer);
   const el = $('#deploy');

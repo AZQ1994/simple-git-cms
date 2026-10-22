@@ -199,10 +199,23 @@ npm test
 npm run dev     # build, then serve the editor at http://localhost:4173
 ```
 
-`npm run dev` creates `dev.config.json` at the repository root on first run (gitignored); point
-it at a real repository to edit anything. It is copied into `dist/` after every build, so it
-survives rebuilds. On localhost you can also set `localStorage['simple-git-cms-api']` to send
-the GitHub API through a local proxy.
+`npm run dev` creates `dev.config.json` at the repository root on first run (gitignored). It is
+copied into `dist/` after every build, so it survives rebuilds.
+
+**It edits the files on this machine, not GitHub.** `npm run dev ../my-site` puts that checkout
+behind the editor: there is nothing to sign in to, the list is read from `collection.dir` on disk,
+and saving writes the article and its images and commits them there — one commit, the same message
+the editor would have used, and only the paths it touched, so anything else you had staged stays
+staged. Pushing is yours to do, which is the point: the editor writes the files, git still decides
+what goes out. With no path given it edits the repository the editor itself is in, which is what
+an install inside a site looks like.
+
+A repository in the middle of a merge or a rebase is written to but not committed, and the editor
+says so. If a file changed on disk while it was open here — you edited it in your own editor — the
+save stops and offers you both versions, exactly as it does when someone else changes it on GitHub.
+
+Setting `localStorage['simple-git-cms-api']` on localhost sends the GitHub API through a local
+proxy instead; that is what the browser tests use, and it takes precedence over the files.
 
 Adding or changing a dependency means re-running `npm run licenses`, which regenerates
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) from whatever is actually bundled. CI checks it.

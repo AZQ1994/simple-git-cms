@@ -169,6 +169,7 @@ svg { flex: none; }
 .side-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); }
 .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--line); }
 .user-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.local-badge { flex: none; padding: 2px 7px; border-radius: 999px; background: var(--hover); color: var(--muted); font-size: 11px; font-weight: 600; cursor: default; }
 
 /* Language menu: a quiet dropdown at the foot of the sidebar, and one on the sign-in card */
 .lang-select {
@@ -190,7 +191,7 @@ svg { flex: none; }
 .status.live::before, .status.draft::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; vertical-align: 1px; }
 .status.live::before { background: var(--green); }
 .status.draft::before { background: var(--amber); }
-.deploy { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.deploy { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; min-width: 0; overflow: hidden; }
 .deploy.pending { background: var(--navy-soft); color: var(--navy); }
 .deploy.pending::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; }
 .deploy.ok { background: var(--ok-bg); color: var(--green); }

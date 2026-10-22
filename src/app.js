@@ -9,6 +9,7 @@
 //   auth.js        signing in and out, and refreshing the token
 //   list.js        the sidebar list, its search and filters
 //   articles.js    loading that list: which files there are, then their text, in batches
+//   local.js       the same store, backed by the files on this machine while developing
 //   editor.js      the editing surface: TipTap, the toolbar and the image tools
 //   doc.js         the article form, saving, publishing, the status bar
 //   preview-ui.js  the preview pane
@@ -16,11 +17,12 @@
 //   html-scan.js   whether the body's HTML closes everything it opens
 //   config.js      what config.json may say, and what to say when it says something else
 import { GitHubStore } from './github.js';
+import { LocalStore } from './local.js';
 import { loadArticles } from './articles.js';
 import { setBlocks } from './blocks.js';
 import { setImageOptions } from './images.js';
 import { $, busy, fillIcons, toast } from './dom.js';
-import { API_BASE, CONFIG, isLocal, on, setConfig, setStore, state, store } from './store.js';
+import { API_BASE, apiPinned, CONFIG, isLocal, on, setConfig, setStore, state, store } from './store.js';
 import { relabel } from './lang.js';
 import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from './auth.js';
 import { renderList } from './list.js';
@@ -110,28 +112,41 @@ async function start() {
       return;
     }
   }
-  const hashError = takeTokenFromHash();
-  if (hashError) return showLogin(hashError);
+  // `npm run dev` puts the repository on this machine behind the editor. Nothing else answers
+  // this, and nothing but localhost is asked, so anywhere else the editor signs in to GitHub.
+  const local = isLocal && !apiPinned ? await LocalStore.detect(CONFIG) : null;
+  if (local) {
+    setStore(local);
+  } else {
+    const hashError = takeTokenFromHash();
+    if (hashError) return showLogin(hashError);
 
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return showLogin();
-  setStore(
-    new GitHubStore({
-      token,
-      repo: CONFIG.repo,
-      branch: CONFIG.branch,
-      contentDir: CONFIG.collection.dir,
-      apiBase: API_BASE,
-      refresh: refreshToken,
-      timeZone: CONFIG.timeZone,
-    }),
-  );
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return showLogin();
+    setStore(
+      new GitHubStore({
+        token,
+        repo: CONFIG.repo,
+        branch: CONFIG.branch,
+        contentDir: CONFIG.collection.dir,
+        apiBase: API_BASE,
+        refresh: refreshToken,
+        timeZone: CONFIG.timeZone,
+      }),
+    );
+  }
 
   await busy(t('save.loading'), async () => {
     const me = await store.whoami();
     if (!me.canWrite) return logout(t('login.noAccess', { login: me.login }));
     $('#user-name').textContent = me.name;
+    $('#user-name').title = me.name; // the corner is narrow, and a long name is cut short
     $('#user-avatar').src = me.avatar;
+    // Saying so, because "this is my own computer" and "this is the live site" look the same
+    $('#local-badge').hidden = !store.local;
+    $('#local-badge').title = store.local ? `${store.site.root}${store.site.branch ? ` · ${store.site.branch}` : ''}` : '';
+    $('#user-avatar').hidden = Boolean(store.local); // a picture of nobody, and the badge needs the room
+    $('#logout').hidden = Boolean(store.local); // there is nothing to sign out of
     // The list fills in as it arrives and the editor opens on the first batch of it: with a few
     // hundred articles, waiting for the last one is waiting for all of them
     let announce;

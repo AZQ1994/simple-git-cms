@@ -20,6 +20,7 @@ export default {
   'list.empty': '条件に合う記事がありません',
   'list.untitled': '（無題）',
   'list.more': '残り {n} 件を読み込み中…',
+  'local.badge': 'ローカル',
   'filter.all': 'すべて',
   'filter.live': '公開済み',
   'filter.draft': '下書き',
@@ -161,6 +162,7 @@ export default {
   'done.update': '更新しました。1 分ほどでサイトに反映されます。',
   'done.publish': '公開しました。1 分ほどでサイトに反映されます。',
   'done.unpublish': '下書きに戻しました。1 分ほどでサイトに反映されます。',
+  'done.local': 'このマシンのファイルに保存しました。',
   'save.deleted': '削除しました',
   'save.busyRepo': '保存できませんでした：リポジトリの更新が立て込んでいます。少し待ってからお試しください。',
   'save.discardConfirm': '保存していない変更があります。破棄してよろしいですか？',
@@ -198,6 +200,11 @@ export default {
   'deploy.pending': 'サイトを更新しています…',
   'deploy.success': 'サイトを更新しました',
   'deploy.failure': 'サイトの更新に失敗しました。管理者にご連絡ください。',
+  'deploy.committed': 'コミット済み · {sha}',
+  'deploy.written': 'ファイルに保存しました',
+  'deploy.repoBusy': 'リポジトリが作業の途中なので、コミットはしていません',
+  'deploy.notCommitted': 'コミットはしていません。タイミングはご自分で',
+  'deploy.pushHint': 'このマシンのリポジトリにコミットしました。push はご自分のタイミングで。',
 
   // 設定 / GitHub
   'config.notAnObject': 'config.json は JSON のオブジェクトである必要があります。',

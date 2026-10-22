@@ -20,6 +20,7 @@ export default {
   'list.empty': '没有符合条件的文章',
   'list.untitled': '（无标题）',
   'list.more': '还在读取其余 {n} 篇…',
+  'local.badge': '本地',
   'filter.all': '全部',
   'filter.live': '已发布',
   'filter.draft': '草稿',
@@ -161,6 +162,7 @@ export default {
   'done.update': '已更新，约 1 分钟后网站更新',
   'done.publish': '已发布，约 1 分钟后网站更新',
   'done.unpublish': '已撤回，约 1 分钟后网站更新',
+  'done.local': '已保存到这台机器上的文件。',
   'save.deleted': '已删除',
   'save.busyRepo': '保存失败：仓库正在频繁更新，请稍后再试',
   'save.discardConfirm': '有未保存的修改，确定要放弃吗？',
@@ -198,6 +200,11 @@ export default {
   'deploy.pending': '正在更新网站…',
   'deploy.success': '网站已更新',
   'deploy.failure': '网站更新失败，请联系管理员',
+  'deploy.committed': '已提交 · {sha}',
+  'deploy.written': '已保存到文件',
+  'deploy.repoBusy': '仓库正处在合并 / 变基中途，所以没有提交',
+  'deploy.notCommitted': '没有提交——什么时候提交由你决定',
+  'deploy.pushHint': '已提交到这台机器上的仓库。什么时候 push 由你决定。',
 
   // 配置 / GitHub
   'config.notAnObject': 'config.json 必须是一个 JSON 对象。',

@@ -164,9 +164,20 @@ npm test
 npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 ```
 
-`npm run dev` 第一次会在仓库根目录用示例生成 `dev.config.json`（已 gitignore），把它指向一个
-真实仓库才能编辑。每次构建后都会复制进 `dist/`，所以重新构建不会丢。
-在 localhost 打开编辑器时，还可以设置 `localStorage['simple-git-cms-api']` 把 GitHub API 指到本地代理。
+`npm run dev` 第一次运行时会在仓库根目录创建 `dev.config.json`（已 gitignore）。每次构建后它都会被复制
+进 `dist/`，所以重新构建也不会丢。
+
+**它编辑的是这台机器上的文件，不是 GitHub。** `npm run dev ../my-site` 会把那个检出放到编辑器后面：不用
+登录，列表从磁盘上的 `collection.dir` 读，保存会写下文章和它的图片并在那里提交——一个提交，提交信息和
+编辑器平时用的一样，只包含它碰过的路径，所以你暂存区里别的东西原样留着。push 由你自己做，这正是重点：
+编辑器负责把文件写出来，决定什么东西出去的仍然是 git。不给路径时编辑的就是编辑器自己所在的仓库，装在
+站点里面时就是这个样子。
+
+仓库正处在合并或变基中途时，只写文件不提交，编辑器会这么告诉你。如果一篇文章在编辑器里开着的时候磁盘上
+变了（你用自己的编辑器改了它），保存会停下来，把两个版本都给你看——和别人在 GitHub 上改了它时一模一样。
+
+在 localhost 上设置 `localStorage['simple-git-cms-api']` 可以把 GitHub API 转到本地代理；浏览器测试用的
+就是这条路，它比本地文件优先。
 
 增删依赖之后要重新跑一次 `npm run licenses`，它会按实际打包进去的包重新生成
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)，CI 会检查这个文件有没有过期。

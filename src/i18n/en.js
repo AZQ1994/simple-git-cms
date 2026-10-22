@@ -19,6 +19,7 @@ export default {
   'list.empty': 'No articles match.',
   'list.untitled': '(untitled)',
   'list.more': 'reading {n} more…',
+  'local.badge': 'local',
   'filter.all': 'All',
   'filter.live': 'Published',
   'filter.draft': 'Drafts',
@@ -160,6 +161,7 @@ export default {
   'done.update': 'Updated — the site updates in about a minute.',
   'done.publish': 'Published — the site updates in about a minute.',
   'done.unpublish': 'Reverted to draft — the site updates in about a minute.',
+  'done.local': 'Saved to the files on this machine.',
   'save.deleted': 'Deleted',
   'save.busyRepo': 'Could not save: the repository is being updated too often right now. Please try again shortly.',
   'save.discardConfirm': 'You have unsaved changes. Discard them?',
@@ -197,6 +199,11 @@ export default {
   'deploy.pending': 'Updating the site…',
   'deploy.success': 'Site updated',
   'deploy.failure': 'The site update failed. Please contact the administrator.',
+  'deploy.committed': 'Committed · {sha}',
+  'deploy.written': 'Saved to the files',
+  'deploy.repoBusy': 'The repository is in the middle of something, so nothing was committed',
+  'deploy.notCommitted': 'Nothing was committed — commit when you are ready',
+  'deploy.pushHint': 'Committed in the repository on this machine. Push it when you are ready.',
 
   // Config / GitHub
   'config.notAnObject': 'config.json has to be a JSON object.',

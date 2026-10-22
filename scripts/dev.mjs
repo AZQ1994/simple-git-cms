@@ -6,10 +6,16 @@ import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import { localApi, localMedia } from './local-api.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 const port = Number(process.env.PORT || 4173);
+
+// Which repository on this machine to edit. `npm run dev ../my-site` points the editor at that
+// checkout's files; with nothing given it is the repository the editor itself lives in, which is
+// what an install inside a site looks like.
+const site = path.resolve(process.argv[2] ?? root);
 
 // Every build empties dist/, so the config to develop against lives at the repository root as
 // dev.config.json (gitignored) and is copied in afterwards. Edit that file, not dist/config.json.
@@ -33,8 +39,21 @@ const TYPES = {
   '.webp': 'image/webp',
 };
 
+// The editor asks this server who it is before it asks GitHub; answering means editing the files
+// in `site` instead, with a save becoming a commit there (scripts/local-api.mjs)
+const config = JSON.parse(fs.readFileSync(devConfig, 'utf8'));
+const api = localApi({
+  root: site,
+  contentDir: config.collection?.dir ?? '',
+  mediaDir: config.media?.dir ?? '',
+  timeZone: config.timeZone,
+});
+const media = localMedia({ root: site, mediaDir: config.media?.dir ?? '', mediaUrl: config.media?.url ?? '/uploads' });
+
 http
-  .createServer((req, res) => {
+  .createServer(async (req, res) => {
+    if (await api(req, res)) return;
+    if (media(req, res)) return;
     const rel = decodeURIComponent(new URL(req.url, 'http://localhost').pathname).replace(/^\/+/, '');
     // Resolve inside dist/ so a crafted path can't read the rest of the disk
     const file = path.resolve(dist, rel || 'index.html');
@@ -48,4 +67,7 @@ http
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(target)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
     fs.createReadStream(target).pipe(res);
   })
-  .listen(port, () => console.log(`Simple Git CMS editor on http://localhost:${port}`));
+  .listen(port, () => {
+    console.log(`Simple Git CMS editor on http://localhost:${port}`);
+    console.log(`editing the files in ${site} — a save is a commit there, pushing is yours to do`);
+  });

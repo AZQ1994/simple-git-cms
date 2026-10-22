@@ -5,7 +5,11 @@ import { getLocale } from './i18n/index.js';
 
 export const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 // While developing locally, the GitHub API can be pointed at a proxy on this machine
-export const API_BASE = (isLocal && localStorage.getItem('simple-git-cms-api')) || 'https://api.github.com';
+const pinned = (isLocal && localStorage.getItem('simple-git-cms-api')) || null;
+export const API_BASE = pinned || 'https://api.github.com';
+/** The API was pointed somewhere by hand, so that is where to go — the editor doesn't then look
+ * for the dev server's local files either. */
+export const apiPinned = Boolean(pinned);
 
 /** config.json, filled in with defaults. Set once at startup by loadConfig(). */
 export let CONFIG;
