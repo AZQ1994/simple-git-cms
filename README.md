@@ -247,16 +247,42 @@ doesn't claim keeps the behaviour it had: plain HTML, edited as source.
 | `name` | Only needed when two definitions share a tag |
 | `edit` | Which editor this block gets: `fields` (the default) is a small form, `table` is the table editor — rows, columns, alignment and merged cells — and `source` is the element's own HTML in a box with this block's name on it |
 | `attrs` | Attributes an element must have to be this block, and which are always written — how `<aside class="notice">` is told apart from any other `<aside>` |
+| `starts` | What a value has to begin with for the element to be this block — how one kind of `<iframe>` is told from another. A condition only: unlike `attrs` it is never written for you |
 | `fields` | The attributes someone fills in. `from: "content"` makes a field what sits between the tags instead, and `multiline` gives it room |
 | `preview` | Optional picture shown in the editor, with `{field}` placeholders. A picture from another site has to be allowed by `img-src` in the policy below |
 
 An attribute the file has that `fields` never mentions is kept and offered as a field anyway, so
-nothing is editable only by hand. An element that says something the form could not hold — content
+nothing is editable only by hand — folded away under a line you can open, since an embed as a video
+service hands it over carries eight attributes and seven of them are the same seven every time.
+Out of the way, not out of reach. An element that says something the form could not hold — content
 with no field for it — stays plain HTML rather than being read into a form that would lose it.
 
 A declared tag is also read as one element even when the file writes it across blank lines.
 Markdown ends a block of HTML at the first blank line, so a notice with two paragraphs in it would
 otherwise arrive as an opening tag, a paragraph, and a stray `</aside>` sitting in the text.
+
+Nothing in the editor knows what a video, a map or a tweet is. Whatever your articles already
+embed is a tag, and naming that tag is what turns it into a block — your own component if your
+site expands one, `iframe` if they hold the embed code itself.
+
+A tag on its own is often too broad: an `<iframe>` is a video, a map or a form, and which it is
+shows in its address. That is what `starts` is for — the definition speaks only for the elements
+whose value begins with what it names, and the ones it doesn't claim fall through to the next
+definition, or stay plain HTML:
+
+```json
+{
+  "tag": "iframe",
+  "name": "video",
+  "label": "Video",
+  "starts": { "src": "https://www.youtube.com/embed/" },
+  "fields": [{ "name": "src", "label": "Embed address" }]
+}
+```
+
+An element goes back to the file in the shape it was written in, self-closing or not, with the
+attributes it had: `<iframe …>` is HTML and keeps its closing tag, `<YouTube … />` is a component
+and keeps its slash.
 
 A form is not the right shape for everything, which is what `edit` is for: `table` gives `<table>`
 the table editor, and `source` is for markup worth naming but not worth a form — it is the HTML

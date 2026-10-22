@@ -193,6 +193,13 @@
               "type": "string"
             }
           },
+          "starts": {
+            "type": "object",
+            "description": "Attributes whose value must begin with this, e.g. { \"src\": \"https://www.youtube.com/embed/\" } — how one kind of <iframe> is told from another. Only a condition: it is never written for you.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
           "preview": {
             "type": "string",
             "description": "Optional image address shown in the editor, with {field} placeholders."

@@ -52,6 +52,7 @@ const SPEC = {
       label: str,
       edit: { ...str, oneOf: ['fields', 'table', 'source'] },
       attrs: { free: true },
+      starts: { free: true },
       preview: str,
       fields: { each: { name: { ...str, required: true }, label: str, placeholder: str, multiline: { type: 'boolean' }, from: { ...str, oneOf: ['content'] } } },
     },

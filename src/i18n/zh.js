@@ -77,6 +77,7 @@ export default {
   'toolbar.insert': '插入上面的按钮没有的东西',
   'toolbar.insertLabel': '插入',
   'toolbar.htmlItem': 'HTML',
+  'block.more': '其他属性（{n}）',
   'block.escape': 'Esc 退出',
   'block.remove': '删除这个控件',
   'html.unclosed': '<{tag}> 没有关闭。在网站上，它后面的内容都会被它包进去。',

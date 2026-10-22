@@ -6,6 +6,10 @@
 //
 //   { "tag": "YouTube", "label": "YouTube", "fields": [{ "name": "id", "label": "Video ID" }] }
 //
+// A tag on its own is often too broad — an <iframe> is a video, a map or a form, and which it is
+// shows in its address. `attrs` is what an element must say exactly, `starts` what one of its
+// values must begin with; a definition speaks only for the elements that satisfy both.
+//
 // `edit` says which editor the block gets, since a form is not the right shape for everything:
 //
 //   fields  a small form, one row per attribute — the default
@@ -34,6 +38,7 @@ export function setBlocks(list) {
       label: b.label || b.tag,
       edit: KINDS.includes(b.edit) ? b.edit : 'fields',
       attrs: b.attrs && typeof b.attrs === 'object' ? b.attrs : {},
+      starts: b.starts && typeof b.starts === 'object' ? b.starts : {},
       fields: (Array.isArray(b.fields) ? b.fields : []).filter((f) => f?.name),
     }));
 }
@@ -65,10 +70,12 @@ export function readElement(html) {
   }
 
   const attrs = {};
+  const bare = []; // `allowfullscreen`, written without a value, which is not the same as empty
   for (const m of rest.matchAll(/([a-zA-Z_:][\w:.-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
     attrs[m[1]] = decode(m[2] ?? m[3] ?? m[4] ?? '');
+    if (!m[0].includes('=')) bare.push(m[1]);
   }
-  return { tag, attrs, content };
+  return { tag, attrs, content, shape: { selfClosed: Boolean(selfClosing), bare } };
 }
 
 /** How far a declared block's element runs, from the start of `src`, when the file writes it
@@ -88,8 +95,12 @@ export function wholeElement(src) {
   return /\n[ \t]*\n/.test(raw) ? raw : null;
 }
 
-/** Whether a definition speaks for this element: its tag, and every attribute it insists on. */
-const claims = (def, el) => def.tag.toLowerCase() === el.tag.toLowerCase() && Object.entries(def.attrs).every(([k, v]) => el.attrs[k] === v);
+/** Whether a definition speaks for this element: its tag, every attribute it insists on, and
+ * every one it insists on the beginning of. */
+const claims = (def, el) =>
+  def.tag.toLowerCase() === el.tag.toLowerCase() &&
+  Object.entries(def.attrs).every(([k, v]) => el.attrs[k] === v) &&
+  Object.entries(def.starts).every(([k, v]) => (el.attrs[k] ?? '').startsWith(v));
 
 /** The definition that claims this piece of HTML, whatever it then does with it. */
 export function claimFor(html) {
@@ -109,41 +120,50 @@ export function matchBlock(html) {
     if (el.content?.trim() && !content) continue;
     const values = { ...el.attrs };
     if (content) values[content.name] = el.content ?? '';
-    return { block: def.name, values, raw: html.trim() };
+    return { block: def.name, values, raw: html.trim(), shape: el.shape };
   }
   return null;
 }
 
-const attrsText = (attrs) =>
+/** Elements HTML writes without a closing tag. A paired tag for one of these would be wrong. */
+const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+/** `<YouTube />` is a component, and components are written self-closing; `<iframe>` is HTML, and
+ * HTML's elements are not — `<iframe />` is an opening tag, which would swallow the page. */
+const selfClosedByDefault = (tag) => VOID.has(tag.toLowerCase()) || /[A-Z-]/.test(tag);
+
+const attrsText = (attrs, bare = []) =>
   Object.entries(attrs)
-    .filter(([, v]) => v !== '' && v != null)
-    .map(([k, v]) => ` ${k}="${encode(v)}"`)
+    .filter(([k, v]) => (v !== '' && v != null) || bare.includes(k))
+    .map(([k, v]) => (v === '' && bare.includes(k) ? ` ${k}` : ` ${k}="${encode(v)}"`))
     .join('');
 
 /** A block back as the file spells it. Falls back to what was read, so that turning a definition
  * off in config.json cannot quietly delete what it used to describe. */
-export function fillBlock({ block, values = {}, raw = '' }) {
+export function fillBlock({ block, values = {}, raw = '', shape = null }) {
   const def = blockNamed(block);
   if (!def) return raw;
   const content = contentField(def);
   const written = { ...def.attrs, ...values };
   if (content) delete written[content.name];
-  const attrs = attrsText(written);
-  const inner = content ? (values[content.name] ?? '') : '';
-  return content ? `<${def.tag}${attrs}>${inner}</${def.tag}>` : `<${def.tag}${attrs} />`;
+  const attrs = attrsText(written, shape?.bare);
+  if (content) return `<${def.tag}${attrs}>${values[content.name] ?? ''}</${def.tag}>`;
+  // However it was written is how it goes back; a new one is written the way its tag is written
+  return (shape ? shape.selfClosed : selfClosedByDefault(def.tag)) ? `<${def.tag}${attrs} />` : `<${def.tag}${attrs}></${def.tag}>`;
 }
 
 /** The empty element a definition describes — what inserting one from the menu starts you with. */
 export const emptyElement = (def) => `<${def.tag}${attrsText(def.attrs)}></${def.tag}>`;
 
 /** What the editor shows for a block: every field it defines, plus any attribute the file had
- * that the definition never mentioned — so nothing is editable only by hand. */
+ * that the definition never mentioned — so nothing is editable only by hand. The ones it never
+ * mentioned are marked, since a real embed carries eight of them and a form of eight rows is no
+ * use to anybody; the editor keeps those out of the way rather than out of reach. */
 export function blockFields(def, values = {}) {
   const named = new Set(def.fields.map((f) => f.name));
   const extra = Object.keys(values)
     .filter((k) => !named.has(k) && !(k in def.attrs))
-    .map((name) => ({ name, label: name }));
-  return [...def.fields.map((f) => ({ label: f.name, ...f })), ...extra];
+    .map((name) => ({ name, label: name, declared: false }));
+  return [...def.fields.map((f) => ({ label: f.name, ...f, declared: true })), ...extra];
 }
 
 /** Fill in a template of the same shape — a preview address, say. */

@@ -320,6 +320,12 @@ svg { flex: none; }
   background: var(--bg); color: var(--ink); font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical;
 }
 .block-field input:focus, .block-field textarea:focus { border-color: var(--navy); }
+.block-more { font-size: 12.5px; }
+.block-more summary { cursor: pointer; color: var(--faint); list-style: none; }
+.block-more summary::-webkit-details-marker { display: none; }
+.block-more summary::before { content: '›'; display: inline-block; width: 14px; transition: transform .15s; }
+.block-more[open] summary::before { transform: rotate(90deg); }
+.block-more .block-field { margin-top: 8px; }
 .block-gone { margin: 0; font: 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* Raw HTML: the file said something the editor has no buttons for, so here is its source */

@@ -44,8 +44,8 @@ test('an attribute the definition never mentioned is kept, and offered as a fiel
   const found = matchBlock('<YouTube id="abc" start="30" />');
   assert.deepEqual(found.values, { id: 'abc', start: '30' });
   assert.deepEqual(blockFields(blocks()[0], found.values), [
-    { name: 'id', label: 'Video ID' },
-    { name: 'start', label: 'start' },
+    { name: 'id', label: 'Video ID', declared: true },
+    { name: 'start', label: 'start', declared: false }, // shown, but folded away with the rest
   ]);
   assert.equal(fillBlock(found), '<YouTube id="abc" start="30" />');
 });
@@ -70,8 +70,9 @@ test('a block whose definition has gone is written back as it was read', () => {
 });
 
 test('reading one element apart from everything else', () => {
-  assert.deepEqual(readElement('<b class="x">hi</b>'), { tag: 'b', attrs: { class: 'x' }, content: 'hi' });
-  assert.deepEqual(readElement('<br />'), { tag: 'br', attrs: {}, content: null });
+  assert.deepEqual(readElement('<b class="x">hi</b>'), { tag: 'b', attrs: { class: 'x' }, content: 'hi', shape: { selfClosed: false, bare: [] } });
+  assert.deepEqual(readElement('<br />'), { tag: 'br', attrs: {}, content: null, shape: { selfClosed: true, bare: [] } });
+  assert.deepEqual(readElement('<video controls>x</video>').shape, { selfClosed: false, bare: ['controls'] });
   assert.equal(readElement('<p>a</p><p>b</p>'), null);
   assert.equal(readElement('not html'), null);
 });
@@ -128,4 +129,62 @@ test('a declared element written across blank lines is measured to its closing t
   assert.equal(wholeElement('<aside class="notice">A.</aside>'), null, 'with no blank line in it, Markdown already reads it whole');
   assert.equal(wholeElement('<aside class="notice">A.\n\nB.'), null, 'and an element that never closes is not one');
   assert.equal(wholeElement('<div class="x">A.\n\nB.</div>'), null, 'a tag nobody declared keeps Markdown’s rules');
+});
+
+// ---------- How the element is written back ----------
+//
+// `<iframe />` is not `<iframe></iframe>`: HTML has no self-closing elements of its own, so the
+// first is an opening tag and everything after it ends up inside it.
+
+const VIDEO = { tag: 'iframe', label: 'Video', fields: [{ name: 'src', label: 'Address' }] };
+
+test('an element goes back in the shape the file wrote it in', () => {
+  setBlocks([VIDEO, YOUTUBE]);
+  for (const html of [
+    '<iframe src="https://www.youtube.com/embed/abc" width="560" height="315" allowfullscreen></iframe>',
+    '<YouTube id="abc" />',
+    '<YouTube id="abc"></YouTube>',
+  ]) {
+    assert.equal(fillBlock(matchBlock(html)), html, html);
+  }
+});
+
+test('an attribute written without a value keeps being written without one', () => {
+  setBlocks([VIDEO]);
+  const found = matchBlock('<iframe src="x" allowfullscreen></iframe>');
+  assert.equal(found.values.allowfullscreen, '', 'it is there, and says nothing');
+  assert.equal(fillBlock(found), '<iframe src="x" allowfullscreen></iframe>', 'and it is not dropped as an empty field');
+});
+
+test('editing a field leaves the rest of the element exactly as it was', () => {
+  setBlocks([VIDEO]);
+  const found = matchBlock('<iframe src="x" width="560" allowfullscreen></iframe>');
+  assert.equal(fillBlock({ ...found, values: { ...found.values, src: 'y' } }), '<iframe src="y" width="560" allowfullscreen></iframe>');
+});
+
+test('a block inserted fresh is written the way its tag is written', () => {
+  setBlocks([VIDEO, YOUTUBE, { tag: 'aside', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content' }] }]);
+  assert.equal(fillBlock({ block: 'iframe', values: { src: 'x' } }), '<iframe src="x"></iframe>', 'HTML closes its elements');
+  assert.equal(fillBlock({ block: 'YouTube', values: { id: 'x' } }), '<YouTube id="x" />', 'a component is self-closing');
+  assert.equal(fillBlock({ block: 'aside', values: { text: 'hi' } }), '<aside class="notice">hi</aside>');
+  assert.equal(emptyElement(blocks()[0]), '<iframe></iframe>');
+});
+
+test('an iframe is a video, a map or a form, and the address is what says which', () => {
+  const video = { tag: 'iframe', name: 'video', label: 'Video', starts: { src: 'https://www.youtube.com/embed/' }, fields: [{ name: 'src' }] };
+  const embed = { tag: 'iframe', name: 'embed', label: 'Embed', fields: [{ name: 'src' }] };
+  setBlocks([video, embed]);
+
+  assert.equal(claimFor('<iframe src="https://www.youtube.com/embed/abc"></iframe>').name, 'video');
+  assert.equal(claimFor('<iframe src="https://www.google.com/maps/embed?pb=1"></iframe>').name, 'embed', 'the next definition in line gets it');
+
+  setBlocks([video]);
+  assert.equal(claimFor('<iframe src="https://www.google.com/maps/embed?pb=1"></iframe>'), null, 'and with nothing else to claim it, it stays plain HTML');
+  assert.equal(matchBlock('<iframe src="https://www.youtube.com/embed/abc"></iframe>').block, 'video');
+});
+
+test('what a definition insists on the beginning of is a condition, not something it writes', () => {
+  setBlocks([{ tag: 'iframe', starts: { src: 'https://www.youtube.com/embed/' }, fields: [{ name: 'src' }] }]);
+  assert.equal(fillBlock({ block: 'iframe', values: { src: 'https://www.youtube.com/embed/abc' } }), '<iframe src="https://www.youtube.com/embed/abc"></iframe>');
+  assert.equal(fillBlock({ block: 'iframe', values: {} }), '<iframe></iframe>', 'an empty one says nothing on its own');
 });

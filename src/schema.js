@@ -182,7 +182,9 @@ export const CustomBlock = Node.create({
   group: 'block',
   atom: true,
   draggable: true,
-  addAttributes: () => ({ block: { default: '' }, values: { default: {} }, raw: { default: '' } }),
+  // `shape` is how the file wrote the element — self-closing or not, which attributes were bare.
+  // An attribute the node does not declare is dropped, and with it the element's own spelling.
+  addAttributes: () => ({ block: { default: '' }, values: { default: {} }, raw: { default: '' }, shape: { default: null } }),
   parseHTML: () => [{ tag: 'div[data-block]' }],
   renderHTML: ({ HTMLAttributes }) => ['div', { 'data-block': HTMLAttributes.block }],
   // An insert that was never filled in is not written to the file at all
@@ -220,6 +222,13 @@ export const CustomBlock = Node.create({
         if (src) shot.src = src;
       };
 
+      // Attributes the definition never mentioned are kept and editable, but folded away: a real
+      // YouTube embed has eight of them, and seven are the same eight every time
+      const rest = document.createElement('details');
+      rest.className = 'block-more';
+      const restLabel = document.createElement('summary');
+      rest.append(restLabel);
+
       for (const field of def ? blockFields(def, node.attrs.values) : []) {
         const row = document.createElement('label');
         row.className = 'block-field';
@@ -233,7 +242,11 @@ export const CustomBlock = Node.create({
         removeWhenEmpty(input, () => !Object.values(current.attrs.values ?? {}).some(Boolean), remove);
         stepOut(input, editor, getPos);
         row.append(name, input);
-        dom.append(row);
+        (field.declared ? dom : rest).append(row);
+      }
+      if (rest.childElementCount > 1) {
+        restLabel.textContent = t('block.more', { n: rest.childElementCount - 1 });
+        dom.append(rest);
       }
       // A block whose definition is gone keeps what it was read as, and says so
       if (!def) {

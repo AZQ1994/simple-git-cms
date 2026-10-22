@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { BLOCK, CONTENT_DIR, EMBED, HTML_TABLE, MEDIA_DIR, TABLE, startFakeGitHub } from './fake-github.mjs';
+import { BLOCK, CONTENT_DIR, EMBED, HTML_TABLE, MEDIA_DIR, TABLE, VIDEO, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -50,6 +50,8 @@ before(async () => {
         { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }, { name: 'start', label: 'Start' }] },
         { tag: 'table', label: 'Advanced table', edit: 'table' },
         { tag: 'aside', name: 'notice', label: 'Notice', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content', multiline: true }] },
+        // One kind of iframe, not every iframe: the YouTube embed below is left as source
+        { tag: 'iframe', name: 'video', label: 'Video', starts: { src: 'https://player.vimeo.com/video/' }, fields: [{ name: 'src', label: 'Address' }] },
       ],
     },
   });
@@ -155,6 +157,22 @@ test('a table, an HTML embed and a block the site defined come back out byte for
   assert.ok(file.includes(HTML_TABLE), 'and the HTML one, which is a table in the editor all the same');
   assert.ok(file.includes(EMBED), 'and so should the embed, which the editor understands nothing about');
   assert.ok(file.includes(BLOCK), 'and the block, which exists only because config.json describes it');
+});
+
+test('an embed as the service hands it over is one field, with the rest of it folded away', async () => {
+  await openArticle(0);
+  const card = `[...document.querySelectorAll('#body .block-card')].find((c) => c.querySelector('.block-more'))`;
+  assert.equal(await page.evaluate(`${card}.querySelectorAll(':scope > .block-field').length`), 1, 'the address, and nothing else in the way');
+  assert.equal(await page.evaluate(`${card}.querySelector(':scope > .block-field input').value`), 'https://player.vimeo.com/video/76979871?h=8272103f6e');
+  assert.equal(await page.evaluate(`${card}.querySelector('.block-more').open`), false, 'the other seven are folded away');
+  assert.equal(await page.evaluate(`${card}.querySelectorAll('.block-more .block-field').length`), 7, 'but still there, and still editable');
+  assert.match(await page.evaluate(`${card}.querySelector('.block-more summary').textContent`), /^Other attributes \(7\)/);
+
+  // The embed next to it is an iframe too, and no definition speaks for it
+  assert.equal(await page.evaluate(`document.querySelector('#body .html-block textarea').value`), EMBED, 'left as source');
+
+  await save();
+  assert.ok(gh.files.get(`${CONTENT_DIR}/202610150930.md`).includes(VIDEO), 'and all eight attributes go back exactly as they were');
 });
 
 test('a plain table offers no merging; the advanced one does, and is written as HTML', async () => {
@@ -345,6 +363,7 @@ test('a tag that is never closed is marked, and saving says what it would do to 
   for (let i = 0; i < 60 && gh.commits.length === before; i++) await sleep(100);
   assert.match(page.dialogs.at(-1) ?? '', /<div> is never closed/);
 
+  await page.evaluate(`window.cmsEditor.commands.focus('end')`); // the Update button has the keyboard now
   await typeBody('</div>');
   await page.until(`!document.querySelector('#body .html-broken-tag')`, { label: 'the mark to go' });
   const asked = page.dialogs.length;

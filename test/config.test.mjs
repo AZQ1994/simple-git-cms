@@ -129,6 +129,7 @@ test('a block is checked the way everything else is', () => {
   assert.deepEqual(blocks([{ tag: 'X', fields: [{ label: 'A' }] }]), ['blocks[0].fields[0].name']);
   assert.deepEqual(blocks([{ tag: 'X', fields: [{ name: 'a', from: 'nowhere' }] }]), ['blocks[0].fields[0].from']);
   assert.deepEqual(blocks([{ tag: 'table', edit: 'table' }]), [], 'a table may be edited as a table');
+  assert.deepEqual(blocks([{ tag: 'iframe', starts: { src: 'https://x/' } }]), [], 'and a definition may say which elements it speaks for');
   assert.deepEqual(blocks([{ tag: 'X', edit: 'form' }]), ['blocks[0].edit'], 'and only in one of the ways there are');
 });
 

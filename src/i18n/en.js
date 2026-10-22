@@ -76,6 +76,7 @@ export default {
   'toolbar.insert': 'Insert something the buttons above do not cover',
   'toolbar.insertLabel': 'Insert',
   'toolbar.htmlItem': 'HTML',
+  'block.more': 'Other attributes ({n})',
   'block.escape': 'Esc to step out',
   'block.remove': 'Remove this block',
   'html.unclosed': '<{tag}> is never closed. On the site, everything after it ends up inside it.',

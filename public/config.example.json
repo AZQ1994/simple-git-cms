@@ -45,6 +45,13 @@
       "fields": [{ "name": "text", "from": "content", "multiline": true }]
     },
     {
+      "tag": "iframe",
+      "name": "video",
+      "label": "Video",
+      "starts": { "src": "https://www.youtube.com/embed/" },
+      "fields": [{ "name": "src", "label": "Embed address", "placeholder": "https://www.youtube.com/embed/dQw4w9WgXcQ" }]
+    },
+    {
       "tag": "table",
       "label": "Advanced table",
       "edit": "table"
