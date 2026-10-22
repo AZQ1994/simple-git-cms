@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['20', '22']
+        node: ['22', '26'] # the oldest Node still supported, and the newest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -26,7 +26,7 @@ jobs:
       # The browser tests drive the built editor, so they go after the build. One Node version is
       # enough: what they exercise is the browser, not Node. Chrome comes with the runner image.
       - name: Browser tests
-        if: matrix.node == '22'
+        if: matrix.node == '26'
         run: npm run test:e2e
         env:
           CHROME_PATH: /usr/bin/google-chrome
