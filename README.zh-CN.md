@@ -111,6 +111,19 @@ Deno Deploy、Vercel、Netlify、Bun 和普通的 Node 服务器都能跑。
 编辑器把正文按网站相同的流程（remark-gfm、smartypants、rehype-figures）转成 HTML 发过去，
 预览页只负责显示。
 
+文章页上还显示别的东西的话，预览页也拿得到：`article.image` 是封面图（没有封面、或没配置
+`imageField` 时为 `null`），还没上传也能直接放进 `<img src>`；`article.fields` 是其余的
+frontmatter 字段（作者、分类、活动日期之类），和文件里写的一样。
+
+```js
+connectPreview((article) => {
+  cover.hidden = !article.image;
+  if (article.image) cover.src = article.image;
+  author.textContent = article.fields.author ?? '';
+  // …标题、日期、标签和 article.html 同上
+});
+```
+
 ### 5. 编辑者
 
 需要 GitHub 账号，并加为仓库的协作者（Write 权限）；GitHub App 要安装到这个仓库。

@@ -10,6 +10,8 @@ const $ = (id) => document.getElementById(id);
 
 const embedded = connectPreview((article) => {
   document.title = article.title || 'Preview';
+  $('cover').hidden = !article.image;
+  if (article.image) $('cover').src = article.image;
   $('title').textContent = article.title || '';
   $('date').textContent = article.date
     ? new Date(article.date).toLocaleDateString(document.documentElement.lang || 'en', { dateStyle: 'long' })

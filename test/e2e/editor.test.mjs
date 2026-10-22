@@ -31,6 +31,12 @@ before(async () => {
   policy = policyFromReadme().replace('https://api.github.com', gh.origin);
   site = await startEditor({
     root: dist,
+    // The site's own preview page, with the client it imports taken straight from integrations/
+    routes: {
+      '/preview/index.html': join(root, 'test', 'e2e', 'preview', 'index.html'),
+      '/preview/preview-page.js': join(root, 'test', 'e2e', 'preview', 'preview-page.js'),
+      '/preview/preview-client.js': join(root, 'integrations', 'preview-client.js'),
+    },
     headers: {
       'Content-Security-Policy': policy,
       'X-Content-Type-Options': 'nosniff',
@@ -46,6 +52,7 @@ before(async () => {
       auth: { base: 'http://auth.invalid' },
       collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
+      preview: { url: '/preview/' },
       blocks: [
         { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }, { name: 'start', label: 'Start' }] },
         { tag: 'table', label: 'Advanced table', edit: 'table' },
@@ -568,6 +575,28 @@ test('a cover image is uploaded with the article and named in the frontmatter', 
   await page.evaluate(`document.querySelector('#cover-acts [data-cover="remove"]').click()`);
   await save();
   assert.doesNotMatch(gh.files.get(`${CONTENT_DIR}/${id}.md`), /^image:/m);
+});
+
+test('the preview is sent the cover before it is saved, as a picture it can load', async () => {
+  const file = join(tmpdir(), 'sgcms-preview-cover.png');
+  writeFileSync(file, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR4nGM4YaMBRwzEcQDxwxLBXOwG1wAAAABJRU5ErkJggg==', 'base64'));
+
+  await openArticle(1);
+  await page.evaluate(`document.getElementById('cover-pick').click()`);
+  await page.evaluate(`document.getElementById('media-modal').hidden || document.querySelector('[data-media="upload"]').click()`);
+  await page.chooseFile('#cover-input', file);
+  await page.until(`!document.getElementById('cover-img').hidden`, { label: 'the cover thumbnail' });
+
+  await page.evaluate(`document.getElementById('btn-preview').click()`);
+  const frame = `document.getElementById('preview-frame').contentWindow`;
+  await page.until(`${frame}.received?.image`, { label: 'the article in the preview page' });
+  const got = await page.evaluate(`({ image: ${frame}.received.image, fields: ${frame}.received.fields })`);
+  assert.match(got.image, /^blob:/, 'not uploaded yet, so the page is handed an address it can load');
+  assert.match(got.fields.image, /^\/uploads\/\d{8}\/\w+\.webp$/, 'and the rest of the frontmatter is there as the file will have it');
+  await page.until(`${frame}.document.getElementById('cover').naturalWidth > 0`, { label: 'the cover to load in the preview' });
+
+  await page.evaluate(`document.getElementById('preview-close').click()`);
+  await page.evaluate(`document.querySelector('#cover-acts [data-cover="remove"]').click()`);
 });
 
 test('a cover can be a picture the article already has, rather than a second copy of it', async () => {

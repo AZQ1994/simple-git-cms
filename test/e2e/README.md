@@ -18,6 +18,7 @@ npm run test:e2e
 | `cdp.mjs` | A Chrome DevTools Protocol client: Node's own WebSocket, no dependencies. Starts headless Chrome, evaluates expressions in the page, answers the dialogs the editor puts up |
 | `fake-github.mjs` | The REST and GraphQL calls `src/github.js` makes, answered out of a `Map`. A test can read `gh.files` and `gh.commits` afterwards |
 | `serve.mjs` | Serves `dist/` with a `config.json` written for the test |
+| `preview/` | The site's preview page at its smallest, served beside the editor with `integrations/preview-client.js` |
 | `policy.mjs` | Reads the Content-Security-Policy out of README.md, so the policy under test is the one the README tells people to use |
 | `editor.test.mjs` | Sign in, list, open, edit, save, publish, delete — each one checked against what the fake repository holds |
 

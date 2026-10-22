@@ -137,6 +137,20 @@ tags and `article.html` inside `connectPreview(article => …)`. The editor conv
 the same pipeline your site uses (remark-gfm, smartypants, rehype-figures) and posts the HTML over;
 the preview page only has to display it.
 
+If your article page shows more than that, the preview has it too: `article.image` is the cover
+image (`null` when there is none, or no `imageField` is configured), ready to put in an `<img src>`
+even before it is uploaded, and `article.fields` is every other frontmatter field — an author, a
+category, an event date — exactly as the file has it.
+
+```js
+connectPreview((article) => {
+  cover.hidden = !article.image;
+  if (article.image) cover.src = article.image;
+  author.textContent = article.fields.author ?? '';
+  // …title, date, tags and article.html as above
+});
+```
+
 ### 5. Add your editors
 
 They need a GitHub account, collaborator access to the repository (Write), and the GitHub App

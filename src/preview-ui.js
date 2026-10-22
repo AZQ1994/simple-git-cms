@@ -37,8 +37,19 @@ function sendPreview() {
   const a = collect();
   const images = {};
   for (const [src, p] of pending) images[src] = p.blob;
+  // The cover and the rest of the frontmatter go too: a site may show either on the article page,
+  // and a preview without them would not be the page that goes live
+  const field = CONFIG.collection.imageField;
+  const article = {
+    title: a.title,
+    date: a.date,
+    tags: a.tags,
+    description: a.description,
+    image: (field && a.extra?.[field]) || null,
+    fields: a.extra,
+  };
   previewFrame.contentWindow.postMessage(
-    { type: 'simple-git-cms-preview', article: { title: a.title, date: a.date, tags: a.tags, description: a.description }, html: renderMarkdown(a.body), images },
+    { type: 'simple-git-cms-preview', article, html: renderMarkdown(a.body), images },
     new URL(previewFrame.src).origin,
   );
 }

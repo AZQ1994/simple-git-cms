@@ -43,6 +43,7 @@ img { max-width: 100%; }
 
 .site-main { padding: 0 24px; }
 .post { max-width: var(--measure); margin-inline: auto; padding-block: 40px 56px; }
+.post .cover { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; margin: 0 0 28px; border-radius: 6px; }
 .kicker { margin: 0 0 12px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .post h1 { margin: 0; font-family: var(--font-head); line-height: 1.15; letter-spacing: -0.02em; }
 .meta { margin: 14px 0 0; font: 14px/1.5 var(--sans); color: var(--muted); }

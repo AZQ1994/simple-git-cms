@@ -12,6 +12,9 @@ behind it are in the repository history.
 - **Extra blank lines are no longer an empty paragraph.** Three blank lines in a row were read as a
   blank line of their own and saved as `&nbsp;`, adding space to the page that was never there.
   They are one blank line now, which is all the site ever made of them.
+- **The preview is sent the cover image and the rest of the frontmatter**: `article.image`, as an
+  address the page can load even before it is uploaded, and `article.fields`. A preview page
+  written for 0.4.0 ignores them and works as before.
 
 ## 0.4.0 — 2026-10-23
 

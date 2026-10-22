@@ -128,6 +128,20 @@ GitHub へ直接送ります——ので、効いてくるのはサイトをど�
 エディターは本文をサイトと同じ流れ（remark-gfm、smartypants、rehype-figures）で HTML に変換して送るので、
 プレビューページは表示するだけで済みます。
 
+記事ページにそれ以外のものを出している場合も、プレビューに届きます。`article.image` はカバー画像
+（未設定のとき、または `imageField` を設定していないときは `null`）で、アップロード前でもそのまま
+`<img src>` に入れられます。`article.fields` はそれ以外のフロントマターの項目（著者・カテゴリー・
+イベントの日付など）を、ファイルに書かれたとおりに持っています。
+
+```js
+connectPreview((article) => {
+  cover.hidden = !article.image;
+  if (article.image) cover.src = article.image;
+  author.textContent = article.fields.author ?? '';
+  // …タイトル・日付・タグ・article.html は上のとおり
+});
+```
+
 ### 5. 書く人を追加する
 
 GitHub アカウントと、リポジトリの共同作業者（Write）権限が必要です。GitHub App もそのリポジトリに
