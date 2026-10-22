@@ -629,6 +629,22 @@ test('nothing went wrong in the browser', async () => {
   assert.deepEqual(page.logs.filter((l) => !l.startsWith('[network]')), []);
 });
 
+test('nothing the editor does reaches the network', async () => {
+  // Both servers are on 127.0.0.1, and the editor's API is pointed at the fake one. So any other
+  // origin in what the page loaded is a leak: a font or an icon from a CDN, an embed in an
+  // article that is really being fetched, a stray address left in the code. data: and blob: have
+  // no origin of their own and report "null".
+  const origins = JSON.parse(
+    await page.evaluate(`JSON.stringify([...new Set(performance.getEntriesByType('resource').map((r) => new URL(r.name).origin))])`),
+  );
+  assert.deepEqual(
+    origins.filter((o) => ![site.origin, gh.origin, 'null'].includes(o)),
+    [],
+    'everything the editor loaded should have come from this machine',
+  );
+  assert.ok(origins.includes(site.origin) && origins.includes(gh.origin), 'and both local servers were really used');
+});
+
 // After the check above, because it reloads the page and that empties the browser's own record
 // of the requests made
 test('the list is read in two steps, and opening the editor again downloads no articles at all', async () => {

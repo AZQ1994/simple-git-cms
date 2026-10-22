@@ -24,7 +24,10 @@ npm run test:e2e
 Chrome is found at the usual places, or wherever `CHROME_PATH` points. Nothing is downloaded and
 nothing reaches the network: both servers listen on 127.0.0.1 on a port the operating system picks,
 and the editor's API is pointed at the fake one through `localStorage['simple-git-cms-api']`, which
-the editor only honours on localhost.
+the editor only honours on localhost. Chrome is started with its own background traffic switched
+off, and one of the tests reads back every address the page loaded and fails if any of them is not
+one of the two local servers — so a font or an icon added from a CDN is caught here. The whole
+suite runs offline.
 
 The editor is served under the policy the README recommends, and the last test injects an inline
 script to prove the policy is in force rather than merely printed. So a change that quietly needs

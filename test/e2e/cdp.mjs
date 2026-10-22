@@ -38,6 +38,10 @@ export async function launchChrome(port = 9333) {
       '--disable-gpu',
       '--no-first-run',
       '--no-default-browser-check',
+      // Chrome's own traffic — component updates, safe-browsing lists — would be the only thing
+      // these tests send anywhere. Without it, "nothing reaches the network" is about the editor
+      // only, and the tests can't run offline.
+      '--disable-background-networking',
       '--no-proxy-server',
       '--disable-dev-shm-usage',
       '--no-sandbox', // CI containers run as root, where the sandbox refuses to start
