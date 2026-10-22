@@ -195,6 +195,9 @@ HTML だからです。閉じられないまま開いたものはその場に印
 
 ## 開発
 
+プルリクエスト歓迎です。必要なことは [CONTRIBUTING.md](CONTRIBUTING.md) にあります。セキュリティの問題は
+issue ではなく [SECURITY.md](SECURITY.md) の方法で知らせてください。
+
 ```bash
 npm install
 npm test

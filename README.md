@@ -207,6 +207,9 @@ the block defined.
 
 ## Developing
 
+Pull requests are welcome — [CONTRIBUTING.md](CONTRIBUTING.md) says what they need. A security
+problem goes through [SECURITY.md](SECURITY.md) instead of an issue.
+
 ```bash
 npm install
 npm test

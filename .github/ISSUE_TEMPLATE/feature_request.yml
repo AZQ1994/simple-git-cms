@@ -1,0 +1,16 @@
+name: Idea or request
+description: Something the editor could do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you are trying to do
+      description: The situation, rather than the feature — what your site or the people writing for it need
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: Optional. How it might work in the editor, or in config.json

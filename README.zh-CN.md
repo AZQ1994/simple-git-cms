@@ -171,6 +171,9 @@ Markdown 把这些框当成互不相干的块——一块 HTML 到第一个空�
 
 ## 本地开发
 
+欢迎提 Pull Request，需要注意的事写在 [CONTRIBUTING.md](CONTRIBUTING.md)。安全问题请不要开 issue，
+按 [SECURITY.md](SECURITY.md) 里的方式私下报告。
+
 ```bash
 npm install
 npm test
