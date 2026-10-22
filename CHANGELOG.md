@@ -66,6 +66,8 @@ byte for byte.
 - **A site of its own** at simple-git-cms.azq1994.com, with a demo that runs the real editor
   against a service worker standing in for GitHub, and three site templates the preview can switch
   between.
+- **Node 22 or newer** to build and test the editor; CI runs the oldest supported line and the
+  newest (22 and 26). Node 20 reached its end of life in April 2026.
 
 ## 0.3.0 — 2026-10-21
 
