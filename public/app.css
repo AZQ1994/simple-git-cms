@@ -329,6 +329,15 @@ svg { flex: none; }
 .html-block.html-broken { border-color: var(--red); }
 .html-block.html-broken .html-label { color: var(--red); }
 .body .html-broken-tag { color: var(--red); text-decoration: underline wavy var(--red); text-underline-offset: 3px; }
+/* Taking a box out: everything inside it belongs to the box, so it carries its own way out */
+.node-remove {
+  position: absolute; top: 4px; right: 5px; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px;
+  background: none; color: var(--faint); cursor: pointer; font-size: 16px; line-height: 1; opacity: 0; transition: opacity .12s;
+}
+.node-remove:hover { background: var(--hover); color: var(--ink); }
+.node-hint { position: absolute; top: 9px; right: 32px; font: 600 10.5px/1 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace); color: var(--faint); opacity: 0; }
+.html-block:focus-within .node-hint, .block-card:focus-within .node-hint { opacity: 1; }
+.html-block:hover .node-remove, .block-card:hover .node-remove, .html-block:focus-within .node-remove, .block-card:focus-within .node-remove { opacity: 1; }
 .html-label { position: absolute; top: 6px; left: 12px; font: 600 10.5px/1 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace); letter-spacing: .08em; color: var(--faint); }
 .html-block textarea {
   display: block; width: 100%; min-height: 3em; max-height: 60vh; padding: 0; border: 0; outline: 0; resize: none;

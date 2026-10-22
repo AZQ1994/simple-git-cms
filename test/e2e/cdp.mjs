@@ -22,7 +22,9 @@ export function findChrome() {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Keys the page's own handlers look at the code of, not only the character
-const KEYS = { Tab: 9, Enter: 13, Escape: 27 };
+// Chrome needs the virtual key code as well as the name: ProseMirror reads keyCode for the keys
+// that move the selection, and without it they arrive as nothing at all
+const KEYS = { Backspace: 8, Tab: 9, Enter: 13, Escape: 27, End: 35, Home: 36, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Delete: 46 };
 
 /** Start headless Chrome on a throwaway profile and wait for its debugging port. */
 export async function launchChrome(port = 9333) {

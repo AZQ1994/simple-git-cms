@@ -158,7 +158,9 @@ its id — is the year, month, day, hour and minute it was created.
 Anything else in the body that the editor has no node for — an `<iframe>`, a `<div>`, an HTML
 comment, a component your site expands — is held as a block of raw HTML and written back exactly as
 it was. It shows as a box with its source in it, which is also how to put something into an article
-that the toolbar has no button for.
+that the toolbar has no button for. Everything inside such a box belongs to the box, which is what
+makes it editable — so each one carries its own way in and out: the arrow keys reach it, Enter
+steps in, Esc steps back out, and the × in its corner or Backspace in an empty one takes it away.
 
 Markdown keeps those boxes apart — it ends a block of HTML at the first blank line and never looks
 further — but the page they land on does not: `<div style="color: red">aaaaaa` with no closing tag

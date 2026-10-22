@@ -2,7 +2,7 @@
 // editor itself because nothing here reaches for the DOM as it loads — the one node view below
 // only runs in a browser — so the whole Markdown round-trip can be tested in Node.
 import { Node } from '@tiptap/core';
-import { Plugin } from '@tiptap/pm/state';
+import { NodeSelection, Plugin } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -101,6 +101,70 @@ export const SiteTable = Table.extend({
 // one of them. Here they become a node, so that adding a YouTube embed to a site is a line of
 // config rather than a change to the editor.
 
+// A box is an atom: everything inside it belongs to the text area or the form, which is what
+// makes it editable — and it is also why neither the mouse nor Backspace reaches the editor to
+// take the box out again. So each box carries its own way out.
+
+/** Take this node out, leaving the cursor where it stood. */
+const removeNode = (editor, getPos) => {
+  const pos = getPos();
+  if (pos == null) return;
+  editor.chain().setNodeSelection(pos).deleteSelection().focus().run();
+};
+
+/** What to press to get out again, shown while the box has the keyboard. */
+function escapeHint() {
+  const hint = document.createElement('span');
+  hint.className = 'node-hint';
+  hint.textContent = t('block.escape');
+  return hint;
+}
+
+/** The × in the corner of a box. */
+function removeButton(remove) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'node-remove';
+  button.tabIndex = -1;
+  button.title = t('block.remove');
+  button.textContent = '×';
+  button.addEventListener('click', remove);
+  return button;
+}
+
+/** Step into the box that is selected — arrowed onto with the keyboard, say. Without this the
+ * keyboard can reach a box and then has nothing to do with it. */
+const stepInto = (editor, name) => {
+  const { selection } = editor.state;
+  if (!(selection instanceof NodeSelection) || selection.node.type.name !== name) return false;
+  const field = editor.view.nodeDOM(selection.from)?.querySelector?.('textarea, input');
+  if (!field) return false;
+  field.focus();
+  field.setSelectionRange?.(field.value.length, field.value.length);
+  return true;
+};
+
+/** And Escape steps back out, to the box itself: from there the arrow keys carry on as usual and
+ * Backspace takes it out. A box you can type into has to be a box you can leave. */
+const stepOut = (field, editor, getPos) =>
+  field.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const pos = getPos();
+    if (pos == null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    editor.chain().focus().setNodeSelection(pos).run();
+  });
+
+/** Backspace in a field that is empty, with nothing else in the box to keep, takes the box out —
+ * the way Backspace empties anything else. */
+const removeWhenEmpty = (field, isEmpty, remove) =>
+  field.addEventListener('keydown', (e) => {
+    if (!['Backspace', 'Delete'].includes(e.key) || field.value || !isEmpty()) return;
+    e.preventDefault();
+    remove();
+  });
+
 /** What a definition makes of a run of HTML, by the editor it asks for: a card of fields, a table
  * the editor can edit as a table, or — for `source`, and for HTML nothing claims — nothing, which
  * leaves it as the box of source below. */
@@ -123,15 +187,20 @@ export const CustomBlock = Node.create({
   renderHTML: ({ HTMLAttributes }) => ['div', { 'data-block': HTMLAttributes.block }],
   // An insert that was never filled in is not written to the file at all
   renderMarkdown: (node) => (Object.values(node.attrs.values ?? {}).some(Boolean) || node.attrs.raw ? fillBlock(node.attrs) : ''),
+  addKeyboardShortcuts() {
+    return { Enter: () => stepInto(this.editor, this.name) };
+  },
   addNodeView() {
     return ({ node, editor, getPos }) => {
       const def = blockNamed(node.attrs.block);
+      let current = node; // what the card is showing now, which is not what it was created with
+      const remove = () => removeNode(editor, getPos);
       const dom = document.createElement('div');
       dom.className = 'block-card';
       const label = document.createElement('span');
       label.className = 'html-label';
       label.textContent = def?.label ?? node.attrs.block;
-      dom.append(label);
+      dom.append(label, escapeHint(), removeButton(remove));
 
       const shot = document.createElement('img');
       shot.className = 'block-shot';
@@ -141,8 +210,8 @@ export const CustomBlock = Node.create({
       const put = (name, value) => {
         const pos = getPos();
         if (pos == null) return;
-        const values = { ...node.attrs.values, [name]: value };
-        editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, values, raw: '' }));
+        const values = { ...current.attrs.values, [name]: value };
+        editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { ...current.attrs, values, raw: '' }));
         showPreview(values);
       };
       const showPreview = (values) => {
@@ -161,6 +230,8 @@ export const CustomBlock = Node.create({
         if (field.placeholder) input.placeholder = field.placeholder;
         if (field.multiline) input.rows = 3;
         input.addEventListener('input', () => put(field.name, input.value));
+        removeWhenEmpty(input, () => !Object.values(current.attrs.values ?? {}).some(Boolean), remove);
+        stepOut(input, editor, getPos);
         row.append(name, input);
         dom.append(row);
       }
@@ -175,7 +246,11 @@ export const CustomBlock = Node.create({
 
       return {
         dom,
-        update: (n) => n.type.name === 'customBlock' && n.attrs.block === node.attrs.block,
+        update: (n) => {
+          if (n.type.name !== 'customBlock' || n.attrs.block !== current.attrs.block) return false;
+          current = n; // so that filling in a second field doesn't write back the first one's old value
+          return true;
+        },
         selectNode: () => dom.classList.add('selected'),
         deselectNode: () => dom.classList.remove('selected'),
         stopEvent: () => true,
@@ -224,6 +299,9 @@ export const HtmlBlock = Node.create({
       : // whatever the site's own definitions make of it, and the source itself when none do
         claimed(token.raw) ?? { type: 'htmlBlock', attrs: { html: token.raw.replace(/\s+$/, '') } },
   renderMarkdown: (node) => node.attrs.html ?? '',
+  addKeyboardShortcuts() {
+    return { Enter: () => stepInto(this.editor, this.name) };
+  },
   // Markdown keeps a document's HTML apart — one box here, a line of text there — but the page it
   // all ends up on does not: a tag opened anywhere and never closed wraps everything after it,
   // article and site furniture alike. So the whole document is read as one run of HTML, in order,
@@ -264,6 +342,7 @@ export const HtmlBlock = Node.create({
   // button for can still be written by hand and read back later.
   addNodeView() {
     return ({ node, editor, getPos }) => {
+      const remove = () => removeNode(editor, getPos);
       const dom = document.createElement('div');
       dom.className = 'html-block';
       const label = document.createElement('span');
@@ -286,7 +365,9 @@ export const HtmlBlock = Node.create({
         if (pos != null) editor.view.dispatch(editor.state.tr.setNodeMarkup(pos, undefined, { html: area.value }));
       });
       label.textContent = name();
-      dom.append(label, area);
+      removeWhenEmpty(area, () => true, remove); // an empty box has nothing else in it
+      stepOut(area, editor, getPos);
+      dom.append(label, escapeHint(), removeButton(remove), area);
       requestAnimationFrame(fit);
       return {
         dom,

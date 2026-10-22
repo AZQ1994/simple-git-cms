@@ -47,7 +47,7 @@ before(async () => {
       collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
       blocks: [
-        { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }] },
+        { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }, { name: 'start', label: 'Start' }] },
         { tag: 'table', label: 'Advanced table', edit: 'table' },
         { tag: 'aside', name: 'notice', label: 'Notice', attrs: { class: 'notice' }, fields: [{ name: 'text', from: 'content', multiline: true }] },
       ],
@@ -235,6 +235,71 @@ test('two paragraphs in a block stay one block, instead of stranding the closing
   assert.doesNotMatch(await page.evaluate(`document.getElementById('body').textContent`), /<\/aside>/, 'no closing tag in the text');
   await save();
   assert.equal(gh.files.get(`${CONTENT_DIR}/202610010000.md`), file, 'and saving it again leaves the file alone');
+});
+
+test('a box can be taken out again: Backspace in an empty one, or the × on it', async () => {
+  await openArticle(2); // the draft, which by now has a block or two in it
+  const cards = () => page.evaluate(`document.querySelectorAll('#body .block-card').length`);
+  const before = await cards();
+
+  // An empty HTML box: everything typed in it belongs to the text area, so Backspace never
+  // reached the editor and the box could not be deleted at all
+  await page.evaluate(`document.querySelector('#toolbar [data-menu]').click()`);
+  await page.until(`!document.getElementById('insert-list').hidden`, { label: 'the insert menu' });
+  await page.evaluate(`document.querySelector('#insert-list [data-cmd="html"]').click()`);
+  await page.until(`document.querySelector('#body .html-block textarea')`, { label: 'the box' });
+  await page.evaluate(`document.querySelector('#body .html-block textarea').focus()`);
+  await page.press('Backspace');
+  await page.until(`!document.querySelector('#body .html-block')`, { label: 'the box to go' });
+
+  // And the × takes a filled-in one out, which the mouse otherwise cannot reach
+  await page.evaluate(`document.querySelector('#body .block-card .node-remove').click()`);
+  await page.until(`document.querySelectorAll('#body .block-card').length === ${before - 1}`, { label: 'one card fewer' });
+});
+
+test('the keyboard can get into a box and back out of it', async () => {
+  // A paragraph and a box under it, which is the shape this is about
+  await page.evaluate(`document.getElementById('new-article').click()`);
+  await page.until(`document.getElementById('f-title').value === ''`, { label: 'an empty form' });
+  await typeBody('A line, and a box under it.');
+  await page.evaluate(`document.querySelector('#toolbar [data-menu]').click()`);
+  await page.until(`!document.getElementById('insert-list').hidden`, { label: 'the insert menu' });
+  await page.evaluate(`document.querySelector('#insert-list [data-cmd="html"]').click()`);
+  await page.until(`document.querySelector('#body .html-block textarea')`, { label: 'the box' });
+
+  const where = () => page.evaluate(`document.activeElement.tagName + (document.activeElement.closest('.html-block') ? ' in-box' : ' out')`);
+  await page.evaluate(`document.querySelector('#body .html-block textarea').focus()`);
+  assert.equal(await where(), 'TEXTAREA in-box');
+
+  // Escape leaves the box selected, which is where the arrow keys and Backspace work again
+  await page.press('Escape');
+  await page.until(`document.querySelector('#body .html-block.selected')`, { label: 'the box to be selected' });
+  assert.match(await where(), /out$/, 'and the editor has the keyboard back');
+
+  // The arrow keys are how you reach a box without the mouse: off it, and onto it again
+  await page.press('ArrowUp');
+  await page.until(`!document.querySelector('#body .html-block.selected')`, { label: 'the selection to leave the box' });
+  await page.press('ArrowDown');
+  await page.until(`document.querySelector('#body .html-block.selected')`, { label: 'the box to be selected again' });
+
+  // and Enter steps into whatever is selected
+  await page.press('Enter');
+  await page.until(`document.activeElement.tagName === 'TEXTAREA'`, { label: 'the text area' });
+  assert.equal(await where(), 'TEXTAREA in-box');
+});
+
+test('filling in a second field keeps what the first one says', async () => {
+  await openArticle(0);
+  const setField = (n, value) =>
+    page.evaluate(`(() => {
+      const i = document.querySelectorAll('#body .block-card input')[${n}];
+      i.value = ${JSON.stringify(value)};
+      i.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+  await setField(0, 'abc');
+  await setField(1, '30');
+  await save();
+  assert.match(gh.files.get(`${CONTENT_DIR}/202610150930.md`), /<YouTube id="abc" start="30" \/>/);
 });
 
 test('the HTML box can be edited, and that is what gets committed', async () => {

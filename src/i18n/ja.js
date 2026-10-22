@@ -77,6 +77,8 @@ export default {
   'toolbar.insert': '上のボタンにないものを挿入',
   'toolbar.insertLabel': '挿入',
   'toolbar.htmlItem': 'HTML',
+  'block.escape': 'Esc で出る',
+  'block.remove': 'このブロックを削除',
   'html.unclosed': '<{tag}> が閉じられていません。サイトではこれ以降がすべてこの中に入ります。',
   'html.stray': 'ここには </{tag}> が閉じるものがありません。',
   'html.unclosedLine': '{line} 行目：<{tag}> が閉じられていません',
