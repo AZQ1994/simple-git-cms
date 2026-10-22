@@ -45,6 +45,10 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 - **Nothing in progress is lost**: what hasn't been committed is kept in the browser as you type —
   images that haven't been uploaded included — and offered back after a crash, a closed tab or a
   reload
+- **A long list stays quick**: the list is read in two steps — which files there are, then their
+  text in batches, newest first, so it appears without waiting for the last article. The text is
+  kept in the browser under git's own hash of it, so opening the editor again downloads only what
+  actually changed
 - **Preview**: see the article in your own site's layout, at desktop or phone width, including
   changes and images you have not saved yet
 - **Deployment**: draft saves get `[skip ci]` so they don't trigger a build; after publishing, the
@@ -296,8 +300,11 @@ Markdown in the browser, so a tag your site expands itself will not appear there
 ## Locking the editor down
 
 The token lives in `localStorage`, so anything that can run a script on the editor's address can
-read it — and that token can write to your repository. A Content-Security-Policy header is what
-stops that: nothing but the editor's own files is allowed to run.
+read it — and that token can write to your repository. The articles themselves are kept in the
+browser too, in IndexedDB: unsaved work, and the text the list has already downloaded. For a
+private repository that is its content sitting on whatever machine edits it. A
+Content-Security-Policy header is what stops a script getting at any of it: nothing but the
+editor's own files is allowed to run.
 
 <!-- csp:begin -->
 ```http

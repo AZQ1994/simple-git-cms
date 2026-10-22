@@ -3,6 +3,7 @@
 import { $, busy, toast } from './dom.js';
 import { addPending, CONFIG, displaySrc, emit, fmtDateInput, fmtDateTime, mediaRepoPath, on, pending, state, store } from './store.js';
 import { dropDraft, getDraft, putDraft } from './recover.js';
+import { rememberBody } from './articles.js';
 import { editor, setBody, toMarkdown } from './editor.js';
 import { compressImage, newImagePath, openCropper } from './images.js';
 import { htmlProblems } from './html-scan.js';
@@ -401,6 +402,7 @@ async function save({ draft, force = false, label = t('save.saving') }) {
     (await busy(label, async () => {
       try {
         const r = await store.saveArticle(article, { baseSha: state.current.sha, images, message, force });
+        rememberBody(store, r.sha, r.text);
         for (const img of images) pending.get(img.url).uploaded = true;
         const saved = { ...article, id: r.id, sha: r.sha };
         const i = state.articles.findIndex((a) => a.id === r.id);

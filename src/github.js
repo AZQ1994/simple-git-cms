@@ -83,18 +83,39 @@ export class GitHubStore {
     return { login: user.login, name: user.name || user.login, avatar: user.avatar_url, canWrite: Boolean(repo?.permissions?.push) };
   }
 
-  /** Every article, bodies included, in one request. */
-  async listArticles() {
+  /** Which articles the collection has: one entry per file, newest first. Names and content
+   * hashes only — no text, so this request stays the same size whether the articles are ten lines
+   * or ten pages. The id is the file's name, which is a timestamp, so sorting by it is sorting by
+   * date without having read a single body. */
+  async listFiles() {
     const [owner, name] = this.repo.split('/');
     const data = await this.graphql(
-      `query($owner:String!,$name:String!,$expr:String!){repository(owner:$owner,name:$name){object(expression:$expr){... on Tree{entries{name oid object{... on Blob{text}}}}}}}`,
+      `query($owner:String!,$name:String!,$expr:String!){repository(owner:$owner,name:$name){object(expression:$expr){... on Tree{entries{name oid}}}}}`,
       { owner, name, expr: `${this.branch}:${this.contentDir}` },
     );
     const entries = data.repository?.object?.entries ?? [];
     return entries
-      .filter((e) => e.name.endsWith('.md') && typeof e.object?.text === 'string')
-      .map((e) => ({ ...parseArticle(e.name.replace(/\.md$/, ''), e.object.text), sha: e.oid }))
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      .filter((e) => e.name.endsWith('.md'))
+      .map((e) => ({ id: e.name.replace(/\.md$/, ''), oid: e.oid }))
+      .sort((a, b) => b.id.localeCompare(a.id));
+  }
+
+  /** The text of several articles in one request, by id. A file that isn't there any more — it
+   * was deleted between listing and reading — is simply missing from the answer.
+   * @returns {Promise<Map<string, string>>} */
+  async readFiles(ids) {
+    if (!ids.length) return new Map();
+    const [owner, name] = this.repo.split('/');
+    // One aliased field per article; GitHub has no way to ask for part of a file, so the whole
+    // body comes back and the only thing worth controlling is how many at a time
+    const keys = ids.map((_, i) => `f${i}`);
+    const data = await this.graphql(
+      `query($owner:String!,$name:String!,${keys.map((k) => `$${k}:String!`).join(',')}){repository(owner:$owner,name:$name){${keys
+        .map((k) => `${k}:object(expression:$${k}){... on Blob{text}}`)
+        .join(' ')}}}`,
+      { owner, name, ...Object.fromEntries(keys.map((k, i) => [k, `${this.branch}:${this.contentDir}/${ids[i]}.md`])) },
+    );
+    return new Map(ids.map((id, i) => [id, data.repository?.[keys[i]]?.text]).filter(([, text]) => typeof text === 'string'));
   }
 
   /** The latest version of one article, or null if it isn't there. */
@@ -113,7 +134,8 @@ export class GitHubStore {
    * Save an article. An empty article.id creates a new one. `images` is
    * [{ path: path inside the repository, bytes: Uint8Array }].
    * `baseSha` is the version that was opened; if it no longer matches, this throws ConflictError —
-   * unless force is true, which overwrites. Returns { id, sha, commit }.
+   * unless force is true, which overwrites. Returns { id, sha, commit, text } — text being the
+   * file exactly as it was written, which is what the article now is.
    */
   async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false } = {}) {
     // Image blobs don't depend on the branch, so upload them up front — a retry needn't repeat it
@@ -139,13 +161,12 @@ export class GitHubStore {
 
       const tree = [...imageBlobs.map((b) => ({ path: b.path, mode: '100644', type: 'blob', sha: b.sha }))];
       let articleSha = null;
+      let text = null;
       if (deleteArticle) {
         tree.push({ path, mode: '100644', type: 'blob', sha: null });
       } else {
-        const blob = await this.req(`/repos/${this.repo}/git/blobs`, {
-          method: 'POST',
-          body: { content: serializeArticle({ ...article, id }), encoding: 'utf-8' },
-        });
+        text = serializeArticle({ ...article, id });
+        const blob = await this.req(`/repos/${this.repo}/git/blobs`, { method: 'POST', body: { content: text, encoding: 'utf-8' } });
         articleSha = blob.sha;
         tree.push({ path, mode: '100644', type: 'blob', sha: blob.sha });
       }
@@ -161,7 +182,7 @@ export class GitHubStore {
       });
       try {
         await this.req(`/repos/${this.repo}/git/refs/heads/${this.branch}`, { method: 'PATCH', body: { sha: commit.sha, force: false } });
-        return { id, sha: articleSha, commit: commit.sha };
+        return { id, sha: articleSha, commit: commit.sha, text };
       } catch (e) {
         // The branch moved meanwhile (someone saved a different article): start again from the tip
         if (e.status === 422 && attempt < 3) continue;

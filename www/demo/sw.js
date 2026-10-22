@@ -78,12 +78,24 @@ async function api(request, url) {
   if (/^\/repos\/[^/]+\/[^/]+$/.test(p)) return json({ permissions: { push: true } });
 
   if (p === '/graphql') {
-    const entries = [];
-    for (const [path, file] of Object.entries(state.files)) {
-      if (!path.startsWith(`${CONTENT_DIR}/`) || !('t' in file)) continue;
-      entries.push({ name: path.split('/').pop(), oid: await sha1(file.t), object: { text: file.t } });
+    const at = (expr) => expr.slice(expr.indexOf(':') + 1);
+    // Which articles there are: names and hashes, the way the editor asks for the list
+    if (body.query.includes('on Tree')) {
+      const entries = [];
+      for (const [path, file] of Object.entries(state.files)) {
+        if (!path.startsWith(`${CONTENT_DIR}/`) || !('t' in file)) continue;
+        entries.push({ name: path.split('/').pop(), oid: await sha1(file.t) });
+      }
+      return json({ data: { repository: { object: { entries } } } });
     }
-    return json({ data: { repository: { object: { entries } } } });
+    // And their text: one aliased field per article
+    const repository = {};
+    for (const [key, expr] of Object.entries(body.variables)) {
+      if (!/^f\d+$/.test(key)) continue;
+      const file = state.files[at(expr)];
+      repository[key] = file && 't' in file ? { text: file.t } : null;
+    }
+    return json({ data: { repository } });
   }
 
   const contents = p.match(/\/contents\/(.+)$/);

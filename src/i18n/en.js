@@ -18,6 +18,7 @@ export default {
   'list.openAria': 'Article list',
   'list.empty': 'No articles match.',
   'list.untitled': '(untitled)',
+  'list.more': 'reading {n} more…',
   'filter.all': 'All',
   'filter.live': 'Published',
   'filter.draft': 'Drafts',

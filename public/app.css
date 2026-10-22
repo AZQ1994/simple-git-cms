@@ -165,6 +165,7 @@ svg { flex: none; }
 .dot.live { background: var(--green); }
 .dot.draft { background: var(--amber); }
 .list-empty { padding: 32px 12px; text-align: center; color: var(--faint); font-size: 13px; }
+.list-more { padding: 12px; text-align: center; color: var(--faint); font-size: 12.5px; }
 .side-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); }
 .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--line); }
 .user-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

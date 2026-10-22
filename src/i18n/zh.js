@@ -19,6 +19,7 @@ export default {
   'list.openAria': '文章列表',
   'list.empty': '没有符合条件的文章',
   'list.untitled': '（无标题）',
+  'list.more': '还在读取其余 {n} 篇…',
   'filter.all': '全部',
   'filter.live': '已发布',
   'filter.draft': '草稿',

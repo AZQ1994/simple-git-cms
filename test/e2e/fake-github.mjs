@@ -61,6 +61,7 @@ export async function startFakeGitHub() {
   const blobs = new Map();
   const trees = new Map();
   const commits = [];
+  const queries = [];
   let head = 'c0';
 
   const send = (res, status, data) => {
@@ -86,10 +87,24 @@ export async function startFakeGitHub() {
     if (/^\/repos\/[^/]+\/[^/]+$/.test(p)) return send(res, 200, { permissions: { push: true } });
 
     if (p === '/graphql') {
-      const entries = [...files]
-        .filter(([f]) => f.startsWith(`${CONTENT_DIR}/`) && f.endsWith('.md'))
-        .map(([f, text]) => ({ name: f.split('/').pop(), oid: sha(text), object: { text } }));
-      return send(res, 200, { data: { repository: { object: { entries } } } });
+      queries.push(body.query);
+      const path = (expr) => expr.slice(expr.indexOf(':') + 1);
+      // The listing: every article file in the collection, names and hashes
+      if (body.query.includes('on Tree')) {
+        const dir = `${path(body.variables.expr)}/`;
+        const entries = [...files]
+          .filter(([f]) => f.startsWith(dir) && f.endsWith('.md'))
+          .map(([f, text]) => ({ name: f.slice(dir.length), oid: sha(text) }));
+        return send(res, 200, { data: { repository: { object: { entries } } } });
+      }
+      // The bodies: one aliased field per article asked for
+      const repository = {};
+      for (const [k, expr] of Object.entries(body.variables)) {
+        if (!/^f\d+$/.test(k)) continue;
+        const text = files.get(path(expr));
+        repository[k] = text === undefined ? null : { text };
+      }
+      return send(res, 200, { data: { repository } });
     }
 
     const contents = p.match(/\/contents\/(.+)$/);
@@ -142,6 +157,10 @@ export async function startFakeGitHub() {
     /** Every commit made, newest last. */
     get commits() {
       return commits;
+    },
+    /** Every GraphQL query asked for, to show what the editor does and doesn't download. */
+    get queries() {
+      return queries;
     },
     close: () => new Promise((resolve) => server.close(resolve)),
   };

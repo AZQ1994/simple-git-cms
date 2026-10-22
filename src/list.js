@@ -35,6 +35,13 @@ export function renderList() {
     li.textContent = t('list.empty');
     ul.replaceChildren(li);
   }
+  // Until every body is in, the list, the counts and the search are about what has arrived so far
+  if (state.pending) {
+    const li = document.createElement('li');
+    li.className = 'list-more';
+    li.textContent = t('list.more', { n: state.pending });
+    ul.append(li);
+  }
 
   const allTags = [...new Set(state.articles.flatMap((a) => a.tags))];
   $('#tag-options').replaceChildren(

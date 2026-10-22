@@ -629,6 +629,30 @@ test('nothing went wrong in the browser', async () => {
   assert.deepEqual(page.logs.filter((l) => !l.startsWith('[network]')), []);
 });
 
+// After the check above, because it reloads the page and that empties the browser's own record
+// of the requests made
+test('the list is read in two steps, and opening the editor again downloads no articles at all', async () => {
+  const listings = gh.queries.filter((q) => q.includes('on Tree'));
+  assert.ok(listings.length >= 1, 'the list is read by listing the files first');
+  assert.ok(
+    listings.every((q) => !q.includes('text')),
+    'the listing asks for names and hashes, not for the articles themselves',
+  );
+
+  // The bodies are kept in this browser under the hash of their contents, so nothing has to be
+  // asked for twice — and nothing can come back as the wrong version of an article
+  const before = gh.queries.length;
+  await page.navigate(site.origin);
+  await page.until(`!document.getElementById('app').hidden`, { label: 'the editor again' });
+  await page.until(`document.querySelectorAll('#list .item').length >= 3`, { label: 'the list again' });
+  const asked = gh.queries.slice(before);
+  assert.deepEqual(
+    asked.map((q) => (q.includes('on Tree') ? 'listing' : 'bodies')),
+    ['listing'],
+    'the second visit is one request, and it is the listing',
+  );
+});
+
 // Last, because the browser logs a refused script and the check above would count that as trouble
 test('all of that happened under the policy the README recommends, and it bites', async () => {
   assert.match(policy, /^default-src 'none';/);

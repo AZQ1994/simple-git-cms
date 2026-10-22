@@ -8,6 +8,7 @@
 //   lang.js        interface language and the language menus
 //   auth.js        signing in and out, and refreshing the token
 //   list.js        the sidebar list, its search and filters
+//   articles.js    loading that list: which files there are, then their text, in batches
 //   editor.js      the editing surface: TipTap, the toolbar and the image tools
 //   doc.js         the article form, saving, publishing, the status bar
 //   preview-ui.js  the preview pane
@@ -15,9 +16,10 @@
 //   html-scan.js   whether the body's HTML closes everything it opens
 //   config.js      what config.json may say, and what to say when it says something else
 import { GitHubStore } from './github.js';
+import { loadArticles } from './articles.js';
 import { setBlocks } from './blocks.js';
 import { setImageOptions } from './images.js';
-import { $, busy, fillIcons } from './dom.js';
+import { $, busy, fillIcons, toast } from './dom.js';
 import { API_BASE, CONFIG, isLocal, on, setConfig, setStore, state, store } from './store.js';
 import { relabel } from './lang.js';
 import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from './auth.js';
@@ -130,7 +132,27 @@ async function start() {
     if (!me.canWrite) return logout(t('login.noAccess', { login: me.login }));
     $('#user-name').textContent = me.name;
     $('#user-avatar').src = me.avatar;
-    state.articles = await store.listArticles();
+    // The list fills in as it arrives and the editor opens on the first batch of it: with a few
+    // hundred articles, waiting for the last one is waiting for all of them
+    let announce;
+    const first = new Promise((resolve) => (announce = resolve));
+    const loading = loadArticles(store, {
+      onBatch: (articles, left) => {
+        state.articles = articles;
+        state.pending = left;
+        // There is something to show, or there is nothing at all to show — either way, stop waiting
+        if (articles.length || !left) announce();
+        if (!$('#app').hidden) renderList();
+      },
+    });
+    // Whichever comes first: something to show, or the whole thing failing before there is any
+    await Promise.race([first, loading]);
+    loading.catch((e) => {
+      state.pending = 0;
+      renderList();
+      toast(e.message || String(e), 'error');
+    });
+
     $('#login').hidden = true;
     $('#app').hidden = false;
     renderList();

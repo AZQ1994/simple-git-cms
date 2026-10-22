@@ -23,6 +23,7 @@ export const setStore = (s) => (store = s);
 
 export const state = {
   articles: [],
+  pending: 0, // articles whose text is still being downloaded, counted down as batches arrive
   filter: 'all',
   current: null, // the article being edited, as last saved or loaded
   dirty: false,
