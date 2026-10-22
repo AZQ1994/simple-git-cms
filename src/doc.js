@@ -5,6 +5,7 @@ import { addPending, CONFIG, displaySrc, emit, fmtDateInput, fmtDateTime, mediaR
 import { dropDraft, getDraft, putDraft } from './recover.js';
 import { editor, setBody, toMarkdown } from './editor.js';
 import { compressImage, newImagePath, openCropper } from './images.js';
+import { htmlProblems } from './html-scan.js';
 import { renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
 import { icons } from './icons.js';
@@ -365,6 +366,15 @@ function validate(a) {
   return null;
 }
 
+/** HTML that doesn't close is still worth saving — someone may be halfway through writing it —
+ * but not without saying what it does to the page it lands on. */
+function confirmHtml(body) {
+  const problems = htmlProblems(body);
+  if (!problems.length) return true;
+  const list = problems.slice(0, 5).map((p) => t(`html.${p.kind}Line`, p));
+  return confirm(t('save.htmlConfirm', { list: list.join('\n') }));
+}
+
 /** Save. `draft` is the draft state to end up in. Returns whether it worked. */
 async function save({ draft, force = false, label = t('save.saving') }) {
   const article = { ...collect(), draft };
@@ -373,6 +383,7 @@ async function save({ draft, force = false, label = t('save.saving') }) {
     toast(err, 'error');
     return false;
   }
+  if (!confirmHtml(article.body)) return false;
   const wasLive = state.current.id && !state.current.draft;
   const keyBefore = state.current.id; // a new article is kept under 'new' until it has one
   const images = [];

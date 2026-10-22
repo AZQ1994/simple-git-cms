@@ -325,6 +325,10 @@ svg { flex: none; }
 /* Raw HTML: the file said something the editor has no buttons for, so here is its source */
 .html-block { position: relative; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--surface); padding: 22px 12px 10px; }
 .html-block.selected { border-color: var(--navy); }
+/* A tag opened here and closed nowhere: on the site it would swallow the rest of the page */
+.html-block.html-broken { border-color: var(--red); }
+.html-block.html-broken .html-label { color: var(--red); }
+.body .html-broken-tag { color: var(--red); text-decoration: underline wavy var(--red); text-underline-offset: 3px; }
 .html-label { position: absolute; top: 6px; left: 12px; font: 600 10.5px/1 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace); letter-spacing: .08em; color: var(--faint); }
 .html-block textarea {
   display: block; width: 100%; min-height: 3em; max-height: 60vh; padding: 0; border: 0; outline: 0; resize: none;

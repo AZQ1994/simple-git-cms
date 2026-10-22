@@ -248,6 +248,46 @@ test('the HTML box can be edited, and that is what gets committed', async () => 
   assert.match(gh.files.get(`${CONTENT_DIR}/202610150930.md`), /embed\/zzz/);
 });
 
+test('a tag that is never closed is marked, and saving says what it would do to the page', async () => {
+  await openArticle(0);
+  const setBox = (html) =>
+    page.evaluate(`(() => {
+      const t = document.querySelector('#body .html-block textarea');
+      t.value = ${JSON.stringify(html)};
+      t.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+
+  // One line like this in one article wraps the rest of the page it lands on, which is why the
+  // editor reads the body's HTML as one run rather than block by block
+  await setBox('<div style="color: red">aaaaaa');
+  await page.until(`document.querySelector('#body .html-block.html-broken')`, { label: 'the box to be marked' });
+  await save();
+  assert.match(page.dialogs.at(-1) ?? '', /<div> is never closed/, 'saving has to say so');
+
+  // The same tag typed into the sentence itself, which is where someone writing by hand puts it
+  await setBox('');
+  await typeBody('<div style="color: red">aaaaaa');
+  await page.until(`document.querySelector('#body .html-broken-tag')`, { label: 'the tag to be marked where it stands' });
+  assert.equal(
+    await page.evaluate(`document.querySelector('#body .html-broken-tag').textContent`),
+    '<div style="color: red">',
+    'the tag itself, not the sentence around it',
+  );
+
+  // and Update asks about it, not only Save
+  const before = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 60 && gh.commits.length === before; i++) await sleep(100);
+  assert.match(page.dialogs.at(-1) ?? '', /<div> is never closed/);
+
+  await typeBody('</div>');
+  await page.until(`!document.querySelector('#body .html-broken-tag')`, { label: 'the mark to go' });
+  const asked = page.dialogs.length;
+  await save();
+  assert.equal(page.dialogs.length, asked, 'and once it closes there is nothing to ask about');
+  assert.match(gh.files.get(`${CONTENT_DIR}/202610150930.md`), /<div style="color: red">aaaaaa<\/div>/);
+});
+
 test('a new article gets an id of its own', async () => {
   await page.evaluate(`document.getElementById('new-article').click()`);
   await page.until(`document.getElementById('f-title').value === ''`, { label: 'an empty form' });

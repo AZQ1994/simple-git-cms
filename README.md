@@ -32,7 +32,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   under the name it came with, up to a size you set
 - **Nothing is quietly dropped**: anything in the file the editor has no buttons for — an embed, a
   leftover `<div>`, a component your site expands itself — is shown as an HTML box whose source you
-  can edit, and written back exactly as it was
+  can edit, and written back exactly as it was. A tag that is never closed is marked where it is,
+  and saying so before saving, rather than shipped to wrap the rest of the page
 - **A cover image**: taken from the pictures the article already has, or uploaded; replaced,
   cropped or removed in the article's own form, and written to a frontmatter field of your
   choosing — what a site uses for list thumbnails and share images
@@ -60,7 +61,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 
 | Directory | What's in it |
 |---|---|
-| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js` and `preview-ui.js`; `schema.js` says what a document may contain and how it is written back as Markdown — `app.js` reads the config and starts them up |
+| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js` and `preview-ui.js`; `schema.js` says what a document may contain and how it is written back as Markdown, `html-scan.js` whether its HTML closes what it opens — `app.js` reads the config and starts them up |
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
@@ -158,6 +159,15 @@ Anything else in the body that the editor has no node for — an `<iframe>`, a `
 comment, a component your site expands — is held as a block of raw HTML and written back exactly as
 it was. It shows as a box with its source in it, which is also how to put something into an article
 that the toolbar has no button for.
+
+Markdown keeps those boxes apart — it ends a block of HTML at the first blank line and never looks
+further — but the page they land on does not: `<div style="color: red">aaaaaa` with no closing tag
+wraps everything after it, the rest of the site's page included. So the editor reads the body's HTML
+as one run — across the boxes, across blank lines, and through the sentences, since a tag typed
+into a line of text is HTML too. Whatever opened what nothing closes is marked where it stands:
+the box, or those very characters in the sentence. Saving names the tag and the line before the
+file goes in, whether you press Save or Update. It is a warning, not a refusal: it
+is your markup, and you may be halfway through writing it.
 
 A table in the body is a plain GFM table: a header row, one line of text per cell, no merged
 cells. A hand-written one is laid out once on the first save — padded to the column widths, with

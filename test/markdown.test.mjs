@@ -138,6 +138,11 @@ test('an entity quoted inside code stays an entity, not the character it stands 
   }
 });
 
+test('an entity inside a fence is quoted on every line of it, not only the first', () => {
+  const body = '```html\n<p>&lt;a&gt;</p>\n\nstill &amp;lt; quoted\n```';
+  assert.equal(roundTrip(body), body);
+});
+
 // ---------- Blocks a site defines for itself ----------
 
 const withBlocks = (list, fn) => {

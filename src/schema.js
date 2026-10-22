@@ -2,12 +2,15 @@
 // editor itself because nothing here reaches for the DOM as it loads — the one node view below
 // only runs in a browser — so the whole Markdown round-trip can be tested in Node.
 import { Node } from '@tiptap/core';
+import { Plugin } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import StarterKit from '@tiptap/starter-kit';
 import Paragraph from '@tiptap/extension-paragraph';
 import { Markdown } from '@tiptap/markdown';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 import { blockFields, blockNamed, claimFor, fillBlock, fillTemplate, matchBlock, wholeElement } from './blocks.js';
 import { needsHtml, parseHtmlTable, writeHtmlTable } from './html-table.js';
+import { trackHtml } from './html-scan.js';
 import { t } from './i18n/index.js';
 
 // Paragraphs: by default a paragraph holding a single image is unwrapped into a standalone image
@@ -221,6 +224,42 @@ export const HtmlBlock = Node.create({
       : // whatever the site's own definitions make of it, and the source itself when none do
         claimed(token.raw) ?? { type: 'htmlBlock', attrs: { html: token.raw.replace(/\s+$/, '') } },
   renderMarkdown: (node) => node.attrs.html ?? '',
+  // Markdown keeps a document's HTML apart — one box here, a line of text there — but the page it
+  // all ends up on does not: a tag opened anywhere and never closed wraps everything after it,
+  // article and site furniture alike. So the whole document is read as one run of HTML, in order,
+  // and whatever opened what nothing closes is marked where it stands: the box, or the very
+  // characters in the sentence. Code is quoting, not markup, and is skipped.
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          decorations(state) {
+            const open = [];
+            const strays = [];
+            state.doc.descendants((node, pos) => {
+              if (node.type.name === 'htmlBlock') {
+                strays.push(...trackHtml(node.attrs.html ?? '', open, { from: pos, to: pos + node.nodeSize }));
+                return false;
+              }
+              if (node.type.name === 'codeBlock') return false;
+              if (node.isText && !node.marks.some((m) => m.type.name === 'code')) strays.push(...trackHtml(node.text ?? '', open, { in: pos }));
+              return true;
+            });
+            const bad = [...open.map((o) => ({ ...o, why: 'unclosed' })), ...strays.map((o) => ({ ...o, why: 'stray' }))];
+            return DecorationSet.create(
+              state.doc,
+              bad.map(({ mark, at, len, why, tag }) => {
+                const attrs = { title: t(`html.${why}`, { tag }) };
+                return mark.in === undefined
+                  ? Decoration.node(mark.from, mark.to, { ...attrs, class: 'html-broken' })
+                  : Decoration.inline(mark.in + at, mark.in + at + len, { ...attrs, class: 'html-broken-tag' });
+              }),
+            );
+          },
+        },
+      }),
+    ];
+  },
   // The box the editor draws for it: the source in a text area, so whatever the toolbar has no
   // button for can still be written by hand and read back later.
   addNodeView() {
@@ -287,7 +326,11 @@ export const schemaExtensions = [
  * Everything a writer typed has been escaped by this point, so a `<` at the start of a line — or
  * just inside it, since a block of HTML may be written indented — can only be one of the HTML
  * blocks above. */
-const LITERAL = /```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)|`+[^`\n]*`+|^ {0,3}<[\s\S]*?(?=\n\n|$)/gm;
+const END = '(?![\\s\\S])'; // `$` would be the end of a line, since these are matched with `m`
+const LITERAL = new RegExp(
+  `\`\`\`[\\s\\S]*?(?:\`\`\`|${END})|~~~[\\s\\S]*?(?:~~~|${END})|\`+[^\`\\n]*\`+|^ {0,3}<[\\s\\S]*?(?=\\n[ \\t]*\\n|${END})`,
+  'gm',
+);
 
 /** An & is written out as &amp; and < > as &lt; &gt;, which look the same on the site but are not
  * what the file said. They go back as they were, so that what someone typed — a "<" in a sentence,

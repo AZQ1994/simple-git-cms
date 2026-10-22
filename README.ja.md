@@ -57,7 +57,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 
 | ディレクトリ | 中身 |
 |---|---|
-| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決めています。`app.js` は設定の読み込みと起動だけを担当します |
+| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決め、`html-scan.js` が本文の HTML が開いたものを閉じているかを調べます。`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
@@ -154,6 +154,14 @@ frontmatter のうちエディターが知らない項目はそのまま残り�
 展開されるコンポーネント——は生の HTML のかたまりとして保持され、保存時はそのまま書き戻されます。
 エディターではソースの入った箱として表示されるので、ツールバーにないものを記事に入れる手段にも
 なります。
+
+Markdown はその箱どうしを別々のものとして扱います——HTML のかたまりは最初の空行で終わり、その先は
+見ません——が、できあがるページはそうではありません。`<div style="color: red">aaaaaa` が閉じられて
+いなければ、以降のすべて、記事の外のページ部分まで中に入ってしまいます。そこでエディターは、本文の
+HTML を箱をまたぎ、空行をまたぎ、文章の中まで通してひとつながりに読みます——本文に直接書いたタグも
+HTML だからです。閉じられないまま開いたものはその場に印が付きます。箱なら箱、文章ならその数文字に。
+保存の前にはタグと行を伝えます。「保存」でも「更新」でも同じです。拒否ではなく警告です——あなたのマークアップですし、書いている
+途中かもしれないので。
 
 本文の表は普通の GFM の表です：見出し行が 1 行、1 セルに 1 行、セルの結合はなし。手で書いた表は
 最初の保存で一度だけ桁を揃え直し（列幅に合わせて空白を入れ、コロンも列幅に従います）、そのあとの

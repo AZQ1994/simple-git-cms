@@ -12,6 +12,7 @@
 //   doc.js         the article form, saving, publishing, the status bar
 //   preview-ui.js  the preview pane
 //   theme.js       light or dark
+//   html-scan.js   whether the body's HTML closes everything it opens
 //   config.js      what config.json may say, and what to say when it says something else
 import { GitHubStore } from './github.js';
 import { setBlocks } from './blocks.js';
