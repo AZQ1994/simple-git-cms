@@ -5,7 +5,8 @@ behind it are in the repository history.
 
 ## 0.8.0 — 2026-10-24
 
-Buttons that start GitHub Actions workflows, so a site can keep the editor on its test copy only.
+Buttons that start GitHub Actions workflows, so a site can keep the editor on its test copy only;
+and a sidebar that can be made wider.
 
 - **`actions` in config.json.** Each entry is a sidebar button: a `label`, a `workflow` with a
   `workflow_dispatch` trigger, and optionally the `ref` to run on (the content branch by default),
@@ -15,6 +16,9 @@ Buttons that start GitHub Actions workflows, so a site can keep the editor on it
   `main`, and a button publishes `main` to the live site, which is built without the editor. The
   GitHub App needs **Actions: Read and write** for them; without `actions`, nothing changes and
   Read-only is still enough. See [Action buttons](README.md#action-buttons).
+- **Resizable sidebar.** Drag the sidebar's right edge to make the article list wider or narrower
+  (or focus it and use the arrow keys); the width is kept in the browser, and a double-click puts
+  it back. Phones keep the drawer as it was.
 
 ## 0.7.0 — 2026-10-23
 

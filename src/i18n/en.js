@@ -16,6 +16,8 @@ export default {
   'list.new': 'New article',
   'list.search': 'Search articles',
   'list.openAria': 'Article list',
+  'list.resizeAria': 'Sidebar width',
+  'list.resizeHint': 'Drag to resize; double-click to reset',
   'list.empty': 'No articles match.',
   'list.untitled': '(untitled)',
   'list.more': 'reading {n} more…',
