@@ -102,18 +102,16 @@ App of their own.
 ## From the npm package
 
 A site that installed the editor with `npm install --save-dev simple-git-cms` already has the relay
-in `node_modules/simple-git-cms/auth/`; there is nothing to copy or build.
+in `node_modules/simple-git-cms/auth/`; there is nothing to copy or build. Pick one of the routes
+below, all run from the site's own directory. Each one ends the same way: the relay has an
+address, the GitHub App's **Callback URL** is that address plus `/callback`, and `auth.base` in the
+editor's `config.json` is the address itself. Updating the package (`npm update simple-git-cms`)
+updates the relay along with the editor; deploy again the same way when the changelog mentions it.
 
-**Run it as a server.** The package's command starts `server.js`, configured from the environment
-as above:
+### Cloudflare Workers
 
-```bash
-GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com npx simple-git-cms auth
-```
-
-**Cloudflare Workers.** Point wrangler at the file in the package, in the site's `wrangler.toml`
-(or one of its own), then `npx wrangler deploy` and `npx wrangler secret put GITHUB_CLIENT_ID`,
-the secret likewise:
+Next to the site's `package.json`, a `wrangler.auth.toml` (its own file, so it doesn't collide with a
+`wrangler.toml` the site may already have):
 
 ```toml
 name = "cms-auth"
@@ -122,19 +120,81 @@ compatibility_date = "2025-09-01"
 
 [vars]
 ALLOWED_DOMAINS = "example.com"
+
+# Optional: a domain of your own instead of cms-auth.<account>.workers.dev
+# routes = [{ pattern = "cms-auth.example.com", custom_domain = true }]
 ```
 
-**Inside the site's own code.** `simple-git-cms/auth` is the handler, for an edge function, a Bun or
-Deno server, or a route of a server the site already has:
+Then sign in to Cloudflare once, deploy, and set the two secrets:
+
+```bash
+npx wrangler login
+npx wrangler deploy --config wrangler.auth.toml
+npx wrangler secret put GITHUB_CLIENT_ID --config wrangler.auth.toml
+npx wrangler secret put GITHUB_CLIENT_SECRET --config wrangler.auth.toml
+```
+
+`deploy` prints the address. Later deploys keep the secrets; `ALLOWED_DOMAINS` comes from the file,
+so change it there. Worth adding to the site's `package.json`:
+
+```json
+"scripts": {
+  "deploy:auth": "wrangler deploy --config wrangler.auth.toml"
+}
+```
+
+From CI, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment replace
+`wrangler login`.
+
+### Netlify (the site is hosted there)
+
+The relay deploys with the site, under its path. `netlify/edge-functions/cms-auth.js`:
 
 ```js
 import relay from 'simple-git-cms/auth';
 
-export default (request) => relay.fetch(request, process.env);
+export default (request) => relay.fetch(request, Netlify.env.toObject());
+export const config = { path: '/cms-auth/*' };
 ```
 
-Updating the package updates the relay along with the editor; redeploy it when the changelog
-mentions it.
+In Site configuration → Environment variables, set `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`,
+`ALLOWED_DOMAINS` and `PUBLIC_URL=https://example.com/cms-auth`, then deploy the site as usual. The
+address is `https://example.com/cms-auth`.
+
+### Vercel (the site is hosted there)
+
+Likewise, a function in the site. `api/cms-auth/[...path].js`:
+
+```js
+import relay from 'simple-git-cms/auth';
+
+export default { fetch: (request) => relay.fetch(request, process.env) };
+```
+
+Set the same four variables in Project Settings → Environment Variables, with
+`PUBLIC_URL=https://example.com/api/cms-auth`, and deploy. The address is
+`https://example.com/api/cms-auth`.
+
+### Your own server
+
+The package's command starts `server.js`, configured from the environment:
+
+```bash
+GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com \
+  PUBLIC_URL=https://example.com/cms-auth npx simple-git-cms auth
+```
+
+It listens on port 8788 (`PORT` to change it). Keep it running with whatever the server already
+uses — a systemd unit, pm2 (`pm2 start "npx simple-git-cms auth" --name cms-auth`), a container — with
+the variables in its environment rather than in the command line, and put the reverse proxy from
+[Deploy](#2-deploy) in front of it for `https`. The address is `PUBLIC_URL`, or the domain the proxy
+serves when the relay has one of its own.
+
+### Anywhere else
+
+`simple-git-cms/auth` is the handler, `relay.fetch(request, env)`, for any runtime that speaks
+`Request` and `Response` — Deno (`Deno.serve((request) => relay.fetch(request, Deno.env.toObject()))`),
+Bun, or a route of a server the site already has.
 
 ## When sign-in doesn't work
 

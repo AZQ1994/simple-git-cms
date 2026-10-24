@@ -100,18 +100,17 @@ location /cms-auth/ {
 ## npm パッケージから使う
 
 `npm install --save-dev simple-git-cms` でエディタを入れたサイトには、中継も
-`node_modules/simple-git-cms/auth/` に入っています。コピーもビルドも要りません。
+`node_modules/simple-git-cms/auth/` に入っています。コピーもビルドも要りません。以下のどれか 1 つを
+選び、コマンドはサイト自身のディレクトリで実行します。どの方法も最後は同じです：中継にアドレスが
+でき、GitHub App の **Callback URL** はそのアドレスに `/callback` を付けたもの、エディタの
+`config.json` の `auth.base` はそのアドレスそのものです。パッケージを更新すると
+（`npm update simple-git-cms`）中継もエディタと一緒に更新されます。変更履歴に中継のことが書かれて
+いたら、同じ方法でデプロイし直してください。
 
-**サーバーとして動かす.** パッケージのコマンドが `server.js` を起動します。設定は上と同じく環境変数
-から読みます：
+### Cloudflare Workers
 
-```bash
-GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com npx simple-git-cms auth
-```
-
-**Cloudflare Workers.** サイトの `wrangler.toml`（または専用のもの）で wrangler をパッケージ内の
-ファイルに向け、`npx wrangler deploy` のあと `npx wrangler secret put GITHUB_CLIENT_ID`、シークレット
-も同様に：
+サイトの `package.json` の隣に `wrangler.auth.toml` を置きます（サイトにすでにあるかもしれない
+`wrangler.toml` とぶつからないよう、別のファイルにします）：
 
 ```toml
 name = "cms-auth"
@@ -120,19 +119,80 @@ compatibility_date = "2025-09-01"
 
 [vars]
 ALLOWED_DOMAINS = "example.com"
+
+# 任意：cms-auth.<アカウント>.workers.dev ではなく自分のドメインを使う
+# routes = [{ pattern = "cms-auth.example.com", custom_domain = true }]
 ```
 
-**サイト自身のコードに組み込む.** `simple-git-cms/auth` がハンドラなので、エッジ関数、Bun や Deno の
-サーバー、サイトがすでに持っているサーバーのルートで使えます：
+Cloudflare に一度ログインし、デプロイして、シークレットを 2 つ設定します：
+
+```bash
+npx wrangler login
+npx wrangler deploy --config wrangler.auth.toml
+npx wrangler secret put GITHUB_CLIENT_ID --config wrangler.auth.toml
+npx wrangler secret put GITHUB_CLIENT_SECRET --config wrangler.auth.toml
+```
+
+アドレスは `deploy` が表示します。次からのデプロイでもシークレットは残ります。`ALLOWED_DOMAINS` は
+このファイルが正なので、変えるときはファイルを直します。サイトの `package.json` に足しておくと便利です：
+
+```json
+"scripts": {
+  "deploy:auth": "wrangler deploy --config wrangler.auth.toml"
+}
+```
+
+CI から実行するときは、環境変数に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を入れれば
+`wrangler login` は要りません。
+
+### Netlify（サイトをそこでホストしている場合）
+
+中継はサイトと一緒に、サイトのパスの下にデプロイされます。`netlify/edge-functions/cms-auth.js`：
 
 ```js
 import relay from 'simple-git-cms/auth';
 
-export default (request) => relay.fetch(request, process.env);
+export default (request) => relay.fetch(request, Netlify.env.toObject());
+export const config = { path: '/cms-auth/*' };
 ```
 
-パッケージを更新すると中継もエディタと一緒に更新されます。変更履歴に中継のことが書かれていたら、
-デプロイし直してください。
+Site configuration → Environment variables で `GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`、
+`ALLOWED_DOMAINS`、`PUBLIC_URL=https://example.com/cms-auth` を設定し、いつもどおりサイトをデプロイ
+します。アドレスは `https://example.com/cms-auth` です。
+
+### Vercel（サイトをそこでホストしている場合）
+
+同じく、サイトの中の関数として置きます。`api/cms-auth/[...path].js`：
+
+```js
+import relay from 'simple-git-cms/auth';
+
+export default { fetch: (request) => relay.fetch(request, process.env) };
+```
+
+Project Settings → Environment Variables で同じ 4 つの変数を設定し（`PUBLIC_URL` は
+`https://example.com/api/cms-auth`）、デプロイします。アドレスは `https://example.com/api/cms-auth` です。
+
+### 自前のサーバー
+
+パッケージのコマンドが `server.js` を起動します。設定は環境変数から読みます：
+
+```bash
+GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com \
+  PUBLIC_URL=https://example.com/cms-auth npx simple-git-cms auth
+```
+
+ポート 8788 で待ち受けます（変えるときは `PORT`）。サーバーで普段使っている方法で動かし続けて
+ください——systemd、pm2（`pm2 start "npx simple-git-cms auth" --name cms-auth`）、コンテナなど。
+変数はコマンドラインではなくその環境に入れ、`https` のために[デプロイ](#2-デプロイ)のリバース
+プロキシを前に置きます。アドレスは `PUBLIC_URL`、中継に専用のドメインがあるならプロキシが応答する
+そのドメインです。
+
+### そのほかの場所
+
+`simple-git-cms/auth` がハンドラ `relay.fetch(request, env)` なので、`Request` と `Response` を
+扱える実行環境ならどこでも使えます——Deno（`Deno.serve((request) => relay.fetch(request, Deno.env.toObject()))`）、
+Bun、サイトがすでに持っているサーバーのルートなど。
 
 ## ログインできないとき
 

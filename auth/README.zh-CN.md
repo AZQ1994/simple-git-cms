@@ -91,16 +91,15 @@ location /cms-auth/ {
 ## 从 npm 包里用
 
 用 `npm install --save-dev simple-git-cms` 装了编辑器的网站，中转已经在
-`node_modules/simple-git-cms/auth/` 里了，不用复制，也不用构建。
+`node_modules/simple-git-cms/auth/` 里了，不用复制，也不用构建。下面几种方式挑一种，命令都在网站
+自己的目录里跑。每种方式的结尾都一样：中转有了一个地址，GitHub App 的 **Callback URL** 填这个地址
+加上 `/callback`，编辑器 `config.json` 的 `auth.base` 填这个地址本身。升级这个包
+（`npm update simple-git-cms`）时中转会跟着编辑器一起更新；更新日志里提到中转时，用同样的方式再部署一次。
 
-**当作服务器跑.** 包自带的命令会启动 `server.js`，配置和上面一样从环境变量读：
+### Cloudflare Workers
 
-```bash
-GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com npx simple-git-cms auth
-```
-
-**Cloudflare Workers.** 在网站的 `wrangler.toml`（或者单独一个）里让 wrangler 指向包里的文件，然后
-`npx wrangler deploy`，再 `npx wrangler secret put GITHUB_CLIENT_ID`，密钥同理：
+在网站的 `package.json` 旁边放一个 `wrangler.auth.toml`（单独一个文件，免得和网站可能已有的
+`wrangler.toml` 撞上）：
 
 ```toml
 name = "cms-auth"
@@ -109,18 +108,78 @@ compatibility_date = "2025-09-01"
 
 [vars]
 ALLOWED_DOMAINS = "example.com"
+
+# 可选：用自己的域名，而不是 cms-auth.<账号>.workers.dev
+# routes = [{ pattern = "cms-auth.example.com", custom_domain = true }]
 ```
 
-**写进网站自己的代码.** `simple-git-cms/auth` 就是处理函数，可以用在边缘函数、Bun 或 Deno 的服务器、
-或者网站已有的服务器的某个路由里：
+然后登录一次 Cloudflare，部署，再设两个密钥：
+
+```bash
+npx wrangler login
+npx wrangler deploy --config wrangler.auth.toml
+npx wrangler secret put GITHUB_CLIENT_ID --config wrangler.auth.toml
+npx wrangler secret put GITHUB_CLIENT_SECRET --config wrangler.auth.toml
+```
+
+`deploy` 会打印出地址。之后再部署，密钥都还在；`ALLOWED_DOMAINS` 以这个文件为准，要改就改文件。
+可以在网站的 `package.json` 里加一个脚本：
+
+```json
+"scripts": {
+  "deploy:auth": "wrangler deploy --config wrangler.auth.toml"
+}
+```
+
+在 CI 里跑的话，环境变量里放 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`，就不用 `wrangler login`。
+
+### Netlify（网站托管在那里）
+
+中转跟着网站一起部署，放在网站的某个路径下。`netlify/edge-functions/cms-auth.js`：
 
 ```js
 import relay from 'simple-git-cms/auth';
 
-export default (request) => relay.fetch(request, process.env);
+export default (request) => relay.fetch(request, Netlify.env.toObject());
+export const config = { path: '/cms-auth/*' };
 ```
 
-升级这个包时中转会跟着编辑器一起更新；更新日志里提到中转时，重新部署一下。
+在 Site configuration → Environment variables 里设 `GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`、
+`ALLOWED_DOMAINS` 和 `PUBLIC_URL=https://example.com/cms-auth`，然后照常部署网站。地址是
+`https://example.com/cms-auth`。
+
+### Vercel（网站托管在那里）
+
+同样是网站里的一个函数。`api/cms-auth/[...path].js`：
+
+```js
+import relay from 'simple-git-cms/auth';
+
+export default { fetch: (request) => relay.fetch(request, process.env) };
+```
+
+在 Project Settings → Environment Variables 里设同样四个变量，其中
+`PUBLIC_URL=https://example.com/api/cms-auth`，然后部署。地址是 `https://example.com/api/cms-auth`。
+
+### 你自己的服务器
+
+包自带的命令会启动 `server.js`，配置从环境变量读：
+
+```bash
+GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com \
+  PUBLIC_URL=https://example.com/cms-auth npx simple-git-cms auth
+```
+
+它监听 8788 端口（改端口设 `PORT`）。用服务器上已经在用的方式让它一直跑着——systemd、pm2
+（`pm2 start "npx simple-git-cms auth" --name cms-auth`）、容器都行——变量放进它的环境里，不要写在
+命令行上；前面放上[部署](#2-部署)里那个反向代理来提供 `https`。地址就是 `PUBLIC_URL`；如果中转单独
+占一个域名，就是反向代理的那个域名。
+
+### 其他地方
+
+`simple-git-cms/auth` 就是处理函数 `relay.fetch(request, env)`，能用 `Request` 和 `Response` 的运行
+环境都能用——Deno（`Deno.serve((request) => relay.fetch(request, Deno.env.toObject()))`）、Bun，或者
+网站已有的服务器的某个路由。
 
 ## 登录不成功的时候
 
