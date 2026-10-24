@@ -26,11 +26,11 @@ const b64 = (bytes) => {
 export class LocalStore {
   /** Is `npm run dev` behind this page? Returns a store if it is, and null if not — in which case
    * the editor signs in to GitHub as usual. */
-  static async detect(config, base = BASE) {
+  static async detect(contentDir, base = BASE) {
     const site = await fetch(`${base}/site`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
-    return site ? new LocalStore({ site, contentDir: config.collection.dir, base }) : null;
+    return site ? new LocalStore({ site, contentDir, base }) : null;
   }
 
   constructor({ site, contentDir, base = BASE }) {
@@ -43,7 +43,9 @@ export class LocalStore {
   }
 
   async req(path, body) {
-    const res = await fetch(`${this.base}/${path}`, {
+    // Every request says which directory it is about: the server only answers for the ones
+    // config.json names, and the sidebar can switch between them
+    const res = await fetch(`${this.base}/${path}?dir=${encodeURIComponent(this.contentDir)}`, {
       method: body ? 'POST' : 'GET',
       headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,

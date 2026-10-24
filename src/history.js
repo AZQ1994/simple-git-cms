@@ -6,7 +6,7 @@
 // runs: its text comes from the repository, HTML and all, and the editor's page holds the GitHub
 // token.
 import { $, busy, toast } from './dom.js';
-import { CONFIG, displaySrc, fmtDate, fmtDateTime, state, store } from './store.js';
+import { COLLECTION, displaySrc, fmtDate, fmtDateTime, state, store } from './store.js';
 import { openPreview, renderBody } from './preview-ui.js';
 import { restoreChanges, restoreVersion } from './doc.js';
 import { t } from './i18n/index.js';
@@ -79,7 +79,7 @@ async function show(c) {
   }
   if (shown !== c) return;
   frame.srcdoc = page(article, html);
-  previewBtn.hidden = !CONFIG.preview?.url;
+  previewBtn.hidden = !COLLECTION.preview;
   // Not offered for the version that is already there, with nothing unsaved on top of it
   restoreBtn.hidden = !restoreChanges(article);
 }
@@ -94,7 +94,7 @@ function showText(text) {
 function page(article, html) {
   const css = getComputedStyle(document.documentElement);
   const v = (name) => css.getPropertyValue(name).trim();
-  const field = CONFIG.collection.imageField;
+  const field = COLLECTION.imageField;
   const cover = article && field && typeof article.extra?.[field] === 'string' ? article.extra[field] : null;
   const head = article
     ? `<h1>${esc(article.title) || esc(t('list.untitled'))}</h1>

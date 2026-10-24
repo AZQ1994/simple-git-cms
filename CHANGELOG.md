@@ -3,6 +3,26 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## 1.0.0 — 2026-10-24
+
+More than one kind of article: news, notices, events, each in its own directory, in one editor.
+This changes config.json; see [Upgrading from 0.x](README.md#2-write-configjson).
+
+- **`collections` in config.json.** A list of the site's kinds of article, each with its own `dir`,
+  `url`, `label`, `imageField` and `preview` page, and a `name` for the address bar (by default the
+  last part of `dir`). With more than one, the sidebar's label becomes a menu that switches between
+  them: the list, the cover field, the Preview button and View on site all follow the one picked.
+  Switching away from unsaved changes asks first. The repository, images, blocks, saving,
+  publishing, deployment and action buttons are the same for all of them.
+- **The address bar says which collection** as well as which article (`?c=notices&id=…`), since an
+  id is only unique within its own directory. A reload or a link comes back to both; a link from
+  before 1.0 (`?id=…`) opens in the first collection, and one naming a collection there no longer
+  is opens the first one.
+- **Breaking: `collection` is now `collections`, and `preview.url` is each entry's `preview`.** An
+  old config.json is not silently half-used: the editor says what each of the two became and how
+  to write it.
+- **`npm run dev`** serves every collection's directory, and only those.
+
 ## 0.9.0 — 2026-10-24
 
 Article history: every earlier version of an article, to look through and to bring back.
