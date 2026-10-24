@@ -181,6 +181,7 @@ export default {
 
   // 提交信息
   'commit.article': '{verb}文章：{title}',
+  'commit.restored': '{message}（恢复自 {when} 的版本 {sha}）',
   'commit.delete': '删除草稿：{title}',
 
   // 冲突
@@ -201,7 +202,7 @@ export default {
 
   // 历史版本
   'history.title': '历史版本',
-  'history.hint': '每次保存都是一个版本。这里只能查看，不会改动文章。',
+  'history.hint': '每次保存都是一个版本。恢复会把它载入编辑器，保存后才会生效。',
   'history.close': '关闭',
   'history.loading': '正在读取历史…',
   'history.latest': '最新',
@@ -210,6 +211,9 @@ export default {
   'history.deleted': '这个版本里文章被删除了。',
   'history.preview': '在网站样式里预览',
   'history.previewNote': '{when} 的版本，不是正在编辑的内容',
+  'history.restore': '恢复这个版本',
+  'history.restored': '已载入 {when} 的版本，保存后才会生效',
+  'history.backToSaved': '已回到上次保存的版本，未保存的修改已放弃',
 
   // 部署
   'deploy.pending': '正在更新网站…',

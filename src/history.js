@@ -1,6 +1,6 @@
 // The history of the article that is open: every commit that changed it, and the article as each
-// one left it — to look at, not to edit. Every save is already a commit, so the versions are all
-// in the repository; this only reads them back.
+// one left it. Every save is already a commit, so the versions are all in the repository; this
+// reads them back, and restoring one puts it in the editor to be saved like any other change.
 //
 // A version is drawn the way the site would draw it, in a frame sandboxed so that nothing in it
 // runs: its text comes from the repository, HTML and all, and the editor's page holds the GitHub
@@ -8,12 +8,14 @@
 import { $, busy, toast } from './dom.js';
 import { CONFIG, displaySrc, fmtDate, fmtDateTime, state, store } from './store.js';
 import { openPreview, renderBody } from './preview-ui.js';
+import { restoreChanges, restoreVersion } from './doc.js';
 import { t } from './i18n/index.js';
 
 const modal = $('#history-modal');
 const list = $('#history-list');
 const frame = $('#history-frame');
 const previewBtn = modal.querySelector('[data-history="preview"]');
+const restoreBtn = modal.querySelector('[data-history="restore"]');
 
 let commits = [];
 let articleId = null;
@@ -57,6 +59,7 @@ async function show(c) {
   for (const b of list.querySelectorAll('.history-item')) b.classList.toggle('on', b.dataset.sha === c.sha);
   $('#history-what').textContent = t('history.viewing', { when: when(c) });
   previewBtn.hidden = true;
+  restoreBtn.hidden = true;
   showText(t('history.loading'));
   let article;
   try {
@@ -77,6 +80,8 @@ async function show(c) {
   if (shown !== c) return;
   frame.srcdoc = page(article, html);
   previewBtn.hidden = !CONFIG.preview?.url;
+  // Not offered for the version that is already there, with nothing unsaved on top of it
+  restoreBtn.hidden = !restoreChanges(article);
 }
 
 function showText(text) {
@@ -133,6 +138,10 @@ list.addEventListener('click', (e) => {
 });
 modal.addEventListener('click', (e) => {
   if (e.target === modal || e.target.closest('[data-history="close"]')) return close();
+  if (e.target.closest('[data-history="restore"]') && shown && versions.get(shown.sha)) {
+    if (restoreVersion(versions.get(shown.sha), { sha: shown.sha, when: when(shown) })) close();
+    return;
+  }
   if (e.target.closest('[data-history="preview"]') && shown && versions.get(shown.sha)) {
     // The preview sits under this window, so this one steps aside until the preview is closed —
     // and comes back only after that, so the Escape that closed the preview doesn't close it too

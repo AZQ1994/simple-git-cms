@@ -43,7 +43,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 - **Saving**: the article and its new images go in as a single commit; if someone else changed the
   article while it was open, you are offered their version or yours
 - **History**: every version of an article, one per commit that changed it, to look through as the
-  site would show it — or in the site's own preview — without touching what is being edited
+  site would show it — or in the site's own preview. Restoring one puts it in the editor; saving it
+  is a new commit that says which version it came from, and leaves the article published or not as
+  it was
 - **Nothing in progress is lost**: what hasn't been committed is kept in the browser as you type —
   images that haven't been uploaded included — and offered back after a crash, a closed tab or a
   reload

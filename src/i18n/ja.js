@@ -181,6 +181,7 @@ export default {
 
   // コミットメッセージ
   'commit.article': '記事を{verb}：{title}',
+  'commit.restored': '{message}（{when} の版 {sha} から復元）',
   'commit.delete': '下書きを削除：{title}',
 
   // 競合
@@ -201,7 +202,7 @@ export default {
 
   // 履歴
   'history.title': '履歴',
-  'history.hint': '保存するたびに版が残ります。ここでは見るだけで、記事は変わりません。',
+  'history.hint': '保存するたびに版が残ります。戻すとエディターに読み込まれ、保存するまで記事は変わりません。',
   'history.close': '閉じる',
   'history.loading': '履歴を読み込んでいます…',
   'history.latest': '最新',
@@ -210,6 +211,9 @@ export default {
   'history.deleted': 'この版では記事が削除されています。',
   'history.preview': 'サイトの見た目でプレビュー',
   'history.previewNote': '{when} の版です（編集中の内容ではありません）',
+  'history.restore': 'この版に戻す',
+  'history.restored': '{when} の版をエディターに読み込みました。保存すると反映されます',
+  'history.backToSaved': '保存済みの版に戻しました。保存していない変更は破棄されました',
 
   // デプロイ
   'deploy.pending': 'サイトを更新しています…',

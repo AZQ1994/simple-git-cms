@@ -180,6 +180,7 @@ export default {
 
   // Commit messages
   'commit.article': '{verb} article: {title}',
+  'commit.restored': '{message} (restored from {when}, {sha})',
   'commit.delete': 'Delete draft: {title}',
 
   // Conflicts
@@ -200,7 +201,7 @@ export default {
 
   // History
   'history.title': 'History',
-  'history.hint': 'Every save is a version. Looking only — nothing here changes the article.',
+  'history.hint': 'Every save is a version. Restoring one puts it in the editor; nothing changes until you save.',
   'history.close': 'Close',
   'history.loading': 'Loading the history…',
   'history.latest': 'Latest',
@@ -209,6 +210,9 @@ export default {
   'history.deleted': 'In this version the article was deleted.',
   'history.preview': 'Preview on the site',
   'history.previewNote': 'The version from {when}, not what you are editing',
+  'history.restore': 'Restore this version',
+  'history.restored': 'The version from {when} is in the editor. Save to keep it.',
+  'history.backToSaved': 'Back to the saved version; unsaved changes discarded.',
 
   // Deployment
   'deploy.pending': 'Updating the site…',

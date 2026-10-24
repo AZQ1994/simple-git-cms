@@ -12,6 +12,11 @@ behind it are in the repository history.
   changes, and nothing is written. The version is drawn in a sandbox where nothing in it can run.
   Works against GitHub (no new permission: Contents: Read already covers it) and on the local dev
   server (`git log` / `git show`).
+- **Restore a version.** In the history, Restore this version puts it in the editor as unsaved
+  changes; saving is the usual save, and its commit message says which version it came from
+  (`Update article: … (restored from <when>, <sha>)`). Whether the article is published stays as it
+  is now, and a save someone else made meanwhile is still a conflict. Restoring the latest version
+  with unsaved changes on top is going back to what is saved.
 
 ## 0.8.0 — 2026-10-24
 
