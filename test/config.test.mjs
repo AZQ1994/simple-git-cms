@@ -139,3 +139,11 @@ test('the example config shipped with the editor is one the editor accepts', () 
   const example = JSON.parse(readFileSync(new URL('../public/config.example.json', import.meta.url), 'utf8'));
   assert.deepEqual(keys(example), []);
 });
+
+test('actions are optional; each needs a label and a workflow, and a url is a full address', () => {
+  const action = { label: 'Go live', workflow: 'release.yml', ref: 'main', inputs: { tag: '' }, confirm: 'Sure?', url: 'https://example.com' };
+  assert.deepEqual(keys({ ...good(), actions: [action] }), []);
+  assert.deepEqual(keys({ ...good(), actions: [{ ref: 'main' }] }).sort(), ['actions[0].label', 'actions[0].workflow']);
+  assert.deepEqual(keys({ ...good(), actions: [action, { ...action, url: 'example.com' }] }), ['actions[1].url']);
+  assert.deepEqual(keys({ ...good(), actions: { label: 'x' } }), ['actions']);
+});

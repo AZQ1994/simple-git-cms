@@ -59,6 +59,16 @@ const SPEC = {
   },
   preview: { fields: { url: { ...str, slash: true } } },
   deploy: { fields: { skipCiForDrafts: { type: 'boolean' } } },
+  actions: {
+    each: {
+      label: { ...str, required: true },
+      workflow: { ...str, required: true },
+      ref: str,
+      inputs: { free: true },
+      confirm: str,
+      url: { ...str, absolute: true },
+    },
+  },
 };
 
 /** The closest known key, when it is close enough to be worth suggesting. */

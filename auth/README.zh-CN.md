@@ -35,7 +35,8 @@ GitHub → Settings → Developer settings → GitHub Apps → New。
 - **Expire user authorization tokens**：保持勾选——编辑器会自动续期
 - **Webhook**：把 Active 取消勾选
 - **Repository permissions**：**Contents: Read and write**，以及 **Actions: Read-only**（让编辑器
-  能显示部署进度）。其他一个都不要。
+  能显示部署进度）。其他一个都不要。config.json 里有 `actions` 时例外：执行按钮要运行 workflow，
+  Actions 要选 **Read and write**。
 - **Where can this GitHub App be installed**：如果仓库属于某个组织，选 Any account
 - 生成一个 client secret，然后 **Install App**，只挑放内容的那个仓库
 

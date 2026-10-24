@@ -204,6 +204,15 @@ export default {
   'deploy.repoBusy': 'The repository is in the middle of something, so nothing was committed',
   'deploy.notCommitted': 'Nothing was committed — commit when you are ready',
   'deploy.pushHint': 'Committed in the repository on this machine. Push it when you are ready.',
+  'actions.confirm': 'Run “{label}”?\n\nThis starts {workflow} on the {ref} branch.',
+  'actions.unsaved': 'The article open now has changes that are not saved. The workflow won’t see them.',
+  'actions.starting': 'Starting…',
+  'actions.pending': '{label}…',
+  'actions.success': '{label}: done',
+  'actions.view': 'View',
+  'actions.failure': '{label}: failed. Please contact the administrator.',
+  'actions.forbidden': 'This sign-in may not start GitHub Actions. The GitHub App needs “Actions: Read and write”, and you need write access to the repository.',
+  'actions.notFound': 'GitHub could not start {workflow} on {ref} ({message}). Check actions in config.json, and that the workflow has a workflow_dispatch trigger and takes those inputs.',
 
   // Config / GitHub
   'config.notAnObject': 'config.json has to be a JSON object.',

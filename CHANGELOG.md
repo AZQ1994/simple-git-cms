@@ -3,6 +3,19 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## 0.8.0 — 2026-10-24
+
+Buttons that start GitHub Actions workflows, so a site can keep the editor on its test copy only.
+
+- **`actions` in config.json.** Each entry is a sidebar button: a `label`, a `workflow` with a
+  `workflow_dispatch` trigger, and optionally the `ref` to run on (the content branch by default),
+  fixed `inputs`, the `confirm` text, and a `url` to link once it succeeds. A click confirms —
+  warning about unsaved changes in the open article — starts the workflow, and the line under the
+  button follows the run to the end. The typical use: the editor lives on a test site built from
+  `main`, and a button publishes `main` to the live site, which is built without the editor. The
+  GitHub App needs **Actions: Read and write** for them; without `actions`, nothing changes and
+  Read-only is still enough. See [Action buttons](README.md#action-buttons).
+
 ## 0.7.0 — 2026-10-23
 
 The sign-in relay can live under a site's own path.

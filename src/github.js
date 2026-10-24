@@ -208,11 +208,43 @@ export class GitHubStore {
   /** Deployment status for a commit: pending / success / failure / superseded. */
   async deployStatus(commitSha) {
     const runs = await this.req(`/repos/${this.repo}/actions/runs?head_sha=${commitSha}&per_page=5`);
-    const run = runs.workflow_runs?.[0];
-    if (!run) return 'pending';
-    if (run.status !== 'completed') return 'pending';
-    if (run.conclusion === 'success') return 'success';
-    if (run.conclusion === 'cancelled') return 'superseded'; // a later save took over
-    return 'failure';
+    return runState(runs.workflow_runs?.[0]);
   }
+
+  /**
+   * Start a workflow that has a `workflow_dispatch` trigger — one of config.actions, e.g. the step
+   * from the test site the editor writes to the site everyone sees. Returns the run's id when GitHub
+   * says it (it does when asked to, since 2026-02); otherwise null, and workflowStatus() finds the run.
+   * @param {{ workflow: string, ref: string, inputs?: object }} o The workflow's file name or id,
+   * the branch, and the workflow's inputs (GitHub takes them as strings).
+   */
+  async runWorkflow({ workflow, ref, inputs = {} }) {
+    const body = { ref, return_run_details: true };
+    if (Object.keys(inputs).length) body.inputs = Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, String(v)]));
+    const r = await this.req(`/repos/${this.repo}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, { method: 'POST', body });
+    return r?.workflow_run_id ?? null;
+  }
+
+  /**
+   * How a run started by runWorkflow() is doing: pending / success / failure / superseded.
+   * @param {{ workflow: string, ref: string, runId: number|null, since: number }} o `since` is when
+   * it was started (ms), used to find the run when there is no id.
+   */
+  async workflowStatus({ workflow, ref, runId, since }) {
+    if (runId) return runState(await this.req(`/repos/${this.repo}/actions/runs/${runId}`));
+    const runs = await this.req(
+      `/repos/${this.repo}/actions/workflows/${encodeURIComponent(workflow)}/runs?event=workflow_dispatch&branch=${encodeURIComponent(ref)}&per_page=5`,
+    );
+    // A minute's grace for the clock on this computer being off from GitHub's
+    const run = runs.workflow_runs?.find((r) => Date.parse(r.created_at) >= since - 60_000);
+    return runState(run);
+  }
+}
+
+/** A workflow run as pending / success / failure / superseded (cancelled: a later run took over). */
+function runState(run) {
+  if (!run || run.status !== 'completed') return 'pending';
+  if (run.conclusion === 'success') return 'success';
+  if (run.conclusion === 'cancelled') return 'superseded';
+  return 'failure';
 }

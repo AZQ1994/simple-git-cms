@@ -13,6 +13,7 @@
 //   editor.js      the editing surface: TipTap, the toolbar and the image tools
 //   doc.js         the article form, saving, publishing, the status bar
 //   preview-ui.js  the preview pane
+//   actions.js     the buttons that start config.actions' workflows, and how each run is doing
 //   theme.js       light or dark
 //   html-scan.js   whether the body's HTML closes everything it opens
 //   config.js      what config.json may say, and what to say when it says something else
@@ -28,6 +29,7 @@ import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from '.
 import { renderList } from './list.js';
 import { addBlockMenu, editor } from './editor.js';
 import { restoreOpen, updateBar } from './doc.js';
+import { showActions } from './actions.js';
 import './preview-ui.js';
 import './theme.js';
 import { resolveLocale, setLocale, t } from './i18n/index.js';
@@ -64,6 +66,8 @@ async function loadConfig() {
     collection: { label: t('config.defaultCollection'), url: '/{id}/', imageField: '', ...c.collection, dir: strip(c.collection?.dir) },
     media: { url: '/uploads', ...c.media, dir: strip(c.media?.dir) },
     deploy: { skipCiForDrafts: true, ...c.deploy },
+    // Buttons that start a workflow; none unless config.json lists some
+    actions: (c.actions ?? []).map((a) => ({ ref: c.branch || 'main', inputs: {}, ...a })),
   };
   config.media.url = '/' + strip(config.media.url);
   // On a different domain than the site, load images from the site's address — locally, from the
@@ -147,6 +151,7 @@ async function start() {
     $('#local-badge').title = store.local ? `${store.site.root}${store.site.branch ? ` · ${store.site.branch}` : ''}` : '';
     $('#user-avatar').hidden = Boolean(store.local); // a picture of nobody, and the badge needs the room
     $('#logout').hidden = Boolean(store.local); // there is nothing to sign out of
+    showActions();
     // The list fills in as it arrives and the editor opens on the first batch of it: with a few
     // hundred articles, waiting for the last one is waiting for all of them
     let announce;

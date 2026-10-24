@@ -205,6 +205,15 @@ export default {
   'deploy.repoBusy': 'リポジトリが作業の途中なので、コミットはしていません',
   'deploy.notCommitted': 'コミットはしていません。タイミングはご自分で',
   'deploy.pushHint': 'このマシンのリポジトリにコミットしました。push はご自分のタイミングで。',
+  'actions.confirm': '「{label}」を実行しますか？\n\n{ref} ブランチで {workflow} を実行します。',
+  'actions.unsaved': '開いている記事に保存していない変更があります。その変更は今回の実行に含まれません。',
+  'actions.starting': '開始しています…',
+  'actions.pending': '{label}：実行中…',
+  'actions.success': '{label}：完了',
+  'actions.view': '表示',
+  'actions.failure': '{label}：失敗しました。管理者にご連絡ください。',
+  'actions.forbidden': 'このログインでは GitHub Actions を実行できません。GitHub App に「Actions: Read and write」の権限が必要で、リポジトリへの書き込み権限も必要です。',
+  'actions.notFound': 'GitHub が {ref} で {workflow} を実行できませんでした（{message}）。config.json の actions と、その workflow に workflow_dispatch トリガーがあり、その inputs を受け付けるかを確認してください。',
 
   // 設定 / GitHub
   'config.notAnObject': 'config.json は JSON のオブジェクトである必要があります。',
