@@ -7,7 +7,7 @@
   "required": [
     "repo",
     "auth",
-    "collection",
+    "collections",
     "media"
   ],
   "properties": {
@@ -67,30 +67,45 @@
         }
       }
     },
-    "collection": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "dir"
-      ],
-      "properties": {
-        "label": {
-          "type": "string",
-          "description": "What this collection is called in the interface, e.g. news."
-        },
-        "imageField": {
-          "type": "string",
-          "description": "The frontmatter field for the article's cover image, e.g. image. Empty (the default) means no cover image control."
-        },
-        "dir": {
-          "type": "string",
-          "description": "The article directory inside the repository; one <id>.md per article."
-        },
-        "url": {
-          "type": "string",
-          "pattern": "^/",
-          "default": "/{id}/",
-          "description": "The article's address on the site. {id} is substituted."
+    "collections": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Each kind of article the site has, in a directory of its own. With more than one, the sidebar switches between them.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dir"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[\\w-]+$",
+            "description": "What the address bar calls this collection (?c=news). Defaults to the last part of dir; has to be different for each collection."
+          },
+          "label": {
+            "type": "string",
+            "description": "What this collection is called in the interface, e.g. News."
+          },
+          "dir": {
+            "type": "string",
+            "description": "The article directory inside the repository; one <id>.md per article."
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^/",
+            "default": "/{id}/",
+            "description": "The article's address on the site. {id} is substituted."
+          },
+          "imageField": {
+            "type": "string",
+            "description": "The frontmatter field for the article's cover image, e.g. image. Empty (the default) means no cover image control."
+          },
+          "preview": {
+            "type": "string",
+            "pattern": "^/",
+            "description": "This collection's preview page on the site. Leave it out and there is no Preview button."
+          }
         }
       }
     },
@@ -129,17 +144,6 @@
           "maximum": 100,
           "default": 20,
           "description": "The largest attachment that may be uploaded, in MB. Cloudflare Pages and Workers static assets serve a single file of at most 25 MiB, and GitHub refuses one over 100MB."
-        }
-      }
-    },
-    "preview": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "url": {
-          "type": "string",
-          "pattern": "^/",
-          "description": "The preview page on the site. Leave it out and there is no Preview button."
         }
       }
     },

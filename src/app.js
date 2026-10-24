@@ -23,18 +23,18 @@ import { loadArticles } from './articles.js';
 import { setBlocks } from './blocks.js';
 import { setImageOptions } from './images.js';
 import { $, busy, fillIcons, toast } from './dom.js';
-import { API_BASE, apiPinned, CONFIG, isLocal, on, setConfig, setStore, state, store } from './store.js';
+import { API_BASE, apiPinned, COLLECTION, CONFIG, isLocal, on, setCollection, setConfig, setStore, state, store } from './store.js';
 import { relabel } from './lang.js';
 import { refreshToken, showLogin, logout, takeTokenFromHash, TOKEN_KEY } from './auth.js';
 import { renderList } from './list.js';
 import { addBlockMenu, editor } from './editor.js';
-import { restoreOpen, updateBar } from './doc.js';
+import { collectionInUrl, confirmDiscard, restoreOpen, showNothing, updateBar } from './doc.js';
 import { showActions } from './actions.js';
 import './preview-ui.js';
 import './history.js';
 import './theme.js';
 import { resolveLocale, setLocale, t } from './i18n/index.js';
-import { ConfigError, checkConfig } from './config.js';
+import { ConfigError, checkConfig, collectionName } from './config.js';
 
 fillIcons();
 
@@ -64,7 +64,15 @@ async function loadConfig() {
     ...c,
     siteUrl: (c.siteUrl || location.origin).replace(/\/+$/, ''),
     auth: { ...c.auth },
-    collection: { label: t('config.defaultCollection'), url: '/{id}/', imageField: '', ...c.collection, dir: strip(c.collection?.dir) },
+    collections: c.collections.map((col) => ({
+      label: t('config.defaultCollection'),
+      url: '/{id}/',
+      imageField: '',
+      preview: '',
+      ...col,
+      name: collectionName(col),
+      dir: strip(col.dir),
+    })),
     media: { url: '/uploads', ...c.media, dir: strip(c.media?.dir) },
     deploy: { skipCiForDrafts: true, ...c.deploy },
     // Buttons that start a workflow; none unless config.json lists some
@@ -75,6 +83,8 @@ async function loadConfig() {
   // local site
   config.assetBase = isLocal || new URL(config.siteUrl).origin === location.origin ? '' : config.siteUrl;
   setConfig(config, c);
+  // The one in the address bar, when it names one; the first one otherwise
+  setCollection(config.collections.find((col) => col.name === collectionInUrl()) ?? config.collections[0]);
   setImageOptions({ ...config.media, timeZone: config.timeZone });
   setBlocks(config.blocks);
   addBlockMenu();
@@ -84,7 +94,78 @@ async function loadConfig() {
     img.alt = config.siteName;
     img.addEventListener('error', () => (img.hidden = true)); // no logo is better than a broken one
   }
+  relabel(); // which also fills the collections menu
+}
+
+/** The sidebar's menu of collections, when there is more than one to choose from. */
+function fillCollections() {
+  const select = $('#collection-select');
+  select.hidden = CONFIG.collections.length < 2;
+  $('#collection-label').hidden = !select.hidden;
+  select.replaceChildren(
+    ...CONFIG.collections.map((col) => {
+      const o = document.createElement('option');
+      o.value = col.name;
+      o.textContent = col.label;
+      return o;
+    }),
+  );
+  select.value = COLLECTION.name;
+}
+on('relabel', () => CONFIG && fillCollections());
+
+$('#collection-select').addEventListener('change', async (e) => {
+  const next = CONFIG.collections.find((col) => col.name === e.target.value);
+  if (!next || next === COLLECTION) return;
+  if (!confirmDiscard()) {
+    e.target.value = COLLECTION.name;
+    return;
+  }
+  setCollection(next);
+  // A copy pointed at the other directory, rather than the same store changed underneath: a list
+  // still loading from the last one goes on reading where it started
+  setStore(Object.assign(Object.create(Object.getPrototypeOf(store)), store, { contentDir: next.dir }));
+  showNothing(); // closes what was open, and the address bar now says which collection
+  state.articles = [];
+  state.pending = 0;
+  renderList();
   relabel();
+  await busy(t('save.loading'), loadList);
+});
+
+let listing = 0; // which load of the list is the latest; an older one still arriving is ignored
+
+/** Read the open collection's articles into the sidebar, and reopen what the address bar says. */
+async function loadList() {
+  const mine = ++listing;
+  // The list fills in as it arrives and the editor opens on the first batch of it: with a few
+  // hundred articles, waiting for the last one is waiting for all of them
+  let announce;
+  const first = new Promise((resolve) => (announce = resolve));
+  const loading = loadArticles(store, {
+    onBatch: (articles, left) => {
+      if (mine !== listing) return; // the sidebar has switched to another collection since
+      state.articles = articles;
+      state.pending = left;
+      // There is something to show, or there is nothing at all to show — either way, stop waiting
+      if (articles.length || !left) announce();
+      if (!$('#app').hidden) renderList();
+    },
+  });
+  // Whichever comes first: something to show, or the whole thing failing before there is any
+  await Promise.race([first, loading]);
+  loading.catch((e) => {
+    if (mine !== listing) return;
+    state.pending = 0;
+    renderList();
+    toast(e.message || String(e), 'error');
+  });
+  if (mine !== listing) return;
+  $('#login').hidden = true;
+  $('#app').hidden = false;
+  renderList();
+  updateBar();
+  restoreOpen();
 }
 
 /** config.json is the one thing the editor can't recover from, so the page becomes the message. */
@@ -119,7 +200,7 @@ async function start() {
   }
   // `npm run dev` puts the repository on this machine behind the editor. Nothing else answers
   // this, and nothing but localhost is asked, so anywhere else the editor signs in to GitHub.
-  const local = isLocal && !apiPinned ? await LocalStore.detect(CONFIG) : null;
+  const local = isLocal && !apiPinned ? await LocalStore.detect(COLLECTION.dir) : null;
   if (local) {
     setStore(local);
   } else {
@@ -133,7 +214,7 @@ async function start() {
         token,
         repo: CONFIG.repo,
         branch: CONFIG.branch,
-        contentDir: CONFIG.collection.dir,
+        contentDir: COLLECTION.dir,
         apiBase: API_BASE,
         refresh: refreshToken,
         timeZone: CONFIG.timeZone,
@@ -153,32 +234,7 @@ async function start() {
     $('#user-avatar').hidden = Boolean(store.local); // a picture of nobody, and the badge needs the room
     $('#logout').hidden = Boolean(store.local); // there is nothing to sign out of
     showActions();
-    // The list fills in as it arrives and the editor opens on the first batch of it: with a few
-    // hundred articles, waiting for the last one is waiting for all of them
-    let announce;
-    const first = new Promise((resolve) => (announce = resolve));
-    const loading = loadArticles(store, {
-      onBatch: (articles, left) => {
-        state.articles = articles;
-        state.pending = left;
-        // There is something to show, or there is nothing at all to show — either way, stop waiting
-        if (articles.length || !left) announce();
-        if (!$('#app').hidden) renderList();
-      },
-    });
-    // Whichever comes first: something to show, or the whole thing failing before there is any
-    await Promise.race([first, loading]);
-    loading.catch((e) => {
-      state.pending = 0;
-      renderList();
-      toast(e.message || String(e), 'error');
-    });
-
-    $('#login').hidden = true;
-    $('#app').hidden = false;
-    renderList();
-    updateBar();
-    restoreOpen();
+    await loadList();
   });
 }
 

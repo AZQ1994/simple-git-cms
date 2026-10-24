@@ -37,6 +37,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 - **A cover image**: taken from the pictures the article already has, or uploaded; replaced,
   cropped or removed in the article's own form, and written to a frontmatter field of your
   choosing — what a site uses for list thumbnails and share images
+- **Several kinds of article**: news, notices, events — each in a directory of its own, with its
+  own address on the site, cover field and preview page, switched between in the sidebar. Saving,
+  publishing and deployment are the same for all of them
 - **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft. The open
   one is in the address bar, so reloading comes back to it and the link opens it for anyone else
   who can sign in
@@ -109,16 +112,47 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `siteUrl` | Your site's address, used for "View on site" — and to load images when the editor is not on the same domain |
 | `timeZone` | Used for dates shown, for image folders, and for new article IDs |
 | `auth.base` | The URL of the sign-in relay |
-| `collection.dir` | The article directory inside the repository; one `<id>.md` per article |
-| `collection.url` | The article's URL on the site; `{id}` is substituted |
-| `collection.imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
+| `collections` | The kinds of article the site has, as a list (at least one). With more than one, the sidebar has a menu to switch between them. Each entry: |
+| `collections[].dir` | The article directory inside the repository; one `<id>.md` per article (required) |
+| `collections[].name` | What the address bar calls it (`?c=news`): letters, digits, `-` and `_`. Defaults to the last part of `dir`; no two may be the same |
+| `collections[].label` | What the interface calls it, e.g. `News` |
+| `collections[].url` | The article's URL on the site; `{id}` is substituted |
+| `collections[].imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
+| `collections[].preview` | This collection's preview page on your site (step 4). Leave it out and there is no Preview button |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
 | `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default; see below) |
 | `blocks` | Blocks this site defines for itself; see [Blocks of your own](#blocks-of-your-own) |
-| `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
 | `actions` | Buttons in the sidebar, each starting a workflow that has a `workflow_dispatch` trigger, then following the run; see [Action buttons](#action-buttons). The GitHub App needs **Actions: Read and write** for them ([auth/README.md](auth/README.md)) |
+
+```json
+"collections": [
+  { "name": "news", "label": "News", "dir": "src/content/news", "url": "/news/{id}/", "imageField": "image", "preview": "/news/preview/" },
+  { "name": "notices", "label": "Notices", "dir": "src/content/notices", "url": "/notices/{id}/" }
+]
+```
+
+Everything else — the repository, images, blocks, deployment, action buttons — is shared by all
+of them. Each article's id is only unique within its collection, so the address bar carries both
+(`?c=notices&id=202610120800`).
+
+**Upgrading from 0.x.** 1.0 replaces `collection` with the list `collections`, and moves
+`preview.url` into each entry as `preview`. The editor names both if it finds the old ones. What
+was
+
+```json
+"collection": { "label": "news", "dir": "src/content/news", "url": "/news/{id}/" },
+"preview": { "url": "/news/preview/" }
+```
+
+is now
+
+```json
+"collections": [{ "label": "news", "dir": "src/content/news", "url": "/news/{id}/", "preview": "/news/preview/" }]
+```
+
+Links to articles from before (`?id=…`) still open in the first collection.
 
 ### Action buttons
 
@@ -259,7 +293,7 @@ npm run dev     # build, then serve the editor at http://localhost:4173
 copied into `dist/` after every build, so it survives rebuilds.
 
 **It edits the files on this machine, not GitHub.** `npm run dev ../my-site` puts that checkout
-behind the editor: there is nothing to sign in to, the list is read from `collection.dir` on disk,
+behind the editor: there is nothing to sign in to, the list is read from each collection's `dir` on disk,
 and saving writes the article and its images and commits them there — one commit, the same message
 the editor would have used, and only the paths it touched, so anything else you had staged stays
 staged. Pushing is yours to do, which is the point: the editor writes the files, git still decides
@@ -429,7 +463,8 @@ the usual way of reaching it, not the only conceivable one.
 
 - Editors need a GitHub account. Letting people in without one would mean adding your own sign-in
   service that commits as the GitHub App.
-- One article collection per site, with the fields listed above
+- Every collection has the same fields — title, date, tags, summary and a cover — and is one flat
+  directory: articles in its subdirectories are not listed
 - The preview converts Markdown in the browser, so Markdown plugins your site adds separately are
   not reflected in it
 - Image addresses pointing somewhere else (pasted from another page) are refused on save — download

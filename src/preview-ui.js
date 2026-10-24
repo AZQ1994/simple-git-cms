@@ -1,7 +1,7 @@
 // The preview pane. The site's own preview page (integrations/preview-client.js) sits in an
 // iframe; the editor posts what is being edited over, and the site renders it in its own layout.
 import { $, toast } from './dom.js';
-import { CONFIG, on, pending, state } from './store.js';
+import { COLLECTION, CONFIG, on, pending, state } from './store.js';
 import { collect } from './doc.js';
 import { t } from './i18n/index.js';
 
@@ -49,7 +49,7 @@ function sendPreview() {
   for (const [src, p] of pending) images[src] = p.blob;
   // The cover and the rest of the frontmatter go too: a site may show either on the article page,
   // and a preview without them would not be the page that goes live
-  const field = CONFIG.collection.imageField;
+  const field = COLLECTION.imageField;
   const article = {
     title: a.title,
     date: a.date,
@@ -76,7 +76,7 @@ export async function openPreview(article = null, { note, closed } = {}) {
   }
   // As with images: use this origin when the editor shares the site's domain or is running
   // locally, and the site's address otherwise
-  const url = new URL(CONFIG.preview.url, CONFIG.assetBase || location.origin).href;
+  const url = new URL(COLLECTION.preview, CONFIG.assetBase || location.origin).href;
   fixed = article;
   onClose = closed ?? null;
   $('#preview-hint').textContent = article ? note : t('preview.hint');
