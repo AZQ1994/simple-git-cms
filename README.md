@@ -162,7 +162,9 @@ silence.
 ### 3. Deploy the sign-in relay
 
 See [auth/README.md](auth/README.md). Cloudflare Workers is the documented route, but the relay is
-a single standard-web-API file — Deno Deploy, Vercel, Netlify, Bun and plain Node all work.
+a single standard-web-API file — Deno Deploy, Vercel, Netlify, Bun and plain Node all work. It comes
+with the npm package: `npx simple-git-cms auth` runs it
+([more](auth/README.md#from-the-npm-package)).
 
 ### 4. Set up the site side
 

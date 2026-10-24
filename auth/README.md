@@ -99,6 +99,43 @@ every repository it is installed on that the person can write to, and a script i
 listed domain could start a sign-in. Give a test site, or sites with different owners, a relay and
 App of their own.
 
+## From the npm package
+
+A site that installed the editor with `npm install --save-dev simple-git-cms` already has the relay
+in `node_modules/simple-git-cms/auth/`; there is nothing to copy or build.
+
+**Run it as a server.** The package's command starts `server.js`, configured from the environment
+as above:
+
+```bash
+GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com npx simple-git-cms auth
+```
+
+**Cloudflare Workers.** Point wrangler at the file in the package, in the site's `wrangler.toml`
+(or one of its own), then `npx wrangler deploy` and `npx wrangler secret put GITHUB_CLIENT_ID`,
+the secret likewise:
+
+```toml
+name = "cms-auth"
+main = "node_modules/simple-git-cms/auth/index.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+ALLOWED_DOMAINS = "example.com"
+```
+
+**Inside the site's own code.** `simple-git-cms/auth` is the handler, for an edge function, a Bun or
+Deno server, or a route of a server the site already has:
+
+```js
+import relay from 'simple-git-cms/auth';
+
+export default (request) => relay.fetch(request, process.env);
+```
+
+Updating the package updates the relay along with the editor; redeploy it when the changelog
+mentions it.
+
 ## When sign-in doesn't work
 
 Four things account for nearly every failure, and none of them report a useful error:

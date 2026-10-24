@@ -3,6 +3,13 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## Unreleased
+
+- **The sign-in relay ships in the npm package.** A site that installed the editor from npm can run
+  it with `npx simple-git-cms auth`, point wrangler at `node_modules/simple-git-cms/auth/index.js`,
+  or `import relay from 'simple-git-cms/auth'` in its own code — no clone of this repository. See
+  [From the npm package](auth/README.md#from-the-npm-package).
+
 ## 0.9.0 — 2026-10-24
 
 Article history: every earlier version of an article, to look through and to bring back.

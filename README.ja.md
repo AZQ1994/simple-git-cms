@@ -129,6 +129,8 @@ GitHub へ直接送ります——ので、効いてくるのはサイトをど�
 [auth/README.ja.md](auth/README.ja.md) を参照してください。手順は Cloudflare Workers で書いていますが、
 中継は標準の Web API しか使っていないので、Deno Deploy・Vercel・Netlify・Bun・普通の Node サーバーでも
 そのまま動きます。
+中継は npm パッケージに入っているので、`npx simple-git-cms auth` で動かせます
+（[詳しく](auth/README.ja.md#npm-パッケージから使う)）。
 
 ### 4. サイト側
 

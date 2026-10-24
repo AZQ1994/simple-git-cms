@@ -107,7 +107,8 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 ### 3. 部署登录中转
 
 见 [auth/README.zh-CN.md](auth/README.zh-CN.md)。文档里用的是 Cloudflare Workers，但中转只用标准的 Web API，
-Deno Deploy、Vercel、Netlify、Bun 和普通的 Node 服务器都能跑。
+Deno Deploy、Vercel、Netlify、Bun 和普通的 Node 服务器都能跑。它就在 npm 包里：`npx simple-git-cms auth`
+就能跑起来（[详见](auth/README.zh-CN.md#从-npm-包里用)）。
 
 ### 4. 网站端
 

@@ -28,12 +28,14 @@
     "simple-git-cms": "scripts/install.mjs"
   },
   "exports": {
+    "./auth": "./auth/index.js",
     "./preview-client": "./integrations/preview-client.js",
     "./rehype-figures": "./integrations/astro/rehype-figures.mjs",
     "./package.json": "./package.json"
   },
   "files": [
     "dist/",
+    "auth/",
     "integrations/",
     "scripts/install.mjs",
     "CHANGELOG.md",

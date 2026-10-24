@@ -88,6 +88,40 @@ location /cms-auth/ {
 这些站点共用一个 App：从任何一个站点登录拿到的令牌，都能访问 App 装过的、这个人有写权限的所有仓库；
 列出的任何一个域名被注入了脚本，都能借它发起登录。测试站、归属不同的站点，请各用一套中转和 App。
 
+## 从 npm 包里用
+
+用 `npm install --save-dev simple-git-cms` 装了编辑器的网站，中转已经在
+`node_modules/simple-git-cms/auth/` 里了，不用复制，也不用构建。
+
+**当作服务器跑.** 包自带的命令会启动 `server.js`，配置和上面一样从环境变量读：
+
+```bash
+GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com npx simple-git-cms auth
+```
+
+**Cloudflare Workers.** 在网站的 `wrangler.toml`（或者单独一个）里让 wrangler 指向包里的文件，然后
+`npx wrangler deploy`，再 `npx wrangler secret put GITHUB_CLIENT_ID`，密钥同理：
+
+```toml
+name = "cms-auth"
+main = "node_modules/simple-git-cms/auth/index.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+ALLOWED_DOMAINS = "example.com"
+```
+
+**写进网站自己的代码.** `simple-git-cms/auth` 就是处理函数，可以用在边缘函数、Bun 或 Deno 的服务器、
+或者网站已有的服务器的某个路由里：
+
+```js
+import relay from 'simple-git-cms/auth';
+
+export default (request) => relay.fetch(request, process.env);
+```
+
+升级这个包时中转会跟着编辑器一起更新；更新日志里提到中转时，重新部署一下。
+
 ## 登录不成功的时候
 
 几乎所有失败都是这四件事之一，而且它们都不会给出有用的报错：

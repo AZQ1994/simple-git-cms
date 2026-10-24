@@ -97,6 +97,43 @@ location /cms-auth/ {
 並べたどのドメインにスクリプトを注入されても、それを使ってログインを始められます。テスト用のサイトや
 持ち主の違うサイトには、それぞれ専用の中継と App を用意してください。
 
+## npm パッケージから使う
+
+`npm install --save-dev simple-git-cms` でエディタを入れたサイトには、中継も
+`node_modules/simple-git-cms/auth/` に入っています。コピーもビルドも要りません。
+
+**サーバーとして動かす.** パッケージのコマンドが `server.js` を起動します。設定は上と同じく環境変数
+から読みます：
+
+```bash
+GITHUB_CLIENT_ID=… GITHUB_CLIENT_SECRET=… ALLOWED_DOMAINS=example.com npx simple-git-cms auth
+```
+
+**Cloudflare Workers.** サイトの `wrangler.toml`（または専用のもの）で wrangler をパッケージ内の
+ファイルに向け、`npx wrangler deploy` のあと `npx wrangler secret put GITHUB_CLIENT_ID`、シークレット
+も同様に：
+
+```toml
+name = "cms-auth"
+main = "node_modules/simple-git-cms/auth/index.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+ALLOWED_DOMAINS = "example.com"
+```
+
+**サイト自身のコードに組み込む.** `simple-git-cms/auth` がハンドラなので、エッジ関数、Bun や Deno の
+サーバー、サイトがすでに持っているサーバーのルートで使えます：
+
+```js
+import relay from 'simple-git-cms/auth';
+
+export default (request) => relay.fetch(request, process.env);
+```
+
+パッケージを更新すると中継もエディタと一緒に更新されます。変更履歴に中継のことが書かれていたら、
+デプロイし直してください。
+
 ## ログインできないとき
 
 うまくいかない原因はほぼこの 4 つで、しかもどれもまともなエラーを出してくれません。
