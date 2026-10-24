@@ -66,9 +66,12 @@
     "skipCiForDrafts": true
   },
 
-  "release": {
-    "workflow": "release.yml",
-    "label": "Publish to the live site",
-    "url": "https://example.com"
-  }
+  "actions": [
+    {
+      "label": "Publish to the live site",
+      "workflow": "release.yml",
+      "confirm": "Publish what is on the test site now to the live site?",
+      "url": "https://example.com"
+    }
+  ]
 }

@@ -212,25 +212,25 @@ export class GitHubStore {
   }
 
   /**
-   * Start a workflow that has a `workflow_dispatch` trigger — config.release, the step from the
-   * site the editor writes to the one everyone sees. Returns the run's id when GitHub says it
-   * (it does when asked to, since 2026-02); otherwise null, and releaseStatus() finds the run.
-   * @param {{ workflow: string, ref: string }} o The workflow's file name or id, and the branch.
+   * Start a workflow that has a `workflow_dispatch` trigger — one of config.actions, e.g. the step
+   * from the test site the editor writes to the site everyone sees. Returns the run's id when GitHub
+   * says it (it does when asked to, since 2026-02); otherwise null, and workflowStatus() finds the run.
+   * @param {{ workflow: string, ref: string, inputs?: object }} o The workflow's file name or id,
+   * the branch, and the workflow's inputs (GitHub takes them as strings).
    */
-  async release({ workflow, ref }) {
-    const r = await this.req(`/repos/${this.repo}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, {
-      method: 'POST',
-      body: { ref, return_run_details: true },
-    });
+  async runWorkflow({ workflow, ref, inputs = {} }) {
+    const body = { ref, return_run_details: true };
+    if (Object.keys(inputs).length) body.inputs = Object.fromEntries(Object.entries(inputs).map(([k, v]) => [k, String(v)]));
+    const r = await this.req(`/repos/${this.repo}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, { method: 'POST', body });
     return r?.workflow_run_id ?? null;
   }
 
   /**
-   * How a release started by release() is doing: pending / success / failure.
+   * How a run started by runWorkflow() is doing: pending / success / failure / superseded.
    * @param {{ workflow: string, ref: string, runId: number|null, since: number }} o `since` is when
    * it was started (ms), used to find the run when there is no id.
    */
-  async releaseStatus({ workflow, ref, runId, since }) {
+  async workflowStatus({ workflow, ref, runId, since }) {
     if (runId) return runState(await this.req(`/repos/${this.repo}/actions/runs/${runId}`));
     const runs = await this.req(
       `/repos/${this.repo}/actions/workflows/${encodeURIComponent(workflow)}/runs?event=workflow_dispatch&branch=${encodeURIComponent(ref)}&per_page=5`,

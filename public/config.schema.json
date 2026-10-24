@@ -154,31 +154,24 @@
         }
       }
     },
-    "release": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["workflow"],
-      "description": "A button that starts a GitHub Actions workflow, e.g. publishing the test site the editor is on to the live site. The GitHub App needs Actions: Read and write.",
-      "properties": {
-        "workflow": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The workflow's file name (or id). It needs a workflow_dispatch trigger."
-        },
-        "ref": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The branch to run it on. Defaults to branch."
-        },
-        "label": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The button's text. Defaults to \"Publish to the live site\" in the interface language."
-        },
-        "url": {
-          "type": "string",
-          "pattern": "^https?://",
-          "description": "Where the released site is; linked once the run succeeds."
+    "actions": {
+      "type": "array",
+      "description": "Buttons in the sidebar that start GitHub Actions workflows, e.g. publishing the test site the editor is on to the live site. The GitHub App needs Actions: Read and write.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "workflow"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "description": "The button's text." },
+          "workflow": { "type": "string", "minLength": 1, "description": "The workflow's file name (or id). It needs a workflow_dispatch trigger." },
+          "ref": { "type": "string", "minLength": 1, "description": "The branch to run it on. Defaults to branch." },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": { "type": ["string", "number", "boolean"] },
+            "description": "Inputs passed to the workflow, always these values."
+          },
+          "confirm": { "type": "string", "minLength": 1, "description": "What the confirmation asks. Defaults to naming the button, the workflow and the branch." },
+          "url": { "type": "string", "pattern": "^https?://", "description": "Linked once the run succeeds, e.g. the site it published." }
         }
       }
     },

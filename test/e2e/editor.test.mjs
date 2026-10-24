@@ -53,7 +53,10 @@ before(async () => {
       collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
       preview: { url: '/preview/' },
-      release: { workflow: 'release.yml', url: 'http://live.invalid' },
+      actions: [
+        { label: 'Publish to the live site', workflow: 'release.yml', inputs: { tag: '' }, url: 'http://live.invalid' },
+        { label: 'Rebuild', workflow: 'rebuild.yml', ref: 'other' },
+      ],
       blocks: [
         { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }, { name: 'start', label: 'Start' }] },
         { tag: 'table', label: 'Advanced table', edit: 'table' },
@@ -526,14 +529,18 @@ test('deleting takes the file with it', async () => {
   await page.until(`document.querySelectorAll('#list .item').length === 3`, { label: 'three articles again' });
 });
 
-test('the release button starts the workflow on the branch and says when the live site has it', async () => {
-  assert.equal(await page.evaluate(`document.getElementById('release').hidden`), false, 'config.json asks for it');
-  assert.equal(await page.evaluate(`document.getElementById('release-label').textContent`), 'Publish to the live site');
-  await page.evaluate(`document.getElementById('release').click()`); // the confirm is answered yes
+test('each action is a button that starts its workflow and says when the run is done', async () => {
+  assert.equal(await page.evaluate(`document.getElementById('actions').hidden`), false, 'config.json lists some');
+  assert.deepEqual(await page.evaluate(`[...document.querySelectorAll('#actions button')].map((b) => b.textContent)`), ['Publish to the live site', 'Rebuild']);
+  await page.evaluate(`document.querySelectorAll('#actions button')[0].click()`); // the confirm is answered yes
   for (let i = 0; i < 50 && !gh.dispatches.length; i++) await sleep(100);
-  assert.deepEqual(gh.dispatches, [{ workflow: 'release.yml', ref: 'main', return_run_details: true }], 'ref defaults to config.branch');
-  await page.until(`document.getElementById('release-status').classList.contains('ok')`, { label: 'the release finishing', timeout: 15000 });
-  assert.equal(await page.evaluate(`document.querySelector('#release-status a').href`), 'http://live.invalid/', 'with a link to the live site');
+  assert.deepEqual(gh.dispatches, [{ workflow: 'release.yml', ref: 'main', return_run_details: true, inputs: { tag: '' } }], 'ref defaults to config.branch');
+  await page.until(`document.querySelector('#actions .deploy').classList.contains('ok')`, { label: 'the run finishing', timeout: 15000 });
+  assert.equal(await page.evaluate(`document.querySelector('#actions .deploy a').href`), 'http://live.invalid/', 'with a link to what it made');
+
+  await page.evaluate(`document.querySelectorAll('#actions button')[1].click()`);
+  for (let i = 0; i < 50 && gh.dispatches.length < 2; i++) await sleep(100);
+  assert.deepEqual(gh.dispatches[1], { workflow: 'rebuild.yml', ref: 'other', return_run_details: true });
 });
 
 test('a table built with the toolbar is saved as a GFM table', async () => {

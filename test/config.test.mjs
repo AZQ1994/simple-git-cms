@@ -140,8 +140,10 @@ test('the example config shipped with the editor is one the editor accepts', () 
   assert.deepEqual(keys(example), []);
 });
 
-test('release is optional, but written it needs a workflow, and its url is a full address', () => {
-  assert.deepEqual(keys({ ...good(), release: { workflow: 'release.yml', ref: 'main', label: 'Go live', url: 'https://example.com' } }), []);
-  assert.deepEqual(keys({ ...good(), release: { ref: 'main' } }), ['release.workflow']);
-  assert.deepEqual(keys({ ...good(), release: { workflow: 'release.yml', url: 'example.com' } }), ['release.url']);
+test('actions are optional; each needs a label and a workflow, and a url is a full address', () => {
+  const action = { label: 'Go live', workflow: 'release.yml', ref: 'main', inputs: { tag: '' }, confirm: 'Sure?', url: 'https://example.com' };
+  assert.deepEqual(keys({ ...good(), actions: [action] }), []);
+  assert.deepEqual(keys({ ...good(), actions: [{ ref: 'main' }] }).sort(), ['actions[0].label', 'actions[0].workflow']);
+  assert.deepEqual(keys({ ...good(), actions: [action, { ...action, url: 'example.com' }] }), ['actions[1].url']);
+  assert.deepEqual(keys({ ...good(), actions: { label: 'x' } }), ['actions']);
 });

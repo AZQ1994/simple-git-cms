@@ -35,7 +35,7 @@
   之后会问你要不要恢复
 - 预览：在编辑器里直接看文章在网站上的样子（电脑 / 手机宽度），未保存的内容和图片也能看
 - 草稿保存自动加 `[skip ci]`，不触发部署；发布后在顶栏显示部署进度（读 GitHub Actions 状态）
-- 发布按钮（可选）：一键运行你指定的 workflow，比如把编辑器所在的测试站发布到正式站，正式站就不用放编辑器
+- 执行按钮（可选）：一键运行你指定的 GitHub Actions workflow，比如把编辑器所在的测试站发布到正式站，正式站就不用放编辑器
 - 登录：用 GitHub App 登录（整页跳转，手机可用；令牌只能访问装了 App 的仓库，过期自动续期），或 Fine-grained 访问令牌
 - 权限：就是仓库权限，能推送的人才能编辑；谁改了什么都在 git 历史里
 - 界面支持英文、简体中文、日文，可随时切换
@@ -90,8 +90,7 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 | `blocks` | 这个网站自己定义的控件，见[自己定义控件](#自己定义控件) |
 | `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
-| `release.workflow` | 有 `workflow_dispatch` 触发器的 workflow（文件名，如 `release.yml`）。设置后侧栏出现一个按钮，点了运行它并显示进度。GitHub App 需要 **Actions: Read and write**（[auth/README.zh-CN.md](auth/README.zh-CN.md)） |
-| `release.ref` / `release.label` / `release.url` | 在哪个分支上运行（默认 `branch`）、按钮上的文字、发布后的网站地址（成功后显示链接） |
+| `actions` | 侧栏的执行按钮，每个运行一个有 `workflow_dispatch` 触发器的 workflow 并显示进度。每项：`label`（按钮文字，必填）、`workflow`（文件名，如 `release.yml`，必填）、`ref`（分支，默认 `branch`）、`inputs`（固定传给 workflow 的参数）、`confirm`（确认框的文字）、`url`（成功后显示的链接）。GitHub App 需要 **Actions: Read and write**（[auth/README.zh-CN.md](auth/README.zh-CN.md)） |
 
 **`media.maxFileMB` 该设多大。** 文件不经过登录中转——浏览器直接发给 GitHub——所以限制它的是网站
 发布在哪里，以及 GitHub 愿意留什么。Cloudflare Pages 和 Cloudflare Workers 静态资源上单个文件最多

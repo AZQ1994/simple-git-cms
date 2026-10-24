@@ -5,15 +5,16 @@ behind it are in the repository history.
 
 ## 0.8.0 — 2026-10-24
 
-A release button, so a site can keep the editor on its test copy only.
+Buttons that start GitHub Actions workflows, so a site can keep the editor on its test copy only.
 
-- **`release` in config.json.** Name a workflow that has a `workflow_dispatch` trigger and the
-  sidebar gets a button that starts it on `release.ref` (the content branch by default), after a
-  confirmation that also warns about unsaved changes in the open article. The sidebar then follows
-  that run to the end, and links to `release.url` once it succeeds. The typical use: the editor
-  lives on a test site built from `main`, and the button publishes `main` to the live site, which
-  is built without the editor. The GitHub App needs **Actions: Read and write** for it; without
-  `release`, nothing changes and Read-only is still enough.
+- **`actions` in config.json.** Each entry is a sidebar button: a `label`, a `workflow` with a
+  `workflow_dispatch` trigger, and optionally the `ref` to run on (the content branch by default),
+  fixed `inputs`, the `confirm` text, and a `url` to link once it succeeds. A click confirms —
+  warning about unsaved changes in the open article — starts the workflow, and the line under the
+  button follows the run to the end. The typical use: the editor lives on a test site built from
+  `main`, and a button publishes `main` to the live site, which is built without the editor. The
+  GitHub App needs **Actions: Read and write** for them; without `actions`, nothing changes and
+  Read-only is still enough. See [Action buttons](README.md#action-buttons).
 
 ## 0.7.0 — 2026-10-23
 

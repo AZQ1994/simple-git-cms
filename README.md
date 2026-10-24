@@ -53,8 +53,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   changes and images you have not saved yet
 - **Deployment**: draft saves get `[skip ci]` so they don't trigger a build; after publishing, the
   top bar follows the GitHub Actions run
-- **Release button** (optional): one click starts a workflow of your choosing — for example, from a
-  test site where the editor lives to the live site, which then needs no editor at all
+- **Action buttons** (optional): buttons that start GitHub Actions workflows of your choosing — for
+  example publishing a test site, where the editor lives, to the live site, which then needs no
+  editor at all
 - **Sign-in**: GitHub App sign-in (a full-page redirect, so it works on phones; the token only
   reaches repositories the App is installed on, and is refreshed automatically), or a fine-grained
   access token
@@ -113,8 +114,32 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `blocks` | Blocks this site defines for itself; see [Blocks of your own](#blocks-of-your-own) |
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
-| `release.workflow` | A workflow with a `workflow_dispatch` trigger (file name, e.g. `release.yml`). Set it and the sidebar gets a button that starts it, then follows the run. The GitHub App needs **Actions: Read and write** for this ([auth/README.md](auth/README.md)) |
-| `release.ref` / `release.label` / `release.url` | The branch it runs on (default `branch`), the button's text, and where the released site is (linked once the run succeeds) |
+| `actions` | Buttons in the sidebar, each starting a workflow that has a `workflow_dispatch` trigger, then following the run; see [Action buttons](#action-buttons). The GitHub App needs **Actions: Read and write** for them ([auth/README.md](auth/README.md)) |
+
+### Action buttons
+
+Each entry in `actions` is a button in the sidebar. A click asks for confirmation (and says so if
+the open article has unsaved changes, which the workflow won't see), starts the workflow through
+the GitHub API, and the line under the button follows the run until it succeeds or fails.
+
+```json
+"actions": [
+  { "label": "Publish to the live site", "workflow": "release.yml", "url": "https://example.com" },
+  { "label": "Rebuild the test site", "workflow": "site.yml", "inputs": { "clean": "true" } }
+]
+```
+
+| Field | Meaning |
+|---|---|
+| `label` | The button's text (required) |
+| `workflow` | The workflow's file name or id; it needs a `workflow_dispatch` trigger (required) |
+| `ref` | The branch it runs on (default `branch`) |
+| `inputs` | Inputs passed to the workflow, always these values |
+| `confirm` | What the confirmation asks (by default it names the button, the workflow and the branch) |
+| `url` | Linked once the run succeeds, e.g. the site it published |
+
+Anyone who can sign in can press them — the same people who can edit. To limit who may publish,
+give the workflow's job an environment with required reviewers on GitHub.
 
 **How large `media.maxFileMB` should be.** The file never passes through the sign-in relay — the
 browser sends it straight to GitHub — so what limits it is where the site is published and what
