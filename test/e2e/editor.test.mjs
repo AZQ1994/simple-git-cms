@@ -142,6 +142,38 @@ test('saving writes one commit, and the file says what the editor showed', async
   assert.equal(await page.evaluate(titleOf(1)), 'Autumn festival photos, corrected', 'the list should follow');
 });
 
+test('the history lists each version, and shows an older one without touching what is being edited', async () => {
+  const items = `[...document.querySelectorAll('#history-list .history-item')]`;
+  const frame = `document.getElementById('history-frame').srcdoc`;
+  await page.evaluate(`document.getElementById('btn-history').click()`);
+  await page.until(`${items}.length === 2`, { label: 'two versions in the history' });
+  const labels = JSON.parse(await page.evaluate(`JSON.stringify(${items}.map((b) => b.textContent))`));
+  assert.match(labels[0], /Latest.*Autumn festival photos, corrected/, 'newest first, named by its commit');
+  assert.match(labels[1], /Seed/);
+  await page.until(`${frame}.includes('It rained in the morning')`, { label: 'the latest version, drawn' });
+
+  await page.evaluate(`${items}[1].click()`);
+  await page.until(`${frame}.includes('Autumn festival photos</h1>')`, { label: 'the older version, drawn' });
+  assert.doesNotMatch(await page.evaluate(frame), /It rained/);
+  assert.doesNotMatch(await page.evaluate(`document.getElementById('history-frame').sandbox.value`), /allow-scripts/, 'where nothing in it can run');
+  assert.equal(await page.evaluate(`document.getElementById('history-frame').contentDocument.querySelector('h1').textContent`), 'Autumn festival photos', 'and it is drawn, not only handed over');
+
+  // On the site, the older version is what the preview is sent; closing it comes back here
+  await page.evaluate(`document.querySelector('[data-history="preview"]').click()`);
+  const preview = `document.getElementById('preview-frame').contentWindow`;
+  await page.until(`${preview}.received?.title === 'Autumn festival photos'`, { label: 'the older version in the preview' });
+  assert.equal(await page.evaluate(`document.getElementById('history-modal').hidden`), true);
+  await page.evaluate(`document.getElementById('preview-close').click()`);
+  await page.until(`!document.getElementById('history-modal').hidden`, { label: 'the history again' });
+  await page.evaluate(`document.querySelector('[data-history="close"]').click()`);
+
+  assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Autumn festival photos, corrected', 'the editor still has the article as it is');
+  assert.equal(await page.evaluate(`document.getElementById('btn-publish').disabled`), true, 'with nothing to save');
+  await page.evaluate(`document.getElementById('btn-preview').click()`);
+  await page.until(`${preview}.received?.title === 'Autumn festival photos, corrected'`, { label: 'the preview back on the article being edited' });
+  await page.evaluate(`document.getElementById('preview-close').click()`);
+});
+
 test('saving a draft leaves the site alone', async () => {
   await openArticle(2);
   assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Draft: timetable changes');

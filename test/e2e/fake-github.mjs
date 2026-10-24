@@ -64,6 +64,8 @@ export async function startFakeGitHub() {
   const dispatches = [];
   const queries = [];
   let head = 'c0';
+  // What the branch pointed at over time, oldest first, so the history has something to read
+  const log = [{ sha: 'c0', message: 'Seed', date: '2026-10-01T00:00:00Z', files }];
 
   const send = (res, status, data) => {
     res.writeHead(status, { ...CORS, 'Content-Type': 'application/json' });
@@ -108,9 +110,18 @@ export async function startFakeGitHub() {
       return send(res, 200, { data: { repository } });
     }
 
+    // The commits that changed one file, newest first: those where it differs from the one before
+    if (/^\/repos\/[^/]+\/[^/]+\/commits$/.test(p)) {
+      const path = url.searchParams.get('path');
+      const touched = log.filter((c, i) => i === 0 ? c.files.has(path) : c.files.get(path) !== log[i - 1].files.get(path));
+      return send(res, 200, touched.reverse().map((c) => ({ sha: c.sha, commit: { message: c.message, author: { name: 'Tester', date: c.date } }, author: { login: 'tester' } })));
+    }
+
     const contents = p.match(/\/contents\/(.+)$/);
     if (contents) {
-      const f = files.get(decodeURIComponent(contents[1]));
+      const ref = url.searchParams.get('ref');
+      const at = ref && ref !== 'main' ? log.find((c) => c.sha === ref)?.files ?? new Map() : files;
+      const f = at.get(decodeURIComponent(contents[1]));
       return f === undefined
         ? send(res, 404, { message: 'Not Found' })
         : send(res, 200, { sha: sha(f), content: Buffer.from(f).toString('base64') });
@@ -141,6 +152,7 @@ export async function startFakeGitHub() {
       if (!c) return send(res, 422, { message: 'Update is not a fast forward' });
       files = trees.get(c.tree);
       head = c.sha;
+      log.push({ sha: c.sha, message: c.message, date: new Date(Date.parse('2026-10-20T00:00:00Z') + log.length * 60_000).toISOString(), files });
       return send(res, 200, { object: { sha: head } });
     }
     const dispatch = p.match(/\/actions\/workflows\/([^/]+)\/dispatches$/);

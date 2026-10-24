@@ -486,6 +486,7 @@ export function updateBar() {
   $('#btn-save').hidden = !has || (a.id && !a.draft); // a published article only offers Update
   $('#btn-publish').hidden = !has;
   $('#btn-preview').hidden = !has || !CONFIG.preview?.url;
+  $('#btn-history').hidden = !has || !a.id;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
   $('#view-live').hidden = !has || !a.id || a.draft;

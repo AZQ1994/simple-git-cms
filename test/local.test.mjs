@@ -146,3 +146,27 @@ test('an image path outside the configured directories is refused', async () => 
     /outside the configured directories/,
   );
 });
+
+test('the history is git log for that one file, and each version is the file at its commit', async () => {
+  const id = '202601010000';
+  const save = async (title, message) => {
+    const [opened] = (await store.listFiles()).filter((f) => f.id === id);
+    await store.saveArticle({ id, title, description: '', date: '2026-01-01T00:00:00.000Z', tags: [], draft: false, extra: {}, body: `${title} の本文` }, { baseSha: opened.oid, message });
+  };
+  await save('一・二回目', '[skip ci] 二回目');
+  await save('一・三回目', '三回目');
+  // Something else changed meanwhile, which isn't this article's history
+  writeFileSync(file('202602020000'), article('二・改', '2026-02-02T00:00:00.000Z'));
+  git('commit', '-qam', 'other');
+
+  const history = await store.history(id);
+  assert.deepEqual(history.map((c) => c.message), ['三回目', '二回目', 'seed'], 'newest first, this file only, without [skip ci]');
+  assert.equal(history[0].author, 'Tester');
+  assert.ok(!Number.isNaN(Date.parse(history[0].date)));
+
+  assert.equal((await store.getArticle(id, history[1].sha)).title, '一・二回目');
+  assert.equal((await store.getArticle(id, history[2].sha)).title, '一');
+  assert.equal(await store.getArticle('202603030000', history[0].sha), null, 'not there at that commit');
+  await assert.rejects(store.getArticle(id, 'HEAD; rm -rf'), 'only a commit hash is taken as a ref');
+  await assert.rejects(store.history('../../etc'), 'and only an article id as an id');
+});

@@ -69,6 +69,18 @@ export class LocalStore {
     return new Map(Object.entries(await this.req('read', { ids })));
   }
 
+  /** The same as GitHubStore.history(): the commits that changed one article, newest first. */
+  async history(id) {
+    return this.req('history', { id });
+  }
+
+  /** The article as a commit left it, or null where it wasn't there. Only the history asks for an
+   * older version; everything else reads the files as they are. */
+  async getArticle(id, ref) {
+    const { text } = await this.req('version', { id, ref });
+    return text === null ? null : parseArticle(id, text);
+  }
+
   async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false } = {}) {
     const text = deleteArticle ? null : serializeArticle(article);
     const r = await this.req('save', {

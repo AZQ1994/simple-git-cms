@@ -34,6 +34,7 @@ export default {
   'bar.delete': '削除',
   'bar.unpublish': '下書きに戻す',
   'bar.preview': 'プレビュー',
+  'bar.history': '履歴',
   'bar.saveDraft': '下書きを保存',
   'bar.publish': '公開',
   'bar.update': '更新',
@@ -197,6 +198,18 @@ export default {
   'preview.phone': 'スマートフォン',
   'preview.close': '閉じる',
   'preview.loadFailed': 'プレビュー用の部品を読み込めませんでした。通信状況を確認してお試しください。',
+
+  // 履歴
+  'history.title': '履歴',
+  'history.hint': '保存するたびに版が残ります。ここでは見るだけで、記事は変わりません。',
+  'history.close': '閉じる',
+  'history.loading': '履歴を読み込んでいます…',
+  'history.latest': '最新',
+  'history.viewing': '{when} 時点の内容',
+  'history.empty': 'まだ履歴はありません。この記事はまだコミットされていません。',
+  'history.deleted': 'この版では記事が削除されています。',
+  'history.preview': 'サイトの見た目でプレビュー',
+  'history.previewNote': '{when} の版です（編集中の内容ではありません）',
 
   // デプロイ
   'deploy.pending': 'サイトを更新しています…',

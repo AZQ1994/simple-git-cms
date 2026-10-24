@@ -22,7 +22,17 @@ function loadRenderer() {
   });
 }
 
+/** Markdown to HTML the way the site does it, loading the renderer first if it isn't yet. */
+export async function renderBody(markdown) {
+  await loadRenderer();
+  return renderMarkdown(markdown);
+}
+
 const previewFrame = $('#preview-frame');
+// An earlier version opened from the history, shown instead of what is being edited, and what to
+// do when the preview closes again
+let fixed = null;
+let onClose = null;
 
 // Keep the preview up to date while editing, after a pause so every keystroke doesn't reconvert
 let previewTimer;
@@ -33,8 +43,8 @@ function queuePreview() {
 on('doc:changed', queuePreview);
 
 function sendPreview() {
-  if (!previewReady || !renderMarkdown || $('#preview').hidden || !state.current) return;
-  const a = collect();
+  if (!previewReady || !renderMarkdown || $('#preview').hidden || (!state.current && !fixed)) return;
+  const a = fixed ?? collect();
   const images = {};
   for (const [src, p] of pending) images[src] = p.blob;
   // The cover and the rest of the frontmatter go too: a site may show either on the article page,
@@ -54,7 +64,11 @@ function sendPreview() {
   );
 }
 
-async function openPreview() {
+/**
+ * Open the preview: of the article being edited, or of `article` — an earlier version from the
+ * history, which `note` then says. `closed` is called when it is closed again.
+ */
+export async function openPreview(article = null, { note, closed } = {}) {
   try {
     await loadRenderer();
   } catch (e) {
@@ -63,6 +77,9 @@ async function openPreview() {
   // As with images: use this origin when the editor shares the site's domain or is running
   // locally, and the site's address otherwise
   const url = new URL(CONFIG.preview.url, CONFIG.assetBase || location.origin).href;
+  fixed = article;
+  onClose = closed ?? null;
+  $('#preview-hint').textContent = article ? note : t('preview.hint');
   $('#preview').hidden = false;
   if (previewFrame.src !== url) {
     previewReady = false;
@@ -77,10 +94,18 @@ addEventListener('message', (e) => {
   previewReady = true;
   sendPreview();
 });
-$('#btn-preview').addEventListener('click', openPreview);
-$('#preview-close').addEventListener('click', () => ($('#preview').hidden = true));
+function closePreview() {
+  $('#preview').hidden = true;
+  fixed = null;
+  const then = onClose;
+  onClose = null;
+  then?.();
+}
+
+$('#btn-preview').addEventListener('click', () => openPreview());
+$('#preview-close').addEventListener('click', closePreview);
 addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !$('#preview').hidden) $('#preview').hidden = true;
+  if (e.key === 'Escape' && !$('#preview').hidden) closePreview();
 });
 $('#preview-size').addEventListener('click', (e) => {
   const b = e.target.closest('button');

@@ -74,6 +74,7 @@
             <a class="btn ghost" id="view-live" target="_blank" rel="noopener" hidden><span data-icon="external"></span><span class="hide-sm" data-i18n="bar.viewLive"></span></a>
             <button class="btn ghost danger" id="btn-delete" type="button" hidden data-i18n="bar.delete"></button>
             <button class="btn ghost" id="btn-unpublish" type="button" hidden data-i18n="bar.unpublish"></button>
+            <button class="btn ghost" id="btn-history" type="button" hidden data-i18n-title="bar.history"><span data-icon="history"></span><span class="hide-sm" data-i18n="bar.history"></span></button>
             <button class="btn ghost" id="btn-preview" type="button" hidden><span data-icon="eye"></span><span class="hide-sm" data-i18n="bar.preview"></span></button>
             <button class="btn ghost" id="btn-save" type="button" data-i18n="bar.saveDraft"></button>
             <button class="btn primary" id="btn-publish" type="button"></button>
@@ -235,12 +236,36 @@
       </div>
     </div>
 
+    <!-- History: the article's earlier versions, one commit each, to look at but not to edit -->
+    <div class="modal" id="history-modal" hidden>
+      <div class="modal-card history-card" role="dialog" aria-modal="true" aria-labelledby="history-title">
+        <div class="history-head">
+          <h2 id="history-title" data-i18n="history.title"></h2>
+          <span class="muted hide-sm" data-i18n="history.hint"></span>
+          <button type="button" class="icon-btn" data-history="close" data-i18n-aria-label="history.close" data-i18n-title="history.close"><span data-icon="x"></span></button>
+        </div>
+        <div class="history-body">
+          <ol class="history-list" id="history-list"></ol>
+          <div class="history-view">
+            <div class="history-view-bar">
+              <span class="muted" id="history-what"></span>
+              <button type="button" class="btn ghost" data-history="preview" hidden><span data-icon="eye"></span><span data-i18n="history.preview"></span></button>
+            </div>
+            <!-- The version is the repository's text, HTML and all, so it is drawn where it can run
+                 nothing: a sandbox without allow-scripts. Same origin, so its images load the way
+                 the editor's do; without scripts that gives the version nothing to reach with. -->
+            <iframe id="history-frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" data-i18n-title="history.title"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Preview: embeds the site's own preview page (config.json's preview.url) so the article
          being edited is shown in the site's layout -->
     <div class="preview" id="preview" hidden>
       <div class="preview-bar">
         <strong data-i18n="preview.title"></strong>
-        <span class="muted hide-sm" data-i18n="preview.hint"></span>
+        <span class="muted hide-sm" id="preview-hint" data-i18n="preview.hint"></span>
         <div class="seg" id="preview-size">
           <button type="button" data-size="desktop" class="on"><span data-icon="monitor"></span><span class="hide-sm" data-i18n="preview.desktop"></span></button>
           <button type="button" data-size="phone"><span data-icon="phone"></span><span class="hide-sm" data-i18n="preview.phone"></span></button>

@@ -34,6 +34,7 @@ export default {
   'bar.delete': '删除',
   'bar.unpublish': '撤回为草稿',
   'bar.preview': '预览',
+  'bar.history': '历史',
   'bar.saveDraft': '保存草稿',
   'bar.publish': '发布',
   'bar.update': '更新',
@@ -197,6 +198,18 @@ export default {
   'preview.phone': '手机',
   'preview.close': '关闭',
   'preview.loadFailed': '预览组件加载失败，请检查网络后重试',
+
+  // 历史版本
+  'history.title': '历史版本',
+  'history.hint': '每次保存都是一个版本。这里只能查看，不会改动文章。',
+  'history.close': '关闭',
+  'history.loading': '正在读取历史…',
+  'history.latest': '最新',
+  'history.viewing': '{when} 时的样子',
+  'history.empty': '还没有历史：这篇文章还没有提交过。',
+  'history.deleted': '这个版本里文章被删除了。',
+  'history.preview': '在网站样式里预览',
+  'history.previewNote': '{when} 的版本，不是正在编辑的内容',
 
   // 部署
   'deploy.pending': '正在更新网站…',

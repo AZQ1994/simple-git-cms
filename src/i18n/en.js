@@ -33,6 +33,7 @@ export default {
   'bar.delete': 'Delete',
   'bar.unpublish': 'Revert to draft',
   'bar.preview': 'Preview',
+  'bar.history': 'History',
   'bar.saveDraft': 'Save draft',
   'bar.publish': 'Publish',
   'bar.update': 'Update',
@@ -196,6 +197,18 @@ export default {
   'preview.phone': 'Phone',
   'preview.close': 'Close',
   'preview.loadFailed': 'Could not load the preview component. Check your connection and try again.',
+
+  // History
+  'history.title': 'History',
+  'history.hint': 'Every save is a version. Looking only — nothing here changes the article.',
+  'history.close': 'Close',
+  'history.loading': 'Loading the history…',
+  'history.latest': 'Latest',
+  'history.viewing': 'As it was at {when}',
+  'history.empty': 'No history yet: this article has not been committed.',
+  'history.deleted': 'In this version the article was deleted.',
+  'history.preview': 'Preview on the site',
+  'history.previewNote': 'The version from {when}, not what you are editing',
 
   // Deployment
   'deploy.pending': 'Updating the site…',

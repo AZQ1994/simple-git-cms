@@ -31,6 +31,7 @@
 - 文章：标题、日期、标签、摘要、草稿 / 发布 / 撤回 / 删除草稿。打开的是哪一篇写在地址栏里，所以
   刷新会回到原处，这个地址也可以直接发给另一个能登录的人
 - 保存：文章 + 新图片合成一个提交；文章在打开后被别人改过时提示冲突（载入对方版本 / 覆盖）
+- 历史版本：一篇文章的每个版本（每次改动它的提交就是一个版本）都可以翻出来看，也可以用网站的预览看当时的样子；只看不改，不影响正在编辑的内容
 - 没提交的东西不会丢：边写边存一份在浏览器里（包括还没上传的图片），浏览器崩了、标签页误关、刷新
   之后会问你要不要恢复
 - 预览：在编辑器里直接看文章在网站上的样子（电脑 / 手机宽度），未保存的内容和图片也能看
@@ -45,7 +46,7 @@
 
 | 目录 | 内容 |
 |---|---|
-| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`；`schema.js` 规定正文能放什么、以及怎么写回 Markdown，`html-scan.js` 查正文里的 HTML 有没有开了不关的标签，`app.js` 只负责读配置和启动 |
+| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`、`history.js`；`schema.js` 规定正文能放什么、以及怎么写回 Markdown，`html-scan.js` 查正文里的 HTML 有没有开了不关的标签，`app.js` 只负责读配置和启动 |
 | `public/` | 页面、样式、`config.example.json` |
 | `auth/` | 「用 GitHub 登录」的中转。一个没有依赖的文件，可以跑在 Cloudflare Workers、Deno Deploy、Vercel、Netlify、Bun 或自己的 Node 服务器上（见[说明](auth/README.zh-CN.md)） |
 | `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件（见[说明](integrations/astro/README.zh-CN.md)） |
