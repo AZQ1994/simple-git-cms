@@ -38,7 +38,8 @@ GitHub → Settings → Developer settings → GitHub Apps → New.
 - **Expire user authorization tokens**: leave checked — the editor refreshes tokens automatically
 - **Webhook**: uncheck Active
 - **Repository permissions**: **Contents: Read and write**, and **Actions: Read-only** (so the
-  editor can show deployment progress). Nothing else.
+  editor can show deployment progress). Nothing else — unless config.json has `release`: its
+  button starts a workflow, which takes **Actions: Read and write**.
 - **Where can this GitHub App be installed**: choose Any account if the repository belongs to an
   organization
 - Generate a client secret, then **Install App** and pick only the repository holding your content

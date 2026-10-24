@@ -197,6 +197,8 @@ svg { flex: none; }
 .deploy.ok { background: var(--ok-bg); color: var(--green); }
 .deploy.ok svg { width: 14px; height: 14px; }
 .deploy.fail { background: var(--fail-bg); color: var(--red); }
+.side-top .deploy { justify-self: start; max-width: 100%; }
+.deploy a { color: inherit; }
 .bar-actions { display: flex; align-items: center; gap: 6px; }
 .only-mobile { display: none; }
 

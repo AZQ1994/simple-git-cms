@@ -59,6 +59,16 @@ const SPEC = {
   },
   preview: { fields: { url: { ...str, slash: true } } },
   deploy: { fields: { skipCiForDrafts: { type: 'boolean' } } },
+  // Optional as a whole: left out, there is no release button. Written, it needs a workflow.
+  release: {
+    optional: true,
+    fields: {
+      workflow: { ...str, required: true },
+      ref: str,
+      label: str,
+      url: { ...str, absolute: true },
+    },
+  },
 };
 
 /** The closest known key, when it is close enough to be worth suggesting. */
@@ -153,7 +163,7 @@ export function checkConfig(raw, t) {
     }
     for (const [key, rule] of Object.entries(spec)) {
       if (rule.required && object[key] === undefined) add(problems, prefix + key, 'config.required');
-      if (rule.fields && object[key] === undefined && Object.values(rule.fields).some((f) => f.required)) {
+      if (rule.fields && !rule.optional && object[key] === undefined && Object.values(rule.fields).some((f) => f.required)) {
         for (const [sub, f] of Object.entries(rule.fields)) if (f.required) add(problems, `${prefix}${key}.${sub}`, 'config.required');
       }
     }

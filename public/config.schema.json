@@ -154,6 +154,34 @@
         }
       }
     },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow"],
+      "description": "A button that starts a GitHub Actions workflow, e.g. publishing the test site the editor is on to the live site. The GitHub App needs Actions: Read and write.",
+      "properties": {
+        "workflow": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The workflow's file name (or id). It needs a workflow_dispatch trigger."
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The branch to run it on. Defaults to branch."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The button's text. Defaults to \"Publish to the live site\" in the interface language."
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https?://",
+          "description": "Where the released site is; linked once the run succeeds."
+        }
+      }
+    },
     "blocks": {
       "type": "array",
       "description": "Blocks this site defines for itself: HTML tags the editor should show as a small form instead of as source.",

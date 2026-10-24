@@ -53,6 +53,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   changes and images you have not saved yet
 - **Deployment**: draft saves get `[skip ci]` so they don't trigger a build; after publishing, the
   top bar follows the GitHub Actions run
+- **Release button** (optional): one click starts a workflow of your choosing — for example, from a
+  test site where the editor lives to the live site, which then needs no editor at all
 - **Sign-in**: GitHub App sign-in (a full-page redirect, so it works on phones; the token only
   reaches repositories the App is installed on, and is refreshed automatically), or a fine-grained
   access token
@@ -111,6 +113,8 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `blocks` | Blocks this site defines for itself; see [Blocks of your own](#blocks-of-your-own) |
 | `preview.url` | The preview page on your site (step 4). Leave it out and there is no Preview button. |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
+| `release.workflow` | A workflow with a `workflow_dispatch` trigger (file name, e.g. `release.yml`). Set it and the sidebar gets a button that starts it, then follows the run. The GitHub App needs **Actions: Read and write** for this ([auth/README.md](auth/README.md)) |
+| `release.ref` / `release.label` / `release.url` | The branch it runs on (default `branch`), the button's text, and where the released site is (linked once the run succeeds) |
 
 **How large `media.maxFileMB` should be.** The file never passes through the sign-in relay — the
 browser sends it straight to GitHub — so what limits it is where the site is published and what

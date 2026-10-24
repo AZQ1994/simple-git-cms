@@ -46,6 +46,8 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
   確認できます
 - **デプロイ**：下書きの保存には `[skip ci]` が付くのでビルドは走りません。公開後はヘッダーに
   GitHub Actions の進行状況が出ます
+- **公開ボタン**（任意）：指定した workflow をワンクリックで実行。たとえばエディターのあるテストサイトから
+  本番サイトへの公開。本番サイトにはエディターを置かずに済みます
 - **ログイン**：GitHub App でのログイン（全画面リダイレクト方式なのでスマートフォンでも使えます。
   トークンは App を入れたリポジトリにしか届かず、期限切れは自動で更新）、または Fine-grained
   アクセストークン
@@ -104,6 +106,8 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `blocks` | このサイトが自分で定義するブロック。[自分でブロックを定義する](#自分でブロックを定義する)を参照 |
 | `preview.url` | サイト側のプレビューページ（下の手順 4）。空なら「プレビュー」ボタンは出ません |
 | `deploy.skipCiForDrafts` | 下書きの保存に `[skip ci]` を付ける（既定は true） |
+| `release.workflow` | `workflow_dispatch` トリガーのある workflow（ファイル名。例：`release.yml`）。設定するとサイドバーにボタンが出て、押すと実行し進行状況を表示します。GitHub App に **Actions: Read and write** が必要です（[auth/README.ja.md](auth/README.ja.md)） |
+| `release.ref` / `release.label` / `release.url` | 実行するブランチ（既定は `branch`）、ボタンの文字、公開先のサイト（成功後にリンクを表示） |
 
 **`media.maxFileMB` をどこまで上げられるか。** ファイルはログイン中継を通りません——ブラウザーが
 GitHub へ直接送ります——ので、効いてくるのはサイトをどこに公開しているかと、GitHub が何を置かせて

@@ -53,6 +53,7 @@ before(async () => {
       collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
       media: { dir: MEDIA_DIR, url: '/uploads' },
       preview: { url: '/preview/' },
+      release: { workflow: 'release.yml', url: 'http://live.invalid' },
       blocks: [
         { tag: 'YouTube', label: 'YouTube', fields: [{ name: 'id', label: 'Video' }, { name: 'start', label: 'Start' }] },
         { tag: 'table', label: 'Advanced table', edit: 'table' },
@@ -523,6 +524,16 @@ test('deleting takes the file with it', async () => {
 
   assert.equal(gh.files.has(`${CONTENT_DIR}/${id}.md`), false, 'the file should be gone');
   await page.until(`document.querySelectorAll('#list .item').length === 3`, { label: 'three articles again' });
+});
+
+test('the release button starts the workflow on the branch and says when the live site has it', async () => {
+  assert.equal(await page.evaluate(`document.getElementById('release').hidden`), false, 'config.json asks for it');
+  assert.equal(await page.evaluate(`document.getElementById('release-label').textContent`), 'Publish to the live site');
+  await page.evaluate(`document.getElementById('release').click()`); // the confirm is answered yes
+  for (let i = 0; i < 50 && !gh.dispatches.length; i++) await sleep(100);
+  assert.deepEqual(gh.dispatches, [{ workflow: 'release.yml', ref: 'main', return_run_details: true }], 'ref defaults to config.branch');
+  await page.until(`document.getElementById('release-status').classList.contains('ok')`, { label: 'the release finishing', timeout: 15000 });
+  assert.equal(await page.evaluate(`document.querySelector('#release-status a').href`), 'http://live.invalid/', 'with a link to the live site');
 });
 
 test('a table built with the toolbar is saved as a GFM table', async () => {

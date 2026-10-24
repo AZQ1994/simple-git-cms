@@ -204,6 +204,16 @@ export default {
   'deploy.repoBusy': 'The repository is in the middle of something, so nothing was committed',
   'deploy.notCommitted': 'Nothing was committed — commit when you are ready',
   'deploy.pushHint': 'Committed in the repository on this machine. Push it when you are ready.',
+  'release.button': 'Publish to the live site',
+  'release.confirm': '{label}?\n\nWhat is on the {ref} branch now goes to the live site.',
+  'release.unsaved': 'The article open now has changes that are not saved. They won’t go with it.',
+  'release.starting': 'Starting…',
+  'release.pending': 'Publishing to the live site…',
+  'release.success': 'Published to the live site',
+  'release.view': 'View',
+  'release.failure': 'Publishing to the live site failed. Please contact the administrator.',
+  'release.forbidden': 'This sign-in may not start GitHub Actions. The GitHub App needs “Actions: Read and write”, and you need write access to the repository.',
+  'release.notFound': 'GitHub could not start “{workflow}” on {ref}. Check config.json’s release.workflow, and that the workflow has a workflow_dispatch trigger.',
 
   // Config / GitHub
   'config.notAnObject': 'config.json has to be a JSON object.',

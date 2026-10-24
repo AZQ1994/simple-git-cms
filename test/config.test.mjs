@@ -139,3 +139,9 @@ test('the example config shipped with the editor is one the editor accepts', () 
   const example = JSON.parse(readFileSync(new URL('../public/config.example.json', import.meta.url), 'utf8'));
   assert.deepEqual(keys(example), []);
 });
+
+test('release is optional, but written it needs a workflow, and its url is a full address', () => {
+  assert.deepEqual(keys({ ...good(), release: { workflow: 'release.yml', ref: 'main', label: 'Go live', url: 'https://example.com' } }), []);
+  assert.deepEqual(keys({ ...good(), release: { ref: 'main' } }), ['release.workflow']);
+  assert.deepEqual(keys({ ...good(), release: { workflow: 'release.yml', url: 'example.com' } }), ['release.url']);
+});

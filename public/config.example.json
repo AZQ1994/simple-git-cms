@@ -64,5 +64,11 @@
 
   "deploy": {
     "skipCiForDrafts": true
+  },
+
+  "release": {
+    "workflow": "release.yml",
+    "label": "Publish to the live site",
+    "url": "https://example.com"
   }
 }

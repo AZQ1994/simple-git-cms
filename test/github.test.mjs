@@ -174,3 +174,45 @@ test('an expired token (401) is refreshed and the request retried once; otherwis
   const dead = new GitHubStore({ token: 'old', repo: 'o/r', contentDir: 'site/news', refresh: async () => null });
   await assert.rejects(dead.req('/user'), (e) => e instanceof AuthError);
 });
+
+test('release starts the workflow on the branch and follows the run GitHub names', async () => {
+  const asked = [];
+  globalThis.fetch = (url, { method = 'GET', body } = {}) => {
+    const p = new URL(url).pathname;
+    asked.push(`${method} ${p}`);
+    const ok = (data) => Promise.resolve(new Response(JSON.stringify(data), { status: 200 }));
+    if (p.endsWith('/actions/workflows/release.yml/dispatches')) {
+      assert.deepEqual(JSON.parse(body), { ref: 'main', return_run_details: true });
+      return ok({ workflow_run_id: 42, run_url: 'x', html_url: 'y' });
+    }
+    if (p.endsWith('/actions/runs/42')) return ok({ status: 'completed', conclusion: 'success' });
+    return ok({});
+  };
+  const s = store();
+  const runId = await s.release({ workflow: 'release.yml', ref: 'main' });
+  assert.equal(runId, 42);
+  assert.equal(await s.releaseStatus({ workflow: 'release.yml', ref: 'main', runId, since: Date.now() }), 'success');
+  assert.deepEqual(asked, ['POST /repos/o/r/actions/workflows/release.yml/dispatches', 'GET /repos/o/r/actions/runs/42']);
+});
+
+test('without a run id, the release is the newest dispatched run since it was started', async () => {
+  const since = Date.parse('2026-10-24T10:00:00Z');
+  let runs = [];
+  globalThis.fetch = (url, { method = 'GET' } = {}) => {
+    const u = new URL(url);
+    if (method === 'POST') return Promise.resolve(new Response(null, { status: 204 })); // the old answer
+    assert.equal(u.pathname, '/repos/o/r/actions/workflows/release.yml/runs');
+    assert.equal(u.searchParams.get('event'), 'workflow_dispatch');
+    assert.equal(u.searchParams.get('branch'), 'main');
+    return Promise.resolve(new Response(JSON.stringify({ workflow_runs: runs }), { status: 200 }));
+  };
+  const s = store();
+  assert.equal(await s.release({ workflow: 'release.yml', ref: 'main' }), null);
+  const status = () => s.releaseStatus({ workflow: 'release.yml', ref: 'main', runId: null, since });
+  runs = [{ created_at: '2026-10-23T09:00:00Z', status: 'completed', conclusion: 'success' }];
+  assert.equal(await status(), 'pending', 'yesterday’s release is not this one');
+  runs = [{ created_at: '2026-10-24T10:00:03Z', status: 'in_progress', conclusion: null }, ...runs];
+  assert.equal(await status(), 'pending');
+  runs[0] = { ...runs[0], status: 'completed', conclusion: 'failure' };
+  assert.equal(await status(), 'failure');
+});

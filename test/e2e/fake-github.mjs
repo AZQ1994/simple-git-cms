@@ -61,6 +61,7 @@ export async function startFakeGitHub() {
   const blobs = new Map();
   const trees = new Map();
   const commits = [];
+  const dispatches = [];
   const queries = [];
   let head = 'c0';
 
@@ -142,6 +143,12 @@ export async function startFakeGitHub() {
       head = c.sha;
       return send(res, 200, { object: { sha: head } });
     }
+    const dispatch = p.match(/\/actions\/workflows\/([^/]+)\/dispatches$/);
+    if (dispatch && req.method === 'POST') {
+      dispatches.push({ workflow: decodeURIComponent(dispatch[1]), ...body });
+      return send(res, 200, { workflow_run_id: 7, run_url: `${p}/7`, html_url: 'https://example.invalid/runs/7' });
+    }
+    if (p.endsWith('/actions/runs/7')) return send(res, 200, { status: 'completed', conclusion: 'success' });
     if (p.includes('/actions/runs')) return send(res, 200, { workflow_runs: [{ status: 'completed', conclusion: 'success' }] });
 
     return send(res, 500, { message: `the fake GitHub does not answer ${req.method} ${p}` });
@@ -155,6 +162,10 @@ export async function startFakeGitHub() {
       return files;
     },
     /** Every commit made, newest last. */
+    /** Every workflow started through the API: { workflow, ref, … } */
+    get dispatches() {
+      return dispatches;
+    },
     get commits() {
       return commits;
     },

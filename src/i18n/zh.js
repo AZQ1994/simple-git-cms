@@ -205,6 +205,16 @@ export default {
   'deploy.repoBusy': '仓库正处在合并 / 变基中途，所以没有提交',
   'deploy.notCommitted': '没有提交——什么时候提交由你决定',
   'deploy.pushHint': '已提交到这台机器上的仓库。什么时候 push 由你决定。',
+  'release.button': '发布到正式站',
+  'release.confirm': '{label}？\n\n{ref} 分支现在的内容会发布到正式站。',
+  'release.unsaved': '正在编辑的文章还有没保存的修改，这些修改不会一起发布。',
+  'release.starting': '正在开始…',
+  'release.pending': '正在发布到正式站…',
+  'release.success': '已发布到正式站',
+  'release.view': '查看',
+  'release.failure': '发布到正式站失败，请联系管理员',
+  'release.forbidden': '这个登录不能运行 GitHub Actions。GitHub App 需要「Actions: Read and write」权限，你也需要对仓库有写权限。',
+  'release.notFound': 'GitHub 没能在 {ref} 上运行「{workflow}」。请检查 config.json 的 release.workflow，以及这个 workflow 有没有 workflow_dispatch 触发器。',
 
   // 配置 / GitHub
   'config.notAnObject': 'config.json 必须是一个 JSON 对象。',

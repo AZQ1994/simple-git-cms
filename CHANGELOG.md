@@ -3,6 +3,18 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## 0.8.0 — 2026-10-24
+
+A release button, so a site can keep the editor on its test copy only.
+
+- **`release` in config.json.** Name a workflow that has a `workflow_dispatch` trigger and the
+  sidebar gets a button that starts it on `release.ref` (the content branch by default), after a
+  confirmation that also warns about unsaved changes in the open article. The sidebar then follows
+  that run to the end, and links to `release.url` once it succeeds. The typical use: the editor
+  lives on a test site built from `main`, and the button publishes `main` to the live site, which
+  is built without the editor. The GitHub App needs **Actions: Read and write** for it; without
+  `release`, nothing changes and Read-only is still enough.
+
 ## 0.7.0 — 2026-10-23
 
 The sign-in relay can live under a site's own path.
