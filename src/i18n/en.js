@@ -33,6 +33,7 @@ export default {
   'bar.delete': 'Delete',
   'bar.unpublish': 'Revert to draft',
   'bar.preview': 'Preview',
+  'bar.history': 'History',
   'bar.saveDraft': 'Save draft',
   'bar.publish': 'Publish',
   'bar.update': 'Update',
@@ -179,6 +180,7 @@ export default {
 
   // Commit messages
   'commit.article': '{verb} article: {title}',
+  'commit.restored': '{message} (restored from {when}, {sha})',
   'commit.delete': 'Delete draft: {title}',
 
   // Conflicts
@@ -196,6 +198,24 @@ export default {
   'preview.phone': 'Phone',
   'preview.close': 'Close',
   'preview.loadFailed': 'Could not load the preview component. Check your connection and try again.',
+
+  // History
+  'history.title': 'History',
+  'history.hint': 'Every save is a version. Restoring one puts it in the editor; nothing changes until you save.',
+  'history.close': 'Close',
+  'history.loading': 'Loading the history…',
+  'history.latest': 'Latest',
+  'history.viewing': 'As it was at {when}',
+  'history.empty': 'No history yet: this article has not been committed.',
+  'history.deleted': 'In this version the article was deleted.',
+  'history.preview': 'Preview on the site',
+  'history.previewNote': 'The version from {when}, not what you are editing',
+  'history.restore': 'Restore this version',
+  'history.restored': 'The version from {when} is in the editor. Save to keep it.',
+  'history.backToSaved': 'Back to the saved version; unsaved changes discarded.',
+  'history.replaceConfirm': 'The editor has unsaved changes. Restoring replaces them with the version from {when} — you can undo it for a few seconds afterwards.',
+  'history.undo': 'Undo',
+  'history.undone': 'Back to what you had before restoring.',
 
   // Deployment
   'deploy.pending': 'Updating the site…',

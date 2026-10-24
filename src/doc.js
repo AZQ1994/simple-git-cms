@@ -9,6 +9,7 @@ import { compressImage, newImagePath, openCropper } from './images.js';
 import { htmlProblems } from './html-scan.js';
 import { renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
+import { serializeArticle } from './article.js';
 import { icons } from './icons.js';
 import { t } from './i18n/index.js';
 
@@ -97,13 +98,14 @@ const draftKey = (id) => `${CONFIG.repo}/${CONFIG.collection.dir}/${id ?? 'new'}
 const isUsed = (article, path) => article.body.includes(`(${path}`) || (coverField() && article.extra?.[coverField()] === path);
 
 let draftTimer;
+let heldDraft = null; // { id } of an article whose kept copy is not to be overwritten yet (see restoreVersion)
 function queueDraft() {
   clearTimeout(draftTimer);
   draftTimer = setTimeout(keepDraft, 1200);
 }
 
 async function keepDraft() {
-  if (!state.current || !state.dirty) return;
+  if (!state.current || !state.dirty || heldDraft?.id === state.current.id) return;
   const article = collect();
   const images = [];
   for (const [path, p] of pending) {
@@ -117,12 +119,17 @@ function forgetDraft(id) {
   dropDraft(draftKey(id));
 }
 
+/** Whether two versions of an article say the same thing, published or not. */
+const sameContent = (a, b) => {
+  const what = (x) => JSON.stringify([x.title, x.description, x.date, x.tags, x.body, x.extra]);
+  return what(a) === what(b);
+};
+
 /** What was kept for this article, if it says anything the saved version doesn't. */
 async function unsavedDraft(id, saved) {
   const kept = await getDraft(draftKey(id));
   if (!kept?.article) return null;
-  const same = (a) => JSON.stringify([a.title, a.description, a.date, a.tags, a.body, a.extra]);
-  return saved && same(kept.article) === same(saved) ? null : kept;
+  return saved && sameContent(kept.article, saved) ? null : kept;
 }
 
 /** Put a kept draft back on screen, images and all. Nothing is committed by this. */
@@ -143,6 +150,94 @@ async function offerDraft(id, saved, prompt = 'recover.prompt') {
   if (!kept) return;
   if (confirm(t(prompt, { when: fmtDateTime(kept.savedAt) }))) restoreDraft(kept);
   else forgetDraft(id);
+}
+
+// ---------- Restoring an earlier version ----------
+//
+// Restoring puts a version from the history in the editor as unsaved changes; saving it is the
+// usual save, and the commit says which version it came from. Two things stay as they are now:
+// whether the article is published — bringing back the words shouldn't take it off the site or put
+// it on — and the version the save checks against, so a save someone else made meanwhile is still
+// a conflict rather than quietly overwritten.
+//
+// What was in the editor before is not thrown away at once: the notice that says the version is in
+// offers Undo for a few seconds, and until it goes the browser's copy of the unsaved work stays
+// the work that was replaced, so a reload in that time still offers it back.
+
+let restoredFrom = null; // { sha, when } of the version on screen, until it is saved or left
+
+/** The saved article, as the list has it. */
+const savedVersion = () => state.articles.find((a) => a.id === state.current?.id) ?? null;
+
+/** Whether two versions would be the same file, leaving aside whether they are published. Compared
+ * as written, since what was read back and what was saved differ in ways the file doesn't — an
+ * empty summary, the whitespace around the body. */
+const sameFile = (a, b) => serializeArticle({ ...a, draft: false }) === serializeArticle({ ...b, draft: false });
+
+/** Whether restoring `version` would change anything: not when it is what is saved and there is
+ * nothing unsaved on top of it. */
+export const restoreChanges = (version) => state.dirty || !savedVersion() || !sameFile(version, savedVersion());
+
+/** Put an earlier version of the open article in the editor. Nothing is committed by this. Returns
+ * false when there were unsaved changes and they were to be kept. */
+export function restoreVersion(version, from) {
+  if (!state.current?.id) return false;
+  if (state.dirty && !confirm(t('history.replaceConfirm', { when: from.when }))) return false;
+  const id = state.current.id;
+  const before = { article: collect(), dirty: state.dirty, from: restoredFrom };
+  let hold = null;
+  if (before.dirty) {
+    // Write down what is about to be replaced now, rather than in a moment when it is gone — over
+    // anything an earlier restore was still holding on to
+    heldDraft = null;
+    clearTimeout(draftTimer);
+    keepDraft();
+    heldDraft = hold = { id };
+  }
+
+  const saved = savedVersion();
+  let msg;
+  if (saved && sameFile(version, saved)) {
+    // The version that is saved: that is just going back to it
+    load(structuredClone(saved));
+    msg = t('history.backToSaved');
+  } else {
+    load({ ...structuredClone(version), id, sha: before.article.sha, draft: before.article.draft });
+    restoredFrom = from;
+    state.dirty = true;
+    updateBar();
+    emit('doc:changed'); // sent to an open preview, and kept in the browser once Undo has gone
+    msg = t('history.restored', { when: from.when });
+  }
+
+  const after = { current: state.current, article: collect() };
+  toast(msg, 'ok', {
+    label: t('history.undo'),
+    run: () => undoRestore(before, after),
+    // Too late to undo: what is on screen now is what the browser keeps
+    expired: () => {
+      if (!hold || heldDraft !== hold) return;
+      heldDraft = null;
+      if (state.current?.id !== id) return;
+      if (state.dirty) queueDraft();
+      else forgetDraft(id);
+    },
+  });
+  return true;
+}
+
+/** Put back what was in the editor before restoring — unless it has been saved or left since. */
+function undoRestore(before, after) {
+  if (state.current !== after.current) return;
+  // Typed into since: undoing would lose that too
+  if (!sameFile(collect(), after.article) && !confirm(t('save.discardConfirm'))) return;
+  heldDraft = null;
+  load(before.article);
+  restoredFrom = before.from;
+  state.dirty = before.dirty;
+  updateBar();
+  if (before.dirty) emit('doc:changed');
+  toast(t('history.undone'));
 }
 
 export function confirmDiscard() {
@@ -179,6 +274,7 @@ export function restoreOpen() {
 
 function load(a) {
   state.loading = true;
+  restoredFrom = null;
   state.current = a;
   $('#f-title').value = a.title;
   $('#f-date').value = fmtDateInput(a.date);
@@ -396,7 +492,9 @@ async function save({ draft, force = false, label = t('save.saving') }) {
   // A draft saved as a draft doesn't affect the site, so skip the deployment
   const skipCi = CONFIG.deploy.skipCiForDrafts && draft && !wasLive;
   const action = !state.current.id ? 'create' : draft && wasLive ? 'unpublish' : !draft && !wasLive ? 'publish' : 'update';
-  const message = `${skipCi ? '[skip ci] ' : ''}${t('commit.article', { verb: t(`verb.${action}`), title: article.title })}`;
+  let message = t('commit.article', { verb: t(`verb.${action}`), title: article.title });
+  if (restoredFrom) message = t('commit.restored', { message, when: restoredFrom.when, sha: restoredFrom.sha.slice(0, 7) });
+  message = `${skipCi ? '[skip ci] ' : ''}${message}`;
 
   return (
     (await busy(label, async () => {
@@ -411,6 +509,7 @@ async function save({ draft, force = false, label = t('save.saving') }) {
         state.articles.sort((a, b) => String(b.date).localeCompare(String(a.date)));
         state.current = saved;
         state.dirty = false;
+        restoredFrom = null;
         forgetDraft(keyBefore);
         if (saved.id !== keyBefore) forgetDraft(saved.id);
         rememberOpen(saved.id);
@@ -486,6 +585,7 @@ export function updateBar() {
   $('#btn-save').hidden = !has || (a.id && !a.draft); // a published article only offers Update
   $('#btn-publish').hidden = !has;
   $('#btn-preview').hidden = !has || !CONFIG.preview?.url;
+  $('#btn-history').hidden = !has || !a.id;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
   $('#view-live').hidden = !has || !a.id || a.draft;

@@ -43,7 +43,12 @@ const seed = () => ({
   trees: {},
   commits: {},
   polls: {},
+  log: [],
 });
+
+/** What the branch pointed at over time, oldest first, so the history has something to show. The
+ * seed is its first entry; a demo started before there was a history begins it from where it is. */
+const history = (state) => (state.log?.length ? state.log : [{ sha: 'c0', message: 'Initial content', date: '2026-10-15T09:30:00.000Z', files: state.files }]);
 
 async function loadState() {
   const cache = await caches.open(STATE_CACHE);
@@ -98,9 +103,20 @@ async function api(request, url) {
     return json({ data: { repository } });
   }
 
+  // The commits that changed one article, newest first: those where it differs from the one before
+  if (/^\/repos\/[^/]+\/[^/]+\/commits$/.test(p)) {
+    const path = url.searchParams.get('path');
+    const log = history(state);
+    const text = (c) => c.files[path]?.t;
+    const touched = log.filter((c, i) => (i === 0 ? text(c) !== undefined : text(c) !== text(log[i - 1])));
+    return json(touched.reverse().map((c) => ({ sha: c.sha, commit: { message: c.message, author: { name: 'Demo Editor', date: c.date } }, author: { login: 'demo-editor' } })));
+  }
+
   const contents = p.match(/\/contents\/(.+)$/);
   if (contents) {
-    const file = state.files[decodeURIComponent(contents[1])];
+    const ref = url.searchParams.get('ref');
+    const files = ref && ref !== state.head && ref !== 'main' ? history(state).find((c) => c.sha === ref)?.files ?? {} : state.files;
+    const file = files[decodeURIComponent(contents[1])];
     if (!file || !('t' in file)) return json({ message: 'Not Found' }, 404);
     return json({ sha: await sha1(file.t), content: b64(file.t) });
   }
@@ -129,7 +145,7 @@ async function api(request, url) {
   }
 
   if (p.endsWith('/git/commits') && request.method === 'POST') {
-    const sha = `commit-${body.tree}`;
+    const sha = `commit-${Date.now().toString(36)}-${body.tree}`; // trees are numbered afresh after each commit, so the time keeps this unique
     state.commits[sha] = { tree: body.tree, message: body.message };
     await saveState(state);
     return json({ sha, message: body.message });
@@ -138,6 +154,9 @@ async function api(request, url) {
   if (/\/git\/refs\/heads\//.test(p) && request.method === 'PATCH') {
     const commit = state.commits[body.sha];
     if (!commit) return json({ message: 'Update is not a fast forward' }, 422);
+    // Only the articles: the images would be a second copy of every upload with every save
+    const articles = Object.fromEntries(Object.entries(state.trees[commit.tree]).filter(([path]) => path.startsWith(`${CONTENT_DIR}/`)));
+    state.log = [...history(state), { sha: body.sha, message: commit.message, date: new Date().toISOString(), files: articles }];
     state.files = state.trees[commit.tree];
     state.head = body.sha;
     state.blobs = {};

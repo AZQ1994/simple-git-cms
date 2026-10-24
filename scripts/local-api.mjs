@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, relative, resolve } from 'node:path';
+import { cleanMessage } from '../src/github.js';
 
 /** git's own name for a blob's contents, so the editor's cache can key on it exactly as it keys
  * on the oid GitHub reports. */
@@ -124,6 +125,26 @@ export function localApi({ root, contentDir, mediaDir, timeZone = 'UTC' }) {
         if (text !== null) out[id] = text;
       }
       return (send(200, out), true);
+    }
+
+    // The history: what `git log` says about one article, and the article as one of those commits
+    // left it. Read only, and only ever about a file in the collection.
+    if (what === 'history' || what === 'version') {
+      const { id, ref } = await body(req);
+      if (!/^[\w-]+$/.test(String(id))) return (send(400, { error: 'not an article id' }), true);
+      const rel = relative(base, articlePath(id));
+      if (what === 'history') {
+        if (!repoState(base).repo) return (send(200, []), true);
+        const log = git(base, ['log', '-n', '50', '--format=%H%x1f%an%x1f%aI%x1f%s', '--', rel]);
+        const commits = log.status !== 0 ? [] : log.stdout.split('\n').filter(Boolean).map((line) => {
+          const [sha, author, date, subject] = line.split('\x1f');
+          return { sha, author, date, message: cleanMessage(subject) };
+        });
+        return (send(200, commits), true);
+      }
+      if (!/^[0-9a-f]{7,40}$/.test(String(ref))) return (send(400, { error: 'not a commit' }), true);
+      const shown = git(base, ['show', `${ref}:./${rel}`]);
+      return (send(200, { text: shown.status === 0 ? shown.stdout : null }), true);
     }
 
     if (what === 'save') {

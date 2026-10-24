@@ -219,3 +219,33 @@ test('without a run id, the run is the newest dispatched one since it was starte
   runs[0] = { ...runs[0], status: 'completed', conclusion: 'failure' };
   assert.equal(await status(), 'failure');
 });
+
+test('the history is the commits that changed the article, and a version is read at its commit', async () => {
+  const asked = [];
+  globalThis.fetch = (url) => {
+    const u = new URL(url);
+    asked.push(u);
+    if (u.pathname === '/repos/o/r/commits') {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify([
+            { sha: 'c2', commit: { message: '[skip ci] 更新文章：一\n\n细节', author: { name: '甲', date: '2026-02-01T00:00:00Z' } }, author: { login: 'a' } },
+            { sha: 'c1', commit: { message: '新建文章：一', author: { name: '', date: '2026-01-01T00:00:00Z' } }, author: { login: 'b' } },
+          ]),
+        ),
+      );
+    }
+    return fakeFetch(url);
+  };
+  const s = store();
+
+  assert.deepEqual(await s.history('1'), [
+    { sha: 'c2', message: '更新文章：一', author: '甲', date: '2026-02-01T00:00:00Z' },
+    { sha: 'c1', message: '新建文章：一', author: 'b', date: '2026-01-01T00:00:00Z' },
+  ], 'the first line of the message, without [skip ci], and a login where git has no name');
+  assert.equal(asked[0].searchParams.get('path'), 'site/news/1.md');
+  assert.equal(asked[0].searchParams.get('sha'), 'main');
+
+  await s.getArticle('1', 'c1');
+  assert.equal(asked[1].searchParams.get('ref'), 'c1', 'an older version is the file at that commit');
+});

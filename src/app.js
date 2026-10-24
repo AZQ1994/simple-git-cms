@@ -31,6 +31,7 @@ import { addBlockMenu, editor } from './editor.js';
 import { restoreOpen, updateBar } from './doc.js';
 import { showActions } from './actions.js';
 import './preview-ui.js';
+import './history.js';
 import './theme.js';
 import { resolveLocale, setLocale, t } from './i18n/index.js';
 import { ConfigError, checkConfig } from './config.js';

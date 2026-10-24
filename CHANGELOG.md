@@ -3,6 +3,24 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## Unreleased
+
+- **History.** A History button next to Preview lists every commit that changed the open article,
+  newest first, with when, who and the commit message. Clicking one shows the article as that
+  commit left it — title, date, tags, cover and body, drawn the way the site would draw it — and
+  Preview on the site shows it in the site's own layout. It only looks: nothing in the editor
+  changes, and nothing is written. The version is drawn in a sandbox where nothing in it can run.
+  Works against GitHub (no new permission: Contents: Read already covers it) and on the local dev
+  server (`git log` / `git show`).
+- **Restore a version.** In the history, Restore this version puts it in the editor as unsaved
+  changes; saving is the usual save, and its commit message says which version it came from
+  (`Update article: … (restored from <when>, <sha>)`). Whether the article is published stays as it
+  is now, and a save someone else made meanwhile is still a conflict. Restoring the latest version
+  with unsaved changes on top is going back to what is saved. With unsaved changes in the editor,
+  it first says they will be replaced and by which version; afterwards the notice offers Undo for
+  ten seconds, and until then the browser's copy of the unsaved work is still the work that was
+  replaced, so a reload in that time offers it back.
+
 ## 0.8.0 — 2026-10-24
 
 Buttons that start GitHub Actions workflows, so a site can keep the editor on its test copy only;

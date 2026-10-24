@@ -130,6 +130,20 @@ export class GitHubStore {
     }
   }
 
+  /** The commits that changed one article, newest first — the first is the version there now.
+   * Each is { sha, message, author, date }; getArticle(id, sha) is the article as that commit left
+   * it, or null where that commit deleted it. */
+  async history(id, { limit = 50 } = {}) {
+    const path = `${this.contentDir}/${id}.md`;
+    const list = await this.req(`/repos/${this.repo}/commits?sha=${encodeURIComponent(this.branch)}&path=${encodeURIComponent(path)}&per_page=${limit}`);
+    return list.map((c) => ({
+      sha: c.sha,
+      message: cleanMessage(c.commit.message),
+      author: c.commit.author?.name || c.author?.login || '',
+      date: c.commit.author?.date ?? c.commit.committer?.date ?? null,
+    }));
+  }
+
   /**
    * Save an article. An empty article.id creates a new one. `images` is
    * [{ path: path inside the repository, bytes: Uint8Array }].
@@ -240,6 +254,10 @@ export class GitHubStore {
     return runState(run);
   }
 }
+
+/** A commit message as the history shows it: its first line, without the [skip ci] that only
+ * mattered to the deployment. */
+export const cleanMessage = (message) => message.split('\n')[0].replace(/^\[skip ci\]\s*/i, '').trim();
 
 /** A workflow run as pending / success / failure / superseded (cancelled: a later run took over). */
 function runState(run) {

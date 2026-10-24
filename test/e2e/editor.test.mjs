@@ -142,6 +142,117 @@ test('saving writes one commit, and the file says what the editor showed', async
   assert.equal(await page.evaluate(titleOf(1)), 'Autumn festival photos, corrected', 'the list should follow');
 });
 
+test('the history lists each version, and shows an older one without touching what is being edited', async () => {
+  const items = `[...document.querySelectorAll('#history-list .history-item')]`;
+  const frame = `document.getElementById('history-frame').srcdoc`;
+  await page.evaluate(`document.getElementById('btn-history').click()`);
+  await page.until(`${items}.length === 2`, { label: 'two versions in the history' });
+  const labels = JSON.parse(await page.evaluate(`JSON.stringify(${items}.map((b) => b.textContent))`));
+  assert.match(labels[0], /Latest.*Autumn festival photos, corrected/, 'newest first, named by its commit');
+  assert.match(labels[1], /Seed/);
+  await page.until(`${frame}.includes('It rained in the morning')`, { label: 'the latest version, drawn' });
+
+  await page.evaluate(`${items}[1].click()`);
+  await page.until(`${frame}.includes('Autumn festival photos</h1>')`, { label: 'the older version, drawn' });
+  assert.doesNotMatch(await page.evaluate(frame), /It rained/);
+  assert.doesNotMatch(await page.evaluate(`document.getElementById('history-frame').sandbox.value`), /allow-scripts/, 'where nothing in it can run');
+  assert.equal(await page.evaluate(`document.getElementById('history-frame').contentDocument.querySelector('h1').textContent`), 'Autumn festival photos', 'and it is drawn, not only handed over');
+
+  // On the site, the older version is what the preview is sent; closing it comes back here
+  await page.evaluate(`document.querySelector('[data-history="preview"]').click()`);
+  const preview = `document.getElementById('preview-frame').contentWindow`;
+  await page.until(`${preview}.received?.title === 'Autumn festival photos'`, { label: 'the older version in the preview' });
+  assert.equal(await page.evaluate(`document.getElementById('history-modal').hidden`), true);
+  await page.evaluate(`document.getElementById('preview-close').click()`);
+  await page.until(`!document.getElementById('history-modal').hidden`, { label: 'the history again' });
+  await page.evaluate(`document.querySelector('[data-history="close"]').click()`);
+
+  assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Autumn festival photos, corrected', 'the editor still has the article as it is');
+  assert.equal(await page.evaluate(`document.getElementById('btn-publish').disabled`), true, 'with nothing to save');
+  await page.evaluate(`document.getElementById('btn-preview').click()`);
+  await page.until(`${preview}.received?.title === 'Autumn festival photos, corrected'`, { label: 'the preview back on the article being edited' });
+  await page.evaluate(`document.getElementById('preview-close').click()`);
+});
+
+test('restoring a version puts it in the editor, and saving it says where it came from', async () => {
+  const items = `[...document.querySelectorAll('#history-list .history-item')]`;
+  const restore = `document.querySelector('[data-history="restore"]')`;
+  await page.evaluate(`document.getElementById('btn-history').click()`);
+  await page.until(`${items}.length === 2`, { label: 'the history' });
+  await page.until(`document.getElementById('history-frame').srcdoc.includes('It rained')`, { label: 'the latest version' });
+  assert.equal(await page.evaluate(`${restore}.hidden`), true, 'the version already there, with nothing unsaved, is not offered');
+
+  await page.evaluate(`${items}[1].click()`);
+  await page.until(`!${restore}.hidden`, { label: 'the restore button on the older version' });
+  const before = gh.commits.length;
+  await page.evaluate(`${restore}.click()`);
+  assert.equal(await page.evaluate(`document.getElementById('history-modal').hidden`), true);
+  assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Autumn festival photos');
+  assert.doesNotMatch(await page.evaluate(`document.getElementById('body').textContent`), /It rained/);
+  assert.match(await page.evaluate(`document.getElementById('status').textContent`), /Unsaved/i, 'not saved by restoring');
+  assert.equal(gh.commits.length, before, 'and nothing committed');
+
+  // Published, so the button is Update, and the site is rebuilt
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && gh.commits.length === before; i++) await sleep(100);
+  assert.equal(gh.commits.length, before + 1);
+  assert.match(gh.commits.at(-1).message, /^Update article: Autumn festival photos \(restored from .+, c0\)$/);
+  const file = gh.files.get(`${CONTENT_DIR}/202610120800.md`);
+  assert.match(file, /^title: "Autumn festival photos"$/m);
+  assert.doesNotMatch(file, /It rained|draft: true/, 'the older words, and still published');
+  await page.until(`document.getElementById('btn-publish').disabled`, { label: 'nothing left to save' });
+
+  // Unsaved changes on top: restoring the latest version is going back to what is saved
+  await typeBody(' Typed and then thought better of.');
+  await page.evaluate(`document.getElementById('btn-history').click()`);
+  await page.until(`${items}.length === 3 && !${restore}.hidden`, { label: 'the restore commit, latest, with something to undo' });
+  assert.match(await page.evaluate(`${items}[0].textContent`), /restored from/);
+  await page.evaluate(`${restore}.click()`); // the "discard unsaved changes?" confirm is answered yes
+  assert.doesNotMatch(await page.evaluate(`document.getElementById('body').textContent`), /thought better/);
+  assert.equal(await page.evaluate(`document.getElementById('btn-publish').disabled`), true, 'back to nothing to save');
+});
+
+test('restoring over unsaved changes asks first, can be undone, and the browser keeps them meanwhile', async () => {
+  const items = `[...document.querySelectorAll('#history-list .history-item')]`;
+  const restore = `document.querySelector('[data-history="restore"]')`;
+  const body = `document.getElementById('body').textContent`;
+  const pickOlder = async () => {
+    await page.evaluate(`document.getElementById('btn-history').click()`);
+    await page.until(`!document.getElementById('history-modal').hidden && ${items}.length === 3`, { label: 'the history' });
+    await page.evaluate(`${items}[1].click()`);
+    await page.until(`!${restore}.hidden && document.getElementById('history-frame').srcdoc.includes('It rained')`, { label: 'the older version' });
+  };
+  await typeBody(' My unsaved words.');
+
+  // Saying no keeps everything as it was
+  page.answer.value = false;
+  await pickOlder();
+  await page.evaluate(`${restore}.click()`);
+  page.answer.value = true;
+  assert.match(page.dialogs.at(-1), /unsaved changes.*replaces them with the version from/s, 'it says what is replaced, and by what');
+  assert.match(await page.evaluate(body), /My unsaved words/);
+  assert.equal(await page.evaluate(`document.getElementById('history-modal').hidden`), false, 'still looking at the history');
+
+  // Yes, then Undo: the words come back, still unsaved
+  await page.evaluate(`${restore}.click()`);
+  await page.until(`!(${body}).includes('My unsaved words')`, { label: 'the older version in the editor' });
+  assert.match(await page.evaluate(body), /It rained/);
+  await page.evaluate(`document.querySelector('#toast .toast-action').click()`);
+  assert.match(await page.evaluate(body), /My unsaved words/);
+  assert.match(await page.evaluate(`document.getElementById('status').textContent`), /Unsaved/i);
+
+  // Yes, then a reload before Undo has gone: the browser still has the words that were replaced
+  await pickOlder();
+  await page.evaluate(`${restore}.click()`);
+  await page.until(`!(${body}).includes('My unsaved words')`, { label: 'the older version in the editor' });
+  await sleep(1500); // longer than the browser waits before keeping what is typed
+  const asked = page.dialogs.length;
+  await page.navigate(`${site.origin}/?id=202610120800`);
+  await page.until(`!document.getElementById('doc').hidden && (${body}).includes('My unsaved words')`, { label: 'the unsaved words, offered back and taken' });
+  // (the other dialog is the browser's own "leave this page?", there being unsaved changes)
+  assert.equal(page.dialogs.slice(asked).filter((d) => /has changes from .* that were never saved/.test(d)).length, 1, 'offered back once');
+});
+
 test('saving a draft leaves the site alone', async () => {
   await openArticle(2);
   assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Draft: timetable changes');

@@ -34,6 +34,7 @@ export default {
   'bar.delete': '削除',
   'bar.unpublish': '下書きに戻す',
   'bar.preview': 'プレビュー',
+  'bar.history': '履歴',
   'bar.saveDraft': '下書きを保存',
   'bar.publish': '公開',
   'bar.update': '更新',
@@ -180,6 +181,7 @@ export default {
 
   // コミットメッセージ
   'commit.article': '記事を{verb}：{title}',
+  'commit.restored': '{message}（{when} の版 {sha} から復元）',
   'commit.delete': '下書きを削除：{title}',
 
   // 競合
@@ -197,6 +199,24 @@ export default {
   'preview.phone': 'スマートフォン',
   'preview.close': '閉じる',
   'preview.loadFailed': 'プレビュー用の部品を読み込めませんでした。通信状況を確認してお試しください。',
+
+  // 履歴
+  'history.title': '履歴',
+  'history.hint': '保存するたびに版が残ります。戻すとエディターに読み込まれ、保存するまで記事は変わりません。',
+  'history.close': '閉じる',
+  'history.loading': '履歴を読み込んでいます…',
+  'history.latest': '最新',
+  'history.viewing': '{when} 時点の内容',
+  'history.empty': 'まだ履歴はありません。この記事はまだコミットされていません。',
+  'history.deleted': 'この版では記事が削除されています。',
+  'history.preview': 'サイトの見た目でプレビュー',
+  'history.previewNote': '{when} の版です（編集中の内容ではありません）',
+  'history.restore': 'この版に戻す',
+  'history.restored': '{when} の版をエディターに読み込みました。保存すると反映されます',
+  'history.backToSaved': '保存済みの版に戻しました。保存していない変更は破棄されました',
+  'history.replaceConfirm': 'エディターに保存していない変更があります。戻すと {when} の版で置き換わります（戻したあと数秒間は取り消せます）。',
+  'history.undo': '取り消す',
+  'history.undone': '取り消しました。戻す前の内容に戻っています',
 
   // デプロイ
   'deploy.pending': 'サイトを更新しています…',

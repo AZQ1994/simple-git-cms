@@ -42,6 +42,10 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
   who can sign in
 - **Saving**: the article and its new images go in as a single commit; if someone else changed the
   article while it was open, you are offered their version or yours
+- **History**: every version of an article, one per commit that changed it, to look through as the
+  site would show it — or in the site's own preview. Restoring one puts it in the editor; saving it
+  is a new commit that says which version it came from, and leaves the article published or not as
+  it was
 - **Nothing in progress is lost**: what hasn't been committed is kept in the browser as you type —
   images that haven't been uploaded included — and offered back after a crash, a closed tab or a
   reload
@@ -68,7 +72,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 
 | Directory | What's in it |
 |---|---|
-| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js` and `preview-ui.js`; `schema.js` says what a document may contain and how it is written back as Markdown, `html-scan.js` whether its HTML closes what it opens — `app.js` reads the config and starts them up |
+| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js`, `preview-ui.js` and `history.js`; `schema.js` says what a document may contain and how it is written back as Markdown, `html-scan.js` whether its HTML closes what it opens — `app.js` reads the config and starts them up |
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
