@@ -17,6 +17,8 @@ export default {
   'list.new': '新規作成',
   'list.search': '記事を検索',
   'list.openAria': '記事一覧',
+  'list.resizeAria': 'サイドバーの幅',
+  'list.resizeHint': 'ドラッグで幅を変更、ダブルクリックで元に戻す',
   'list.empty': '条件に合う記事がありません',
   'list.untitled': '（無題）',
   'list.more': '残り {n} 件を読み込み中…',

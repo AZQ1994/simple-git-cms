@@ -133,8 +133,16 @@ svg { flex: none; }
 .error { color: var(--red); font-size: 13px; }
 
 /* ---------- Layout ---------- */
-.app { height: 100%; display: grid; grid-template-columns: var(--side) 1fr; }
-.sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--bg-side); border-right: 1px solid var(--line); }
+/* --side is the width the reader chose (list.js); the editor keeps at least 360px of its own */
+.app { height: 100%; display: grid; grid-template-columns: clamp(220px, var(--side), max(220px, 100vw - 360px)) 1fr; }
+.sidebar { position: relative; display: flex; flex-direction: column; min-height: 0; background: var(--bg-side); border-right: 1px solid var(--line); }
+/* The sidebar's right edge can be dragged; list.js keeps the width. A few pixels either side of
+   the border catch the pointer, and the border itself turns navy while it is held. */
+.side-resize { position: absolute; top: 0; bottom: 0; right: -4px; z-index: 5; width: 8px; cursor: col-resize; touch-action: none; }
+.side-resize::after { content: ''; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; background: transparent; transition: background .15s; }
+.side-resize:hover::after, .side-resize:focus-visible::after, .resizing .side-resize::after { background: var(--navy); }
+.side-resize:focus-visible { outline: none; }
+.resizing { cursor: col-resize; user-select: none; }
 .side-top { display: grid; gap: 12px; padding: 18px 16px 12px; }
 .side-logo { width: 170px; max-height: 48px; object-fit: contain; object-position: left; margin: 2px 2px 0; }
 .side-collection { margin: -4px 2px 2px; font-size: 12px; font-weight: 600; color: var(--faint); letter-spacing: .04em; }
@@ -428,6 +436,7 @@ svg { flex: none; }
   .side-open .sidebar { transform: none; box-shadow: 0 0 40px rgba(0, 0, 0, .2); }
   .side-open .scrim { display: block; position: fixed; inset: 0; z-index: 15; background: var(--overlay); }
   .only-mobile { display: inline-grid; }
+  .side-resize { display: none; }
   .bar { padding: 0 8px 0 4px; gap: 4px; }
   .doc { padding: 24px 18px 100px; }
   .title { font-size: 24px; }

@@ -68,4 +68,50 @@ $('#filter').addEventListener('click', (e) => {
 $('#open-list').addEventListener('click', () => setSidebar(true));
 $('#scrim').addEventListener('click', () => setSidebar(false));
 
+// Its width: drag the right edge (or focus it and use the arrow keys), double-click for the default.
+// Kept per browser; on phones the sidebar is a drawer and the handle is hidden.
+const WIDTH_KEY = 'simple-git-cms-side';
+const MIN_WIDTH = 220;
+const MAX_WIDTH = 640;
+const DEFAULT_WIDTH = 300;
+const handle = $('#side-resize');
+
+function setWidth(px, save = true) {
+  // The stylesheet also keeps it narrower than the window leaves room for
+  const w = Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, px)));
+  $('#app').style.setProperty('--side', `${w}px`);
+  handle.setAttribute('aria-valuenow', w);
+  if (save) localStorage.setItem(WIDTH_KEY, w);
+}
+
+handle.setAttribute('aria-valuemin', MIN_WIDTH);
+handle.setAttribute('aria-valuemax', MAX_WIDTH);
+setWidth(Number(localStorage.getItem(WIDTH_KEY)) || DEFAULT_WIDTH, false);
+
+handle.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  handle.setPointerCapture(e.pointerId);
+  const left = $('#sidebar').getBoundingClientRect().left;
+  const move = (ev) => setWidth(ev.clientX - left, false);
+  const up = () => {
+    handle.removeEventListener('pointermove', move);
+    document.body.classList.remove('resizing');
+    setWidth($('#sidebar').getBoundingClientRect().width);
+  };
+  document.body.classList.add('resizing');
+  handle.addEventListener('pointermove', move);
+  handle.addEventListener('lostpointercapture', up, { once: true });
+});
+handle.addEventListener('dblclick', () => {
+  localStorage.removeItem(WIDTH_KEY);
+  setWidth(DEFAULT_WIDTH, false);
+});
+handle.addEventListener('keydown', (e) => {
+  const step = { ArrowLeft: -16, ArrowRight: 16 }[e.key];
+  if (!step) return;
+  e.preventDefault();
+  setWidth($('#sidebar').getBoundingClientRect().width + step);
+});
+
 on('relabel', renderList);

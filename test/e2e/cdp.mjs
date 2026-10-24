@@ -49,9 +49,16 @@ export async function launchChrome(port = 9333) {
       `--user-data-dir=${profile}`,
       'about:blank',
     ],
-    { stdio: 'ignore' },
+    { stdio: ['ignore', 'ignore', 'pipe'] },
   );
-  for (let i = 0; i < 100; i++) {
+  // What Chrome says on the way down is the only clue when it doesn't start, so the error carries it
+  let stderr = '';
+  proc.stderr.on('data', (d) => (stderr = (stderr + d).slice(-2000)));
+  let exited = null;
+  proc.on('exit', (code, signal) => (exited = signal ?? code));
+  // A cold start on a CI runner can take longer than ten seconds
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline && exited === null) {
     try {
       await fetch(`http://127.0.0.1:${port}/json/version`);
       return {
@@ -67,7 +74,8 @@ export async function launchChrome(port = 9333) {
     }
   }
   proc.kill();
-  throw new Error('Chrome did not open its debugging port');
+  const why = exited === null ? 'within 30s' : `(it exited: ${exited})`;
+  throw new Error(`Chrome did not open its debugging port ${why}${stderr ? `\n${stderr.trim()}` : ''}`);
 }
 
 /** A page to drive. `dialogs` collects what the editor asked; `answer.value` is what it hears. */

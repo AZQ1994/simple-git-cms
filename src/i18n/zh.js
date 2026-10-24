@@ -17,6 +17,8 @@ export default {
   'list.new': '新建文章',
   'list.search': '搜索文章',
   'list.openAria': '文章列表',
+  'list.resizeAria': '侧边栏宽度',
+  'list.resizeHint': '拖动调整宽度，双击恢复默认',
   'list.empty': '没有符合条件的文章',
   'list.untitled': '（无标题）',
   'list.more': '还在读取其余 {n} 篇…',
