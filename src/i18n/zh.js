@@ -214,6 +214,9 @@ export default {
   'history.restore': '恢复这个版本',
   'history.restored': '已载入 {when} 的版本，保存后才会生效',
   'history.backToSaved': '已回到上次保存的版本，未保存的修改已放弃',
+  'history.replaceConfirm': '编辑器里有未保存的修改。恢复会用 {when} 的版本替换它们（恢复后几秒内可以撤销）。',
+  'history.undo': '撤销',
+  'history.undone': '已撤销，回到恢复前的内容',
 
   // 部署
   'deploy.pending': '正在更新网站…',

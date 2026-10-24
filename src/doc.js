@@ -98,13 +98,14 @@ const draftKey = (id) => `${CONFIG.repo}/${CONFIG.collection.dir}/${id ?? 'new'}
 const isUsed = (article, path) => article.body.includes(`(${path}`) || (coverField() && article.extra?.[coverField()] === path);
 
 let draftTimer;
+let heldDraft = null; // { id } of an article whose kept copy is not to be overwritten yet (see restoreVersion)
 function queueDraft() {
   clearTimeout(draftTimer);
   draftTimer = setTimeout(keepDraft, 1200);
 }
 
 async function keepDraft() {
-  if (!state.current || !state.dirty) return;
+  if (!state.current || !state.dirty || heldDraft?.id === state.current.id) return;
   const article = collect();
   const images = [];
   for (const [path, p] of pending) {
@@ -158,6 +159,10 @@ async function offerDraft(id, saved, prompt = 'recover.prompt') {
 // whether the article is published — bringing back the words shouldn't take it off the site or put
 // it on — and the version the save checks against, so a save someone else made meanwhile is still
 // a conflict rather than quietly overwritten.
+//
+// What was in the editor before is not thrown away at once: the notice that says the version is in
+// offers Undo for a few seconds, and until it goes the browser's copy of the unsaved work stays
+// the work that was replaced, so a reload in that time still offers it back.
 
 let restoredFrom = null; // { sha, when } of the version on screen, until it is saved or left
 
@@ -176,22 +181,63 @@ export const restoreChanges = (version) => state.dirty || !savedVersion() || !sa
 /** Put an earlier version of the open article in the editor. Nothing is committed by this. Returns
  * false when there were unsaved changes and they were to be kept. */
 export function restoreVersion(version, from) {
-  if (!state.current?.id || !confirmDiscard()) return false;
-  const now = state.current;
-  const saved = savedVersion();
-  // The version that is saved: that is just going back to it
-  if (saved && sameFile(version, saved)) {
-    load(structuredClone(saved));
-    toast(t('history.backToSaved'));
-    return true;
+  if (!state.current?.id) return false;
+  if (state.dirty && !confirm(t('history.replaceConfirm', { when: from.when }))) return false;
+  const id = state.current.id;
+  const before = { article: collect(), dirty: state.dirty, from: restoredFrom };
+  let hold = null;
+  if (before.dirty) {
+    // Write down what is about to be replaced now, rather than in a moment when it is gone — over
+    // anything an earlier restore was still holding on to
+    heldDraft = null;
+    clearTimeout(draftTimer);
+    keepDraft();
+    heldDraft = hold = { id };
   }
-  load({ ...structuredClone(version), id: now.id, sha: now.sha, draft: now.draft });
-  restoredFrom = from;
-  state.dirty = true;
-  updateBar();
-  emit('doc:changed'); // kept in the browser like anything else typed, and sent to an open preview
-  toast(t('history.restored', { when: from.when }));
+
+  const saved = savedVersion();
+  let msg;
+  if (saved && sameFile(version, saved)) {
+    // The version that is saved: that is just going back to it
+    load(structuredClone(saved));
+    msg = t('history.backToSaved');
+  } else {
+    load({ ...structuredClone(version), id, sha: before.article.sha, draft: before.article.draft });
+    restoredFrom = from;
+    state.dirty = true;
+    updateBar();
+    emit('doc:changed'); // sent to an open preview, and kept in the browser once Undo has gone
+    msg = t('history.restored', { when: from.when });
+  }
+
+  const after = { current: state.current, article: collect() };
+  toast(msg, 'ok', {
+    label: t('history.undo'),
+    run: () => undoRestore(before, after),
+    // Too late to undo: what is on screen now is what the browser keeps
+    expired: () => {
+      if (!hold || heldDraft !== hold) return;
+      heldDraft = null;
+      if (state.current?.id !== id) return;
+      if (state.dirty) queueDraft();
+      else forgetDraft(id);
+    },
+  });
   return true;
+}
+
+/** Put back what was in the editor before restoring — unless it has been saved or left since. */
+function undoRestore(before, after) {
+  if (state.current !== after.current) return;
+  // Typed into since: undoing would lose that too
+  if (!sameFile(collect(), after.article) && !confirm(t('save.discardConfirm'))) return;
+  heldDraft = null;
+  load(before.article);
+  restoredFrom = before.from;
+  state.dirty = before.dirty;
+  updateBar();
+  if (before.dirty) emit('doc:changed');
+  toast(t('history.undone'));
 }
 
 export function confirmDiscard() {

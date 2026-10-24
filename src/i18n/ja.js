@@ -214,6 +214,9 @@ export default {
   'history.restore': 'この版に戻す',
   'history.restored': '{when} の版をエディターに読み込みました。保存すると反映されます',
   'history.backToSaved': '保存済みの版に戻しました。保存していない変更は破棄されました',
+  'history.replaceConfirm': 'エディターに保存していない変更があります。戻すと {when} の版で置き換わります（戻したあと数秒間は取り消せます）。',
+  'history.undo': '取り消す',
+  'history.undone': '取り消しました。戻す前の内容に戻っています',
 
   // デプロイ
   'deploy.pending': 'サイトを更新しています…',

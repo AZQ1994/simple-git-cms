@@ -213,6 +213,9 @@ export default {
   'history.restore': 'Restore this version',
   'history.restored': 'The version from {when} is in the editor. Save to keep it.',
   'history.backToSaved': 'Back to the saved version; unsaved changes discarded.',
+  'history.replaceConfirm': 'The editor has unsaved changes. Restoring replaces them with the version from {when} — you can undo it for a few seconds afterwards.',
+  'history.undo': 'Undo',
+  'history.undone': 'Back to what you had before restoring.',
 
   // Deployment
   'deploy.pending': 'Updating the site…',

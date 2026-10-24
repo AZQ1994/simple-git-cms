@@ -16,7 +16,10 @@ behind it are in the repository history.
   changes; saving is the usual save, and its commit message says which version it came from
   (`Update article: … (restored from <when>, <sha>)`). Whether the article is published stays as it
   is now, and a save someone else made meanwhile is still a conflict. Restoring the latest version
-  with unsaved changes on top is going back to what is saved.
+  with unsaved changes on top is going back to what is saved. With unsaved changes in the editor,
+  it first says they will be replaced and by which version; afterwards the notice offers Undo for
+  ten seconds, and until then the browser's copy of the unsaved work is still the work that was
+  replaced, so a reload in that time offers it back.
 
 ## 0.8.0 — 2026-10-24
 

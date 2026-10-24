@@ -16,6 +16,9 @@
 }
 .demo-bar button:hover, .demo-bar a:hover { background: rgb(255 255 255 / 12%); }
 .demo-bar .demo-close { padding: 5px 10px; border-color: transparent; opacity: .6; }
+/* The editor's notices sit at the bottom too; keep them above the strip, where they can be read and
+   their buttons pressed */
+body:has(.demo-bar) .toast { bottom: 76px; }
 @media (max-width: 720px) {
   .demo-bar { left: 16px; right: 16px; bottom: 12px; padding-left: 14px; font-size: 12px; gap: 8px; }
   .demo-bar span { display: none; }

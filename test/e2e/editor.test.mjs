@@ -212,6 +212,47 @@ test('restoring a version puts it in the editor, and saving it says where it cam
   assert.equal(await page.evaluate(`document.getElementById('btn-publish').disabled`), true, 'back to nothing to save');
 });
 
+test('restoring over unsaved changes asks first, can be undone, and the browser keeps them meanwhile', async () => {
+  const items = `[...document.querySelectorAll('#history-list .history-item')]`;
+  const restore = `document.querySelector('[data-history="restore"]')`;
+  const body = `document.getElementById('body').textContent`;
+  const pickOlder = async () => {
+    await page.evaluate(`document.getElementById('btn-history').click()`);
+    await page.until(`!document.getElementById('history-modal').hidden && ${items}.length === 3`, { label: 'the history' });
+    await page.evaluate(`${items}[1].click()`);
+    await page.until(`!${restore}.hidden && document.getElementById('history-frame').srcdoc.includes('It rained')`, { label: 'the older version' });
+  };
+  await typeBody(' My unsaved words.');
+
+  // Saying no keeps everything as it was
+  page.answer.value = false;
+  await pickOlder();
+  await page.evaluate(`${restore}.click()`);
+  page.answer.value = true;
+  assert.match(page.dialogs.at(-1), /unsaved changes.*replaces them with the version from/s, 'it says what is replaced, and by what');
+  assert.match(await page.evaluate(body), /My unsaved words/);
+  assert.equal(await page.evaluate(`document.getElementById('history-modal').hidden`), false, 'still looking at the history');
+
+  // Yes, then Undo: the words come back, still unsaved
+  await page.evaluate(`${restore}.click()`);
+  await page.until(`!(${body}).includes('My unsaved words')`, { label: 'the older version in the editor' });
+  assert.match(await page.evaluate(body), /It rained/);
+  await page.evaluate(`document.querySelector('#toast .toast-action').click()`);
+  assert.match(await page.evaluate(body), /My unsaved words/);
+  assert.match(await page.evaluate(`document.getElementById('status').textContent`), /Unsaved/i);
+
+  // Yes, then a reload before Undo has gone: the browser still has the words that were replaced
+  await pickOlder();
+  await page.evaluate(`${restore}.click()`);
+  await page.until(`!(${body}).includes('My unsaved words')`, { label: 'the older version in the editor' });
+  await sleep(1500); // longer than the browser waits before keeping what is typed
+  const asked = page.dialogs.length;
+  await page.navigate(`${site.origin}/?id=202610120800`);
+  await page.until(`!document.getElementById('doc').hidden && (${body}).includes('My unsaved words')`, { label: 'the unsaved words, offered back and taken' });
+  // (the other dialog is the browser's own "leave this page?", there being unsaved changes)
+  assert.equal(page.dialogs.slice(asked).filter((d) => /has changes from .* that were never saved/.test(d)).length, 1, 'offered back once');
+});
+
 test('saving a draft leaves the site alone', async () => {
   await openArticle(2);
   assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Draft: timetable changes');
