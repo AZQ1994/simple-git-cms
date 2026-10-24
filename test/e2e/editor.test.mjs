@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { BLOCK, CONTENT_DIR, EMBED, HTML_TABLE, MEDIA_DIR, TABLE, VIDEO, startFakeGitHub } from './fake-github.mjs';
+import { BLOCK, CONTENT_DIR, EMBED, HTML_TABLE, MEDIA_DIR, NOTICES_DIR, TABLE, VIDEO, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -50,9 +50,12 @@ before(async () => {
       siteUrl: 'http://example.invalid',
       timeZone: 'UTC',
       auth: { base: 'http://auth.invalid' },
-      collection: { label: 'news', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image' },
+      collections: [
+        { name: 'news', label: 'News', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image', preview: '/preview/' },
+        // No cover and no preview: what the editor offers follows the collection
+        { name: 'notices', label: 'Notices', dir: NOTICES_DIR, url: '/notices/{id}/' },
+      ],
       media: { dir: MEDIA_DIR, url: '/uploads' },
-      preview: { url: '/preview/' },
       actions: [
         { label: 'Publish to the live site', workflow: 'release.yml', inputs: { tag: '' }, url: 'http://live.invalid' },
         { label: 'Rebuild', workflow: 'rebuild.yml', ref: 'other' },
@@ -127,7 +130,7 @@ test('opening an article shows what the file says', async () => {
   await openArticle(1);
   assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Autumn festival photos');
   assert.match(await page.evaluate(`document.getElementById('body').textContent`), /Thank you to everyone/);
-  assert.equal(await page.evaluate(`location.search`), '?id=202610120800', 'the open article belongs in the address bar');
+  assert.equal(await page.evaluate(`location.search`), '?c=news&id=202610120800', 'the open article, and its collection, belong in the address bar');
 });
 
 test('saving writes one commit, and the file says what the editor showed', async () => {
@@ -772,6 +775,55 @@ test('a file is attached as it is, and linked from the body', async () => {
   assert.match(href, /^\/uploads\/\d{8}\/course-guide-\w{4}\.pdf$/);
   // and the file went in untouched, which is the whole point of attaching rather than uploading
   assert.equal(Buffer.from(gh.files.get(href.replace('/uploads', MEDIA_DIR))).toString(), '%PDF-1.4 a small pretend PDF\n');
+});
+
+test('the sidebar switches to another collection, and what it saves goes there', async () => {
+  const select = `document.getElementById('collection-select')`;
+  const pick = (name) => page.evaluate(`(() => { const s = ${select}; s.value = ${JSON.stringify(name)}; s.dispatchEvent(new Event('change')); })()`);
+  assert.equal(await page.evaluate(`${select}.hidden`), false, 'with two collections there is a choice');
+  assert.equal(await page.evaluate(`document.getElementById('collection-label').hidden`), true);
+
+  // Unsaved changes first: switching asks, and no keeps everything where it was
+  await openArticle(0);
+  await typeBody(' Not saved yet.');
+  const asked = page.dialogs.length;
+  page.answer.value = false;
+  await pick('notices');
+  page.answer.value = true;
+  assert.equal(page.dialogs.length, asked + 1, 'switching away from unsaved changes asks first');
+  assert.equal(await page.evaluate(`${select}.value`), 'news', 'and saying no stays put');
+  assert.equal(await page.evaluate(`document.getElementById('doc').hidden`), false);
+
+  await pick('notices');
+  await page.until(`document.querySelectorAll('#list .item').length === 1`, { label: 'the one notice' });
+  assert.equal(await page.evaluate(titleOf(0)), 'Library closed on Monday');
+  assert.equal(await page.evaluate(`document.getElementById('doc').hidden`), true, 'nothing is open after a switch');
+  assert.equal(await page.evaluate(`location.search`), '?c=notices');
+
+  await openArticle(0);
+  assert.equal(await page.evaluate(`location.search`), '?c=notices&id=202610120800');
+  assert.equal(await page.evaluate(`document.getElementById('cover').hidden`), true, 'notices have no cover field');
+  assert.equal(await page.evaluate(`document.getElementById('btn-preview').hidden`), true, 'nor a preview page');
+  assert.equal(await page.evaluate(`document.getElementById('view-live').getAttribute('href')`), 'http://example.invalid/notices/202610120800/');
+
+  const news = gh.files.get(`${CONTENT_DIR}/202610120800.md`);
+  await typeBody(' Back on Tuesday.');
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && !/Back on Tuesday/.test(gh.files.get(`${NOTICES_DIR}/202610120800.md`)); i++) await sleep(100);
+  assert.match(gh.files.get(`${NOTICES_DIR}/202610120800.md`), /Back on Tuesday\./, 'the save went into the notices');
+  assert.equal(gh.files.get(`${CONTENT_DIR}/202610120800.md`), news, 'and the news article with the same id is untouched');
+
+  // A reload, or a link someone was sent, comes back to the same collection and article
+  await page.navigate(`${site.origin}/?c=notices&id=202610120800`);
+  await page.until(`!document.getElementById('doc').hidden`, { label: 'the notice again' });
+  assert.equal(await page.evaluate(`${select}.value`), 'notices');
+  assert.equal(await page.evaluate(`document.getElementById('f-title').value`), 'Library closed on Monday');
+
+  // A collection that isn't there any more is the first one, and the address says so
+  await page.navigate(`${site.origin}/?c=gone&id=202610120800`);
+  await page.until(`!document.getElementById('app').hidden && document.querySelectorAll('#list .item').length >= 3`, { label: 'the news' });
+  assert.equal(await page.evaluate(`${select}.value`), 'news');
+  assert.equal(await page.evaluate(`location.search`), '?c=news');
 });
 
 test('nothing went wrong in the browser', async () => {

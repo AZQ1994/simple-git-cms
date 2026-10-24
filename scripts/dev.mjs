@@ -44,7 +44,7 @@ const TYPES = {
 const config = JSON.parse(fs.readFileSync(devConfig, 'utf8'));
 const api = localApi({
   root: site,
-  contentDir: config.collection?.dir ?? '',
+  contentDirs: (config.collections ?? []).map((c) => c.dir ?? ''),
   mediaDir: config.media?.dir ?? '',
   timeZone: config.timeZone,
 });

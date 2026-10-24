@@ -28,14 +28,23 @@ const SPEC = {
   siteUrl: { ...str, absolute: true },
   timeZone: { ...str, timeZone: true },
   auth: { fields: { base: { ...str, required: true, url: true } } },
-  collection: {
-    fields: {
+  // Each kind of article the site has, in its own directory; the sidebar switches between them
+  collections: {
+    required: true,
+    nonEmpty: true,
+    unique: 'name',
+    each: {
+      name: { ...str, pattern: /^[\w-]+$/, hint: 'config.collectionName' },
       label: str,
-      imageField: str,
       dir: { ...str, required: true },
       url: { ...str, slash: true, wants: '{id}', hint: 'config.noId' },
+      imageField: str,
+      preview: { ...str, slash: true },
     },
   },
+  // Before 1.0 there was one collection, and the preview page was set apart from it
+  collection: { moved: 'config.movedCollection', to: 'collections' },
+  preview: { moved: 'config.movedPreview' },
   media: {
     fields: {
       dir: { ...str, required: true },
@@ -57,7 +66,6 @@ const SPEC = {
       fields: { each: { name: { ...str, required: true }, label: str, placeholder: str, multiline: { type: 'boolean' }, from: { ...str, oneOf: ['content'] } } },
     },
   },
-  preview: { fields: { url: { ...str, slash: true } } },
   deploy: { fields: { skipCiForDrafts: { type: 'boolean' } } },
   actions: {
     each: {
@@ -92,6 +100,9 @@ function nearest(key, known) {
     .filter(({ k, d }) => d <= Math.max(2, Math.floor(k.length / 3)))
     .sort((a, b) => a.d - b.d)[0]?.k;
 }
+
+/** What a collection is called in the address bar: its `name`, or the last part of its directory. */
+export const collectionName = (c) => c.name ?? String(c.dir ?? '').replace(/\/+$/, '').split('/').pop();
 
 const isTimeZone = (value) => {
   try {
@@ -140,14 +151,28 @@ export function checkConfig(raw, t) {
         add(problems, prefix + key, guess ? 'config.unknownDidYouMean' : 'config.unknown', { guess });
         continue;
       }
+      if (rule.moved) {
+        add(problems, prefix + key, rule.moved);
+        continue;
+      }
       if (rule.each) {
         if (!Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.list') });
+        else if (rule.nonEmpty && !value.length) add(problems, prefix + key, 'config.emptyList');
         else
           value.forEach((item, i) => {
             const path = `${prefix}${key}[${i}]`;
             if (item === null || typeof item !== 'object' || Array.isArray(item)) add(problems, path, 'config.mustBe', { type: t('config.type.group') });
             else walk(item, rule.each, `${path}.`);
           });
+        if (rule.unique === 'name' && Array.isArray(value)) {
+          const seen = new Set();
+          value.forEach((item, i) => {
+            if (item === null || typeof item !== 'object' || typeof item.dir !== 'string') return;
+            const name = collectionName(item);
+            if (seen.has(name)) add(problems, `${prefix}${key}[${i}]`, 'config.duplicateName', { name });
+            seen.add(name);
+          });
+        }
         continue;
       }
       if (rule.free) {
@@ -162,7 +187,9 @@ export function checkConfig(raw, t) {
       checkField(prefix + key, value, rule);
     }
     for (const [key, rule] of Object.entries(spec)) {
-      if (rule.required && object[key] === undefined) add(problems, prefix + key, 'config.required');
+      // An old setting that was renamed has already said what to write instead
+      const renamed = Object.entries(spec).some(([old, r]) => r.to === key && object[old] !== undefined);
+      if (rule.required && object[key] === undefined && !renamed) add(problems, prefix + key, 'config.required');
       if (rule.fields && object[key] === undefined && Object.values(rule.fields).some((f) => f.required)) {
         for (const [sub, f] of Object.entries(rule.fields)) if (f.required) add(problems, `${prefix}${key}.${sub}`, 'config.required');
       }

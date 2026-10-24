@@ -21,6 +21,11 @@ export function setConfig(config, raw) {
   RAW = raw;
 }
 
+/** The entry of CONFIG.collections being edited: which directory the list is of, where its
+ * articles are on the site, its cover field and its preview page. */
+export let COLLECTION;
+export const setCollection = (c) => (COLLECTION = c);
+
 /** The GitHubStore, once someone is signed in. */
 export let store;
 export const setStore = (s) => (store = s);

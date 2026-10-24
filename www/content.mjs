@@ -19,10 +19,10 @@ const config = `{
   "siteUrl": "https://example.com",
   "timeZone": "Asia/Tokyo",
   "auth": { "base": "https://cms-auth.example.com" },
-  "collection": {
-    "dir": "src/content/news",
-    "url": "/news/{id}/"
-  },
+  "collections": [
+    { "dir": "src/content/news", "url": "/news/{id}/" },
+    { "dir": "src/content/notices", "url": "/notices/{id}/" }
+  ],
   "media": { "dir": "public/uploads", "url": "/uploads" }
 }`;
 
@@ -127,7 +127,7 @@ export const copy = {
       lead: 'Written down in the README too, because finding out later is worse.',
       items: [
         'Editors need a GitHub account. Letting people in without one would mean running a sign-in service of your own.',
-        'One article collection per site, with the fields above.',
+        'Every collection — news, notices, whatever the site has — has the same fields, the ones above.',
         'The preview converts Markdown in the browser, so Markdown plugins your site adds separately aren’t reflected in it.',
         'The GitHub token lives in <code>localStorage</code> — the usual trade-off for an editor with no backend. Serve it from a domain you control.',
       ],
@@ -239,7 +239,7 @@ export const copy = {
       lead: 'README 里也写着，因为用上之后才发现更糟。',
       items: [
         '编辑的人需要 GitHub 账号。想让没账号的人也能写，就得自己跑一个登录服务。',
-        '一个网站一个文章集合，字段就是上面那些。',
+        '每种文章（新闻、公告，网站有几种就几种）的字段都一样，就是上面那些。',
         '预览是在浏览器里转换 Markdown 的，所以你的网站单独加的 Markdown 插件不会体现在预览里。',
         'GitHub 令牌存在 <code>localStorage</code>——这是没有后端的编辑器通常要付的代价。请把它放在你自己控制的域名下。',
       ],
@@ -351,7 +351,7 @@ export const copy = {
       lead: '後で気づくほうが困るので、README にも書いてあります。',
       items: [
         '書く人に GitHub アカウントが必要です。なしで入れたいなら、自前のログインサービスを持つことになります。',
-        '1 サイトに 1 コレクション、項目は上のとおり。',
+        '記事の種類（ニュース、お知らせなど、サイトにあるだけ）はどれも同じ項目で、上のとおりです。',
         'プレビューはブラウザーで Markdown を変換するため、サイト側だけに足した Markdown プラグインは反映されません。',
         'GitHub トークンは <code>localStorage</code> に置きます。バックエンドのないエディターでは普通の割り切りです。自分が管理するドメインから配信してください。',
       ],
