@@ -128,7 +128,8 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 が重ならないのは同じ種類の中だけなので、アドレスバーには両方が入ります（`?c=notices&id=202610120800`）。
 
 **0.x からの更新。** 1.0 で `collection` はリストの `collections` に変わり、`preview.url` は各項目の
-`preview` に移りました。古い書き方があるとエディターがその 2 か所を示します。以前の
+`preview` に移りました。古い書き方があるとエディターがその 2 か所を示します。`npx simple-git-cms install` も、
+隣の config.json が古い書き方ならインストールのあとで知らせます。以前の
 
 ```json
 "collection": { "label": "news", "dir": "src/content/news", "url": "/news/{id}/" },

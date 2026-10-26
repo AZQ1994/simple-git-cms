@@ -138,7 +138,8 @@ of them. Each article's id is only unique within its collection, so the address 
 (`?c=notices&id=202610120800`).
 
 **Upgrading from 0.x.** 1.0 replaces `collection` with the list `collections`, and moves
-`preview.url` into each entry as `preview`. The editor names both if it finds the old ones. What
+`preview.url` into each entry as `preview`. The editor names both if it finds the old ones, and so
+does `npx simple-git-cms install` when it installs next to an old config.json. What
 was
 
 ```json
