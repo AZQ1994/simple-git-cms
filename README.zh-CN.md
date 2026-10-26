@@ -109,7 +109,8 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 不重复，所以地址栏里两样都带上（`?c=notices&id=202610120800`）。
 
 **从 0.x 升级。** 1.0 把 `collection` 换成了列表 `collections`，并把 `preview.url` 移进每一项，改叫
-`preview`。编辑器发现旧写法时会指出这两处。原来的
+`preview`。编辑器发现旧写法时会指出这两处；`npx simple-git-cms install` 旁边的 config.json 还是旧写法时，
+安装完也会提示。原来的
 
 ```json
 "collection": { "label": "news", "dir": "src/content/news", "url": "/news/{id}/" },

@@ -20,7 +20,8 @@ This changes config.json; see [Upgrading from 0.x](README.md#2-write-configjson)
   is opens the first one.
 - **Breaking: `collection` is now `collections`, and `preview.url` is each entry's `preview`.** An
   old config.json is not silently half-used: the editor says what each of the two became and how
-  to write it.
+  to write it, and so does `npx simple-git-cms install` when the config.json it leaves in place is
+  an old one.
 - **`npm run dev`** serves every collection's directory, and only those.
 - **The automatic summary follows the body.** A summary the editor generated used to be taken for
   one written by hand the next time the article was opened, and stayed as it was however the body
