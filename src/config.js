@@ -169,6 +169,8 @@ export function checkConfig(raw, t) {
           value.forEach((item, i) => {
             if (item === null || typeof item !== 'object' || typeof item.dir !== 'string') return;
             const name = collectionName(item);
+            // One taken from the directory has to be fit for the address bar as much as one given
+            if (item.name === undefined && !/^[\w-]+$/.test(name)) add(problems, `${prefix}${key}[${i}].name`, 'config.collectionNameNeeded', { name });
             if (seen.has(name)) add(problems, `${prefix}${key}[${i}]`, 'config.duplicateName', { name });
             seen.add(name);
           });

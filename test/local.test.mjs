@@ -190,3 +190,14 @@ test('each collection is its own directory, and the server answers for no other'
   store.contentDir = '../..';
   await assert.rejects(store.listFiles(), /not a collection directory/);
 });
+
+test('an article id is a file name, never a way out of the collection', async () => {
+  const outside = join(root, 'site', 'escaped.md');
+  const save = (id) =>
+    store.saveArticle({ id, title: 'x', description: '', date: '2026-01-01T00:00:00.000Z', tags: [], draft: false, extra: {}, body: '' }, { message: 'x' });
+  await assert.rejects(save('../../escaped'), /not an article id/);
+  assert.equal(existsSync(outside), false, 'nothing was written outside the directory');
+
+  writeFileSync(outside, article('外', '2026-01-01T00:00:00.000Z'));
+  assert.equal((await store.readFiles(['../../escaped', '202601010000'])).size, 1, 'and nothing outside it is read');
+});

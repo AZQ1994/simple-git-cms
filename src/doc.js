@@ -260,7 +260,7 @@ function autosizeTitle() {
 // the address is a link to that article for anyone else who can sign in. With more than one
 // collection, so does which collection it is in (?c=news&id=…): an id is only unique within one.
 const idInUrl = () => new URLSearchParams(location.search).get('id');
-/** The collection the address bar names, if it names one. Read once at startup. */
+/** The collection the address bar names, if it names one. */
 export const collectionInUrl = () => new URLSearchParams(location.search).get('c');
 
 function rememberOpen(id) {
@@ -274,7 +274,8 @@ function rememberOpen(id) {
 /** Reopen whatever was open before the reload. Called once the article list is in — at startup,
  * and again after switching to another collection. */
 export function restoreOpen() {
-  const id = collectionInUrl() === null || collectionInUrl() === COLLECTION.name ? idInUrl() : null;
+  const named = collectionInUrl();
+  const id = named === null || named === COLLECTION.name ? idInUrl() : null;
   if (!id) {
     rememberOpen(null); // a link to a collection there no longer is says where it really is
     return offerDraft(null, null, 'recover.promptNew'); // an article being written last time

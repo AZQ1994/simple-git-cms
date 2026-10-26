@@ -55,6 +55,8 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
     return [...contents.values(), media].some((dir) => full === dir || full.startsWith(dir + '/')) ? full : null;
   };
   const read = (file) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
+  // An article id is a file name in the collection's directory, never a path out of it
+  const isId = (id) => /^[\w-]+$/.test(String(id));
 
   /** One collection's files: the article directory a request named, and what is in it. */
   const collection = (content) => {
@@ -134,7 +136,7 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
     if (what === 'read') {
       const { ids: wanted = [] } = await body(req);
       const out = {};
-      for (const id of wanted) {
+      for (const id of wanted.filter(isId)) {
         const text = read(articlePath(id));
         if (text !== null) out[id] = text;
       }
@@ -145,7 +147,7 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
     // left it. Read only, and only ever about a file in the collection.
     if (what === 'history' || what === 'version') {
       const { id, ref } = await body(req);
-      if (!/^[\w-]+$/.test(String(id))) return (send(400, { error: 'not an article id' }), true);
+      if (!isId(id)) return (send(400, { error: 'not an article id' }), true);
       const rel = relative(base, articlePath(id));
       if (what === 'history') {
         if (!repoState(base).repo) return (send(200, []), true);
@@ -163,6 +165,7 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
 
     if (what === 'save') {
       const { id: given, text, images = [], message, baseSha = null, force = false, remove = false } = await body(req);
+      if (given && !isId(given)) return (send(400, { error: 'not an article id' }), true);
       const id = given || newId();
       const file = articlePath(id);
       const now = read(file);

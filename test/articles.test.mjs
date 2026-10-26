@@ -108,3 +108,26 @@ test('an empty collection is an empty list, reported once', async () => {
   assert.deepEqual(articles, []);
   assert.deepEqual(steps, [[0, 0]]);
 });
+
+test('a list nobody wants any more stops asking for it', async () => {
+  const store = fakeStore(collection());
+  let wanted = true;
+  const batches = [];
+  await loadArticles(store, {
+    batch: 2,
+    cache: fakeCache(),
+    stop: () => !wanted,
+    onBatch: (articles) => {
+      batches.push(articles.length);
+      if (articles.length) wanted = false; // switched to another collection once the first batch was in
+    },
+  });
+  assert.equal(store.reads.length, 1, 'one batch was read, and no more were asked for');
+  assert.deepEqual(batches, [0, 2], 'and nothing more was reported');
+});
+
+test('a list unwanted before its files are even listed reads nothing', async () => {
+  const store = fakeStore(collection());
+  assert.deepEqual(await loadArticles(store, { cache: fakeCache(), stop: () => true }), []);
+  assert.equal(store.reads.length, 0);
+});

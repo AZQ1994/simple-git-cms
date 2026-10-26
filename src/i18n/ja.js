@@ -258,6 +258,7 @@ export default {
   'config.noId': '{key} に {wants} が入っていないので、どの記事も同じページを指すことになります。',
   'config.emptyList': '{key} が空のリストです。少なくとも 1 つ必要です。',
   'config.collectionName': '{key} に使えるのは英数字と - と _ だけです（アドレスバーに入るため）。',
+  'config.collectionNameNeeded': '{key} が必要です：dir の最後の部分（{name}）はアドレスバーに入れられません。英数字と - と _ を使ってください。',
   'config.duplicateName': '{key}：{name} という名前の collection がすでにあります。どちらかを別の名前にしてください。',
   'config.movedCollection': '1.0 から collection はリストの collections になりました。"collections": [{ … }] と書き、中の設定はそのままです。',
   'config.movedPreview': '1.0 から preview.url は collection ごとの preview になりました。collections の中に "preview": "/news/preview/" として移してください。',

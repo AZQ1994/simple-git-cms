@@ -257,6 +257,7 @@ export default {
   'config.noId': '{key} has no {wants} in it, so every article would link to the same page.',
   'config.emptyList': '{key} is an empty list; it needs at least one.',
   'config.collectionName': '{key} can only use letters, digits, - and _: it goes in the address bar.',
+  'config.collectionNameNeeded': '{key} is needed: the last part of dir ({name}) can’t go in the address bar. Use letters, digits, - and _.',
   'config.duplicateName': '{key}: another collection is already called {name}. Give one of them a different name.',
   'config.movedCollection': 'Since 1.0, collection is collections, a list: write "collections": [{ … }] with the same settings inside.',
   'config.movedPreview': 'Since 1.0, preview.url is each collection’s preview: move it into collections, as "preview": "/news/preview/".',

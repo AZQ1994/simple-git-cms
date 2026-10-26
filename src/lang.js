@@ -17,7 +17,9 @@ export function relabel() {
   for (const sel of document.querySelectorAll('.lang-select')) sel.value = getLocale();
   if (CONFIG) {
     CONFIG.title = RAW.title || t('config.defaultTitle');
-    CONFIG.collections.forEach((c, i) => (c.label = RAW.collections[i].label || t('config.defaultCollection')));
+    // With several, an unlabelled one goes by its name: a menu of identical "articles" says nothing
+    const several = CONFIG.collections.length > 1;
+    CONFIG.collections.forEach((c, i) => (c.label = RAW.collections[i].label || (several ? c.name : t('config.defaultCollection'))));
     document.title = [CONFIG.title, CONFIG.siteName].filter(Boolean).join(' · ');
     document.querySelectorAll('[data-text="title"]').forEach((el) => (el.textContent = CONFIG.title));
     document.querySelectorAll('[data-text="collection"]').forEach((el) => (el.textContent = COLLECTION.label));

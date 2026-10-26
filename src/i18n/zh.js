@@ -258,6 +258,7 @@ export default {
   'config.noId': '{key} 里没有 {wants}，这样每篇文章都会链到同一个页面。',
   'config.emptyList': '{key} 是空的列表，至少要有一项。',
   'config.collectionName': '{key} 只能用字母、数字、- 和 _：它会出现在地址栏里。',
+  'config.collectionNameNeeded': '{key} 需要填写：dir 的最后一段（{name}）不能放进地址栏。请用字母、数字、- 和 _。',
   'config.duplicateName': '{key}：已经有另一个 collection 叫 {name} 了，请给其中一个换个名字。',
   'config.movedCollection': '从 1.0 起，collection 改成了列表 collections：写成 "collections": [{ … }]，里面的设置不变。',
   'config.movedPreview': '从 1.0 起，preview.url 改为每个 collection 各自的 preview：把它移到 collections 里，写成 "preview": "/news/preview/"。',

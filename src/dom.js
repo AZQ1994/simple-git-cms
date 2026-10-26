@@ -52,11 +52,16 @@ export function toast(msg, kind = 'ok', action = null) {
   );
 }
 
+let running = 0;
+
 /** Run `fn` behind the busy overlay. Anything it throws becomes a notice rather than an exception;
- * an expired session is announced so the sign-in screen can come back. */
+ * an expired session is announced so the sign-in screen can come back. Meanwhile the controls
+ * marked data-idle-only are disabled: switching collection halfway through a save would land the
+ * article in the other one. */
 export async function busy(text, fn) {
   $('#busy-text').textContent = text;
   $('#busy').hidden = false;
+  if (running++ === 0) for (const el of document.querySelectorAll('[data-idle-only]')) el.disabled = true;
   try {
     return await fn();
   } catch (e) {
@@ -65,5 +70,6 @@ export async function busy(text, fn) {
     console.error(e);
   } finally {
     $('#busy').hidden = true;
+    if (--running === 0) for (const el of document.querySelectorAll('[data-idle-only]')) el.disabled = false;
   }
 }

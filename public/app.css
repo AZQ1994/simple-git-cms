@@ -152,6 +152,7 @@ svg { flex: none; }
   background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer;
 }
 .side-collection-select:focus { outline: none; border-color: var(--navy); }
+.side-collection-select:disabled { color: var(--faint); cursor: progress; }
 .search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--faint); }
 .search:focus-within { border-color: var(--navy); }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); }

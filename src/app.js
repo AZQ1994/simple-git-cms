@@ -64,8 +64,8 @@ async function loadConfig() {
     ...c,
     siteUrl: (c.siteUrl || location.origin).replace(/\/+$/, ''),
     auth: { ...c.auth },
+    // Each one's label is filled in by relabel(), since the default depends on the language
     collections: c.collections.map((col) => ({
-      label: t('config.defaultCollection'),
       url: '/{id}/',
       imageField: '',
       preview: '',
@@ -122,9 +122,9 @@ $('#collection-select').addEventListener('change', async (e) => {
     return;
   }
   setCollection(next);
-  // A copy pointed at the other directory, rather than the same store changed underneath: a list
-  // still loading from the last one goes on reading where it started
-  setStore(Object.assign(Object.create(Object.getPrototypeOf(store)), store, { contentDir: next.dir }));
+  // A list still loading from the last one stops at its next request (see loadList), so the
+  // store can simply be pointed at the other directory
+  store.contentDir = next.dir;
   showNothing(); // closes what was open, and the address bar now says which collection
   state.articles = [];
   state.pending = 0;
@@ -143,8 +143,9 @@ async function loadList() {
   let announce;
   const first = new Promise((resolve) => (announce = resolve));
   const loading = loadArticles(store, {
+    stop: () => mine !== listing, // the sidebar has switched to another collection since
     onBatch: (articles, left) => {
-      if (mine !== listing) return; // the sidebar has switched to another collection since
+      if (mine !== listing) return;
       state.articles = articles;
       state.pending = left;
       // There is something to show, or there is nothing at all to show — either way, stop waiting

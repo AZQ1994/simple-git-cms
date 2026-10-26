@@ -79,6 +79,10 @@ test('two collections cannot go by the same name, given or taken from the direct
 
 test('a collection name has to be something an address can carry', () => {
   assert.deepEqual(keys({ ...good(), collections: [{ name: 'news & events', dir: 'a' }] }), ['collections[0].name']);
+  // Taken from the directory, it has to be just as fit, and then a name is asked for
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'content/news.en' }] }), ['collections[0].name']);
+  assert.match(checkConfig({ ...good(), collections: [{ dir: 'content/お知らせ' }] }, t).problems[0].text, /お知らせ/);
+  assert.deepEqual(keys({ ...good(), collections: [{ name: 'notices', dir: 'content/お知らせ' }] }), []);
 });
 
 test('a setting nobody has ever heard of is caught without a guess', () => {
