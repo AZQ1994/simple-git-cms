@@ -3,7 +3,7 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
-## 1.0.0 — 2026-10-26
+## 1.0.0 — 2026-10-27
 
 More than one kind of article: news, notices, events, each in its own directory, in one editor.
 This changes config.json; see [Upgrading from 0.x](README.md#2-write-configjson).
