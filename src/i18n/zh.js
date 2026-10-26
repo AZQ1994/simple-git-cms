@@ -124,6 +124,7 @@ export default {
   'img.side': '并排',
   'img.replace': '替换',
   'img.captionPlaceholder': '图片说明（显示在图片下方）',
+  'img.altPlaceholder': '替代文字：给看不到图片的人读的描述（不填就用图片说明）',
   'img.captionSubmit': '确定',
   'img.layoutAlone': '单独一行',
   'img.layoutSide': '与上一张并排',

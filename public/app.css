@@ -376,8 +376,9 @@ svg { flex: none; }
 .node-bar .danger { color: #ff9a9f !important; }
 .node-bar .bar-label { padding: 0 4px 0 6px; font-size: 12px; font-weight: 600; opacity: .7; }
 .node-bar .sep { width: 1px; height: 18px; margin: 0 4px; background: currentcolor; opacity: .25; }
-.caption-form { display: flex; gap: 4px; width: 100%; padding: 4px 2px 2px; }
+.caption-form { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; padding: 4px 2px 2px; }
 .caption-form input { flex: 1; min-width: 200px; height: 32px; padding: 0 10px; border: 0; border-radius: 6px; outline: 0; background: var(--surface); color: var(--ink); }
+.caption-form input:first-child { flex-basis: 100%; } /* the caption on a row of its own; the alt text shares one with OK */
 .caption-form button { background: var(--navy) !important; color: var(--on-dark) !important; }
 
 /* ---------- Dialogs ---------- */

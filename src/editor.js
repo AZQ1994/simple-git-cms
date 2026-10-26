@@ -344,6 +344,9 @@ $('#img-bar').addEventListener('click', async (e) => {
     const form = $('#caption-form');
     form.hidden = !form.hidden;
     $('#caption-input').value = img.node.attrs.title ?? '';
+    // Alt text that only repeats the caption was filled in from it, so it is shown as not written
+    const { alt, title } = img.node.attrs;
+    $('#alt-input').value = alt && alt !== title ? alt : '';
     if (!form.hidden) $('#caption-input').focus();
     return positionBars();
   }
@@ -384,7 +387,11 @@ $('#caption-form').addEventListener('submit', (e) => {
   if (!img) return;
   // The caption goes in Markdown's "title", so strip the double quotes that would break it
   const title = $('#caption-input').value.trim().replace(/"/g, '”') || null;
-  editor.chain().command(({ tr }) => (tr.setNodeMarkup(img.pos, undefined, { ...img.node.attrs, title }), true)).setNodeSelection(img.pos).run();
+  // Alt text goes between Markdown's square brackets, where one left unpaired ends it early. An
+  // empty alt tells a screen reader the image is decoration and not to mention it at all, so
+  // without one of its own the image is described by its caption.
+  const alt = $('#alt-input').value.replace(/\s+/g, ' ').trim().replace(/\[/g, '［').replace(/\]/g, '］') || title || '';
+  editor.chain().command(({ tr }) => (tr.setNodeMarkup(img.pos, undefined, { ...img.node.attrs, title, alt }), true)).setNodeSelection(img.pos).run();
   $('#caption-form').hidden = true;
 });
 

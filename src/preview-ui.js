@@ -4,6 +4,7 @@ import { $, toast } from './dom.js';
 import { CONFIG, on, pending, state } from './store.js';
 import { collect } from './doc.js';
 import { t } from './i18n/index.js';
+import { excerpt } from './article.js';
 
 let previewReady = false;
 let renderMarkdown; // preview.js is a separate bundle, fetched the first time a preview opens
@@ -54,7 +55,7 @@ function sendPreview() {
     title: a.title,
     date: a.date,
     tags: a.tags,
-    description: a.description,
+    description: a.description || excerpt(a.body), // what the file will say
     image: (field && a.extra?.[field]) || null,
     fields: a.extra,
   };
