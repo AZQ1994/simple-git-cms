@@ -7,6 +7,8 @@ const isBlank = (n) => n.type === 'text' && !n.value.trim();
 function figure(img) {
   const title = img.properties?.title;
   if (title) delete img.properties.title;
+  // An empty alt marks an image as decoration, which a screen reader skips; a captioned one is not
+  if (title && !img.properties.alt) img.properties.alt = String(title);
   return {
     type: 'element',
     tagName: 'figure',

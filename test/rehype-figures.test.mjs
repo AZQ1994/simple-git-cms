@@ -27,3 +27,10 @@ test('an uncaptioned image, a whitespace-only paragraph (&nbsp;), and mixed text
   const out = run([el('p', {}, [el('img', { src: '/a' })]), el('p', {}, [text(' ')]), el('p', {}, [text('文字'), el('img', { src: '/b' })])]);
   assert.deepEqual(out.map((n) => n.tagName), ['p', 'p', 'p']);
 });
+
+test('a captioned image without alt text is described by its caption; alt text of its own is kept', () => {
+  const [f] = run([el('p', {}, [el('img', { src: '/a.webp', alt: '', title: '说明' })])]);
+  assert.equal(f.children[0].properties.alt, '说明');
+  const [g] = run([el('p', {}, [el('img', { src: '/a.webp', alt: '一只猫', title: '说明' })])]);
+  assert.equal(g.children[0].properties.alt, '一只猫');
+});

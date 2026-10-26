@@ -123,6 +123,7 @@ export default {
   'img.side': 'Side by side',
   'img.replace': 'Replace',
   'img.captionPlaceholder': 'Caption (shown below the image)',
+  'img.altPlaceholder': 'Alt text: what the image shows, for people who can’t see it (left empty, the caption is used)',
   'img.captionSubmit': 'OK',
   'img.layoutAlone': 'On its own row',
   'img.layoutSide': 'Beside the previous one',

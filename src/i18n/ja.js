@@ -124,6 +124,7 @@ export default {
   'img.side': '横並び',
   'img.replace': '差し替え',
   'img.captionPlaceholder': '画像の説明（画像の下に表示されます）',
+  'img.altPlaceholder': '代替テキスト：画像が見えない人のための説明（空なら画像の説明を使います）',
   'img.captionSubmit': 'OK',
   'img.layoutAlone': '単独の行に',
   'img.layoutSide': '前の画像と横並び',
