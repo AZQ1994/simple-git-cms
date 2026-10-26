@@ -28,6 +28,8 @@
   它所在的那个框上标出来，保存前也会说一声，而不是就这么发出去包住整页
 - 封面图：可以直接用文章里已有的图片，也可以另外上传；在文章信息栏里更换、裁剪、删除，写进你
   指定的 frontmatter 字段——就是网站用来做列表缩略图和分享图的那张
+- 多种文章：新闻、公告、活动……各放在自己的目录里，网址、封面图字段、预览页也各自设置，在侧栏切换。
+  保存、发布、部署对它们都一样
 - 文章：标题、日期、标签、摘要、草稿 / 发布 / 撤回 / 删除草稿。打开的是哪一篇写在地址栏里，所以
   刷新会回到原处，这个地址也可以直接发给另一个能登录的人
 - 保存：文章 + 新图片合成一个提交；文章在打开后被别人改过时提示冲突（载入对方版本 / 覆盖）
@@ -82,16 +84,45 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 | `siteUrl` | 网站地址，用于「在网站查看」；编辑器不在网站同域名下时也用来加载图片 |
 | `timeZone` | 日期显示、图片目录和新文章编号用的时区 |
 | `auth.base` | 登录中转的地址 |
-| `collection.dir` | 文章目录（仓库内路径），每篇文章一个 `<id>.md` |
-| `collection.url` | 文章网址，`{id}` 会被替换 |
-| `collection.imageField` | 封面图写在 frontmatter 的哪个字段，比如 `image`。不填就没有封面图这个控件 |
+| `collections` | 网站有哪几种文章，是一个列表（至少一项）。多于一项时，侧栏会出现切换用的菜单。每一项： |
+| `collections[].dir` | 文章目录（仓库内路径），每篇文章一个 `<id>.md`（必填） |
+| `collections[].name` | 地址栏里的名字（`?c=news`），只能用字母、数字、`-` 和 `_`。不填就是 `dir` 的最后一段；不能重复 |
+| `collections[].label` | 界面上显示的名字，比如 `新闻` |
+| `collections[].url` | 文章网址，`{id}` 会被替换 |
+| `collections[].imageField` | 封面图写在 frontmatter 的哪个字段，比如 `image`。不填就没有封面图这个控件 |
+| `collections[].preview` | 这种文章在网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
 | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
 | `media.maxFileMB` | 附件大小上限，单位 MB（默认 20，理由见下） |
 | `blocks` | 这个网站自己定义的控件，见[自己定义控件](#自己定义控件) |
-| `preview.url` | 网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `deploy.skipCiForDrafts` | 草稿保存时加 `[skip ci]`（默认 true） |
 | `actions` | 侧栏的执行按钮，每个运行一个有 `workflow_dispatch` 触发器的 workflow 并显示进度。每项：`label`（按钮文字，必填）、`workflow`（文件名，如 `release.yml`，必填）、`ref`（分支，默认 `branch`）、`inputs`（固定传给 workflow 的参数）、`confirm`（确认框的文字）、`url`（成功后显示的链接）。GitHub App 需要 **Actions: Read and write**（[auth/README.zh-CN.md](auth/README.zh-CN.md)） |
+
+```json
+"collections": [
+  { "name": "news", "label": "News", "dir": "src/content/news", "url": "/news/{id}/", "imageField": "image", "preview": "/news/preview/" },
+  { "name": "notices", "label": "Notices", "dir": "src/content/notices", "url": "/notices/{id}/" }
+]
+```
+
+其余的设置——仓库、图片、自定义控件、部署、执行按钮——都是所有种类共用的。文章的 id 只在同一种里
+不重复，所以地址栏里两样都带上（`?c=notices&id=202610120800`）。
+
+**从 0.x 升级。** 1.0 把 `collection` 换成了列表 `collections`，并把 `preview.url` 移进每一项，改叫
+`preview`。编辑器发现旧写法时会指出这两处。原来的
+
+```json
+"collection": { "label": "news", "dir": "src/content/news", "url": "/news/{id}/" },
+"preview": { "url": "/news/preview/" }
+```
+
+现在写成
+
+```json
+"collections": [{ "label": "news", "dir": "src/content/news", "url": "/news/{id}/", "preview": "/news/preview/" }]
+```
+
+以前的文章链接（`?id=…`）仍然会在第一种文章里打开。
 
 **`media.maxFileMB` 该设多大。** 文件不经过登录中转——浏览器直接发给 GitHub——所以限制它的是网站
 发布在哪里，以及 GitHub 愿意留什么。Cloudflare Pages 和 Cloudflare Workers 静态资源上单个文件最多
@@ -192,7 +223,7 @@ npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 进 `dist/`，所以重新构建也不会丢。
 
 **它编辑的是这台机器上的文件，不是 GitHub。** `npm run dev ../my-site` 会把那个检出放到编辑器后面：不用
-登录，列表从磁盘上的 `collection.dir` 读，保存会写下文章和它的图片并在那里提交——一个提交，提交信息和
+登录，列表从磁盘上各个 collection 的 `dir` 读，保存会写下文章和它的图片并在那里提交——一个提交，提交信息和
 编辑器平时用的一样，只包含它碰过的路径，所以你暂存区里别的东西原样留着。push 由你自己做，这正是重点：
 编辑器负责把文件写出来，决定什么东西出去的仍然是 git。不给路径时编辑的就是编辑器自己所在的仓库，装在
 站点里面时就是这个样子。
@@ -347,7 +378,8 @@ nginx：在 `location /editor/` 里写 `add_header Content-Security-Policy "…"
 ## 已知限制
 
 - 编辑者必须有 GitHub 账号（不想用 GitHub 账号的话，需要再加一层自己的登录服务，以 GitHub App 身份提交）
-- 每个网站一个文章集合，字段固定为上面几项
+- 每种文章的字段都一样——标题、日期、标签、摘要和封面图——而且各是一个平的目录：子目录里的文章不会
+  列出来
 - 预览是在浏览器里转换 Markdown，网站另外加的 Markdown 插件不会体现在预览里
 - 外部图片地址（从别的网页粘贴来的）会被拒绝保存，需要下载后重新上传
 - GitHub 令牌存在 `localStorage` 里。这是「没有后端的编辑器」的通常取舍：

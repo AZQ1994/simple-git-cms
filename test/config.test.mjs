@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkConfig } from '../src/config.js';
+import { checkConfig, collectionName } from '../src/config.js';
 import { setLocale, t } from '../src/i18n/index.js';
 
 setLocale('en');
@@ -16,9 +16,11 @@ const good = () => ({
   siteUrl: 'https://example.com',
   timeZone: 'Asia/Tokyo',
   auth: { base: 'https://cms-auth.example.com' },
-  collection: { label: 'news', dir: 'src/content/news', url: '/news/{id}/' },
+  collections: [
+    { name: 'news', label: 'News', dir: 'src/content/news', url: '/news/{id}/', imageField: 'image', preview: '/news/preview/' },
+    { label: 'Notices', dir: 'src/content/notices', url: '/notices/{id}/' },
+  ],
   media: { dir: 'public/uploads', url: '/uploads', maxWidth: 1600, quality: 0.82 },
-  preview: { url: '/news/preview/' },
   deploy: { skipCiForDrafts: true },
 });
 
@@ -32,25 +34,55 @@ test('a complete config has nothing wrong with it', () => {
 });
 
 test('the smallest config that works is accepted', () => {
-  const bare = { repo: 'owner/repo', auth: { base: '/auth' }, collection: { dir: 'content' }, media: { dir: 'public/uploads' } };
+  const bare = { repo: 'owner/repo', auth: { base: '/auth' }, collections: [{ dir: 'content' }], media: { dir: 'public/uploads' } };
   assert.deepEqual(keys(bare), []);
 });
 
 test('every missing setting is named, not just the first', () => {
-  assert.deepEqual(keys({}).sort(), ['auth.base', 'collection.dir', 'media.dir', 'repo']);
+  assert.deepEqual(keys({}).sort(), ['auth.base', 'collections', 'media.dir', 'repo']);
 });
 
 test('a missing setting inside a group is named too', () => {
-  const config = { ...good(), collection: { label: 'news' } };
-  assert.deepEqual(keys(config), ['collection.dir']);
+  const config = { ...good(), collections: [{ label: 'news' }] };
+  assert.deepEqual(keys(config), ['collections[0].dir']);
 });
 
 test('a misspelled setting is caught, with the one that was meant', () => {
-  const config = { ...good(), collections: { dir: 'x' } };
-  delete config.collection;
+  const config = { ...good(), colections: [{ dir: 'x' }] };
+  delete config.collections;
   const { problems } = checkConfig(config, t);
-  assert.ok(problems.some((p) => p.key === 'collections' && /did you mean collection\?/.test(p.text)));
-  assert.ok(problems.some((p) => p.key === 'collection.dir'), 'and the real one is still missing');
+  assert.ok(problems.some((p) => p.key === 'colections' && /did you mean collections\?/.test(p.text)));
+  assert.ok(problems.some((p) => p.key === 'collections'), 'and the real one is still missing');
+});
+
+test('a config from before 1.0 is told what changed, not just that it is wrong', () => {
+  const config = { ...good(), collection: { dir: 'src/content/news' }, preview: { url: '/news/preview/' } };
+  delete config.collections;
+  const { problems } = checkConfig(config, t);
+  assert.deepEqual(problems.map((p) => p.key).sort(), ['collection', 'preview'], 'and collections is not also said to be missing');
+  assert.match(problems.find((p) => p.key === 'collection').text, /"collections": \[/);
+  assert.match(problems.find((p) => p.key === 'preview').text, /"preview": "\/news\/preview\/"/);
+});
+
+test('collections is a list of at least one, each with its own directory', () => {
+  assert.deepEqual(keys({ ...good(), collections: [] }), ['collections']);
+  assert.deepEqual(keys({ ...good(), collections: { dir: 'x' } }), ['collections']);
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'a', colour: 'red' }] }), ['collections[0].colour']);
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'a', preview: 'preview/' }] }), ['collections[0].preview']);
+});
+
+test('two collections cannot go by the same name, given or taken from the directory', () => {
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'a/news' }, { dir: 'b/news' }] }), ['collections[1]']);
+  assert.deepEqual(keys({ ...good(), collections: [{ name: 'x', dir: 'a' }, { name: 'x', dir: 'b' }] }), ['collections[1]']);
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'a/news' }, { name: 'old-news', dir: 'b/news' }] }), []);
+});
+
+test('a collection name has to be something an address can carry', () => {
+  assert.deepEqual(keys({ ...good(), collections: [{ name: 'news & events', dir: 'a' }] }), ['collections[0].name']);
+  // Taken from the directory, it has to be just as fit, and then a name is asked for
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'content/news.en' }] }), ['collections[0].name']);
+  assert.match(checkConfig({ ...good(), collections: [{ dir: 'content/お知らせ' }] }, t).problems[0].text, /お知らせ/);
+  assert.deepEqual(keys({ ...good(), collections: [{ name: 'notices', dir: 'content/お知らせ' }] }), []);
 });
 
 test('a setting nobody has ever heard of is caught without a guess', () => {
@@ -104,10 +136,10 @@ test('an empty string is as missing as a missing one', () => {
   assert.deepEqual(keys({ ...good(), repo: '   ' }), ['repo']);
 });
 
-test('a collection.url with no {id} is a warning, not a refusal', () => {
-  const config = { ...good(), collection: { ...good().collection, url: '/news/' } };
+test('a collection url with no {id} is a warning, not a refusal', () => {
+  const config = { ...good(), collections: [{ ...good().collections[0], url: '/news/' }] };
   assert.deepEqual(keys(config), []);
-  assert.deepEqual(warnings(config), ['collection.url']);
+  assert.deepEqual(warnings(config), ['collections[0].url']);
 });
 
 test('something that is not an object at all is rejected plainly', () => {
@@ -146,4 +178,10 @@ test('actions are optional; each needs a label and a workflow, and a url is a fu
   assert.deepEqual(keys({ ...good(), actions: [{ ref: 'main' }] }).sort(), ['actions[0].label', 'actions[0].workflow']);
   assert.deepEqual(keys({ ...good(), actions: [action, { ...action, url: 'example.com' }] }), ['actions[1].url']);
   assert.deepEqual(keys({ ...good(), actions: { label: 'x' } }), ['actions']);
+});
+
+test('a collection is named by its name, or by the last part of its directory', () => {
+  assert.equal(collectionName({ name: 'news', dir: 'src/content/articles' }), 'news');
+  assert.equal(collectionName({ dir: 'src/content/notices/' }), 'notices');
+  assert.equal(collectionName({ dir: 'content' }), 'content');
 });

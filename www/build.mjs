@@ -75,7 +75,7 @@ await writeFile(
       siteUrl: SITE,
       timeZone: 'Asia/Tokyo',
       auth: { base: '/demo/auth' },
-      collection: { label: 'news', dir: 'site/content/news', url: '/demo/preview/', imageField: 'image' },
+      collections: [{ name: 'news', label: 'news', dir: 'site/content/news', url: '/demo/preview/', imageField: 'image', preview: '/demo/preview/' }],
       media: { dir: 'site/public/uploads', url: '/uploads', maxWidth: 1600, quality: 0.82 },
       blocks: [
         {
@@ -87,7 +87,6 @@ await writeFile(
         },
         { tag: 'table', label: 'Advanced table', edit: 'table' },
       ],
-      preview: { url: '/demo/preview/' },
       deploy: { skipCiForDrafts: true },
     },
     null,

@@ -39,6 +39,8 @@ export const VIDEO =
 export const EMBED = '<iframe src="https://www.youtube.com/embed/abc123" width="560" height="315" allowfullscreen></iframe>';
 
 export const CONTENT_DIR = 'site/content/news';
+/** A second collection, for switching between them. */
+export const NOTICES_DIR = 'site/content/notices';
 export const MEDIA_DIR = 'site/public/uploads';
 
 /** The repository every test starts from. */
@@ -48,6 +50,8 @@ export const seed = () =>
     [`${CONTENT_DIR}/202610150930.md`, article('Spring term enrolment is open', '2026-10-15T09:30:00.000Z', ['notice'], `Applications are open from today.\n\n${TABLE}\n\n${HTML_TABLE}\n\n${EMBED}\n\n${BLOCK}\n\n${VIDEO}`, false)],
     [`${CONTENT_DIR}/202610120800.md`, article('Autumn festival photos', '2026-10-12T08:00:00.000Z', ['events'], 'Thank you to everyone who came.', false)],
     [`${CONTENT_DIR}/202610010000.md`, article('Draft: timetable changes', '2026-10-01T00:00:00.000Z', ['notice'], 'Still being finalised.', true)],
+    // Its id is one the news has too: an id is only unique within its own collection
+    [`${NOTICES_DIR}/202610120800.md`, article('Library closed on Monday', '2026-10-12T08:00:00.000Z', [], 'For the inventory.', false)],
   ]);
 
 const CORS = {

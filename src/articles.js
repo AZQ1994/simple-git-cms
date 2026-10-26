@@ -29,10 +29,13 @@ export const rememberBody = (store, sha, text) => {
  * the list, newest article first, and how many are still to come.
  * @param {number} [o.batch]
  * @param {object} [o.cache] Where downloaded bodies are kept; the IndexedDB one by default.
- * @returns {Promise<object[]>} The complete list.
+ * @param {() => boolean} [o.stop] Asked between requests; true means nobody wants this list any
+ * more (the sidebar has switched to another collection), so stop asking for it.
+ * @returns {Promise<object[]>} The complete list, or as much of it as there was when it stopped.
  */
-export async function loadArticles(store, { onBatch = () => {}, batch = BATCH, cache = bodies } = {}) {
+export async function loadArticles(store, { onBatch = () => {}, batch = BATCH, cache = bodies, stop = () => false } = {}) {
   const files = await store.listFiles();
+  if (stop()) return [];
   const scope = scopeOf(store);
   const have = (await cache.read(scope)) ?? new Map();
 
@@ -48,15 +51,17 @@ export async function loadArticles(store, { onBatch = () => {}, batch = BATCH, c
   let left = missing.length;
   if (left) onBatch(sorted(), left); // whatever the cache already had, before asking for anything
   for (let i = 0; i < missing.length; i += batch) {
+    if (stop()) return sorted();
     const next = missing.slice(i, i + batch);
     const texts = await store.readFiles(next.map((f) => f.id));
     for (const file of next) {
       const text = texts.get(file.id);
       if (text === undefined) continue; // deleted between the listing and now
       add(file, text);
-      cache.write(scope, file.oid, text);
+      cache.write(scope, file.oid, text); // kept even if stopped: it is what was asked, and right
     }
     left -= next.length;
+    if (stop()) return sorted();
     onBatch(sorted(), left);
   }
   if (!missing.length) onBatch(sorted(), 0); // nothing to download: the cache was the whole list

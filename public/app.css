@@ -146,6 +146,13 @@ svg { flex: none; }
 .side-top { display: grid; gap: 12px; padding: 18px 16px 12px; }
 .side-logo { width: 170px; max-height: 48px; object-fit: contain; object-position: left; margin: 2px 2px 0; }
 .side-collection { margin: -4px 2px 2px; font-size: 12px; font-weight: 600; color: var(--faint); letter-spacing: .04em; }
+/* With more than one collection the label becomes the switch between them */
+.side-collection-select {
+  height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer;
+}
+.side-collection-select:focus { outline: none; border-color: var(--navy); }
+.side-collection-select:disabled { color: var(--faint); cursor: progress; }
 .search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--faint); }
 .search:focus-within { border-color: var(--navy); }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); }

@@ -24,7 +24,7 @@ the ones that could reach it, or make a commit nobody asked for:
 - the sign-in relay in [`auth/`](auth/) handing a token or a code to anyone but the editor that
   asked for it, or being usable as an open redirect;
 - `integrations/preview-client.js` accepting messages from an origin it should not;
-- the editor writing outside `collection.dir` and `media.dir`, or committing something other than
+- the editor writing outside the collections' `dir` and `media.dir`, or committing something other than
   what was on screen;
 - `npm run dev`'s local API answering anything but the machine it runs on, or reaching outside the
   site's directories.

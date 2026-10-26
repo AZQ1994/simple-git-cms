@@ -1,7 +1,7 @@
 // The article being edited: its form fields and tags, opening, saving, publishing and deleting,
 // the status bar, and the deployment indicator.
 import { $, busy, toast } from './dom.js';
-import { addPending, CONFIG, displaySrc, emit, fmtDateInput, fmtDateTime, mediaRepoPath, on, pending, state, store } from './store.js';
+import { addPending, COLLECTION, CONFIG, displaySrc, emit, fmtDateInput, fmtDateTime, mediaRepoPath, on, pending, state, store } from './store.js';
 import { dropDraft, getDraft, putDraft } from './recover.js';
 import { rememberBody } from './articles.js';
 import { editor, setBody, toMarkdown } from './editor.js';
@@ -91,7 +91,7 @@ on('doc:changed', queueDraft);
 // browser doesn't lose the article. The copy goes the moment it is committed, or the moment
 // someone says they don't want it.
 
-const draftKey = (id) => `${CONFIG.repo}/${CONFIG.collection.dir}/${id ?? 'new'}`;
+const draftKey = (id) => `${CONFIG.repo}/${COLLECTION.dir}/${id ?? 'new'}`;
 
 /** Whether an article still points at an image — in the body, or as its cover. An image that has
  * been inserted and then deleted again is not committed. */
@@ -257,19 +257,41 @@ function autosizeTitle() {
 }
 
 // Which article is open lives in the address bar, so reloading the page comes back to it — and
-// the address is a link to that article for anyone else who can sign in.
+// the address is a link to that article for anyone else who can sign in. With more than one
+// collection, so does which collection it is in (?c=news&id=…): an id is only unique within one.
 const idInUrl = () => new URLSearchParams(location.search).get('id');
+/** The collection the address bar names, if it names one. */
+export const collectionInUrl = () => new URLSearchParams(location.search).get('c');
 
 function rememberOpen(id) {
-  history.replaceState(null, '', id ? `${location.pathname}?id=${encodeURIComponent(id)}` : location.pathname);
+  const params = new URLSearchParams();
+  if (CONFIG.collections.length > 1) params.set('c', COLLECTION.name);
+  if (id) params.set('id', id);
+  const query = params.toString();
+  history.replaceState(null, '', query ? `${location.pathname}?${query}` : location.pathname);
 }
 
-/** Reopen whatever was open before the reload. Called once the article list is in. */
+/** Reopen whatever was open before the reload. Called once the article list is in — at startup,
+ * and again after switching to another collection. */
 export function restoreOpen() {
-  const id = idInUrl();
-  if (!id) return offerDraft(null, null, 'recover.promptNew'); // an article being written last time
+  const named = collectionInUrl();
+  const id = named === null || named === COLLECTION.name ? idInUrl() : null;
+  if (!id) {
+    rememberOpen(null); // a link to a collection there no longer is says where it really is
+    return offerDraft(null, null, 'recover.promptNew'); // an article being written last time
+  }
   if (state.articles.some((a) => a.id === id)) openArticle(id);
   else rememberOpen(null); // it was deleted, or this is someone else's link to another repository
+}
+
+/** Close whatever is open, with nothing in its place: after a delete, or a switch of collection. */
+export function showNothing() {
+  state.current = null;
+  state.dirty = false;
+  rememberOpen(null);
+  $('#doc').hidden = true;
+  $('#empty').hidden = false;
+  updateBar();
 }
 
 function load(a) {
@@ -320,7 +342,7 @@ $('#new-article').addEventListener('click', () => {
 // ---------- Cover image ----------
 //
 // The site uses it as the article's thumbnail and its share image, so it lives in the frontmatter
-// rather than in the body. Which field it goes in is up to config.collection.imageField; when
+// rather than in the body. Which field it goes in is up to the collection's imageField; when
 // that is empty there is no cover and no control.
 //
 // It is usually a picture the article already has, so choosing one offers those first: picking one
@@ -328,7 +350,7 @@ $('#new-article').addEventListener('click', () => {
 
 let cover = null; // the path on the site, or null
 
-const coverField = () => CONFIG.collection.imageField;
+const coverField = () => COLLECTION.imageField;
 
 function renderCover() {
   const field = coverField();
@@ -546,12 +568,7 @@ $('#btn-delete').addEventListener('click', async () => {
     await store.saveArticle(state.current, { baseSha: state.current.sha, deleteArticle: true, message: `${CONFIG.deploy.skipCiForDrafts ? '[skip ci] ' : ''}${t('commit.delete', { title: state.current.title })}` });
     state.articles = state.articles.filter((a) => a.id !== state.current.id);
     forgetDraft(state.current.id);
-    state.current = null;
-    state.dirty = false;
-    rememberOpen(null);
-    $('#doc').hidden = true;
-    $('#empty').hidden = false;
-    updateBar();
+    showNothing();
     renderList();
     toast(t('save.deleted'));
   });
@@ -584,7 +601,7 @@ export function updateBar() {
   const has = Boolean(a);
   $('#btn-save').hidden = !has || (a.id && !a.draft); // a published article only offers Update
   $('#btn-publish').hidden = !has;
-  $('#btn-preview').hidden = !has || !CONFIG.preview?.url;
+  $('#btn-preview').hidden = !has || !COLLECTION.preview;
   $('#btn-history').hidden = !has || !a.id;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
@@ -596,7 +613,7 @@ export function updateBar() {
   const live = a.id && !a.draft;
   $('#btn-publish').textContent = live ? t('bar.update') : t('bar.publish');
   $('#btn-publish').disabled = live && !state.dirty;
-  $('#view-live').href = CONFIG.siteUrl + CONFIG.collection.url.replace('{id}', a.id);
+  $('#view-live').href = CONFIG.siteUrl + COLLECTION.url.replace('{id}', a.id);
   const s = $('#status');
   s.className = `status ${live ? 'live' : 'draft'}`;
   s.textContent = !a.id ? t('status.new') : live ? t('status.live') : t('status.draft');

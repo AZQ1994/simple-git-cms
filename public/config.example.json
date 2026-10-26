@@ -15,12 +15,22 @@
     "base": "https://cms-auth.example.com"
   },
 
-  "collection": {
-    "label": "news",
-    "dir": "src/content/news",
-    "imageField": "image",
-    "url": "/news/{id}/"
-  },
+  "collections": [
+    {
+      "name": "news",
+      "label": "News",
+      "dir": "src/content/news",
+      "url": "/news/{id}/",
+      "imageField": "image",
+      "preview": "/news/preview/"
+    },
+    {
+      "name": "notices",
+      "label": "Notices",
+      "dir": "src/content/notices",
+      "url": "/notices/{id}/"
+    }
+  ],
 
   "media": {
     "dir": "public/uploads",
@@ -57,10 +67,6 @@
       "edit": "table"
     }
   ],
-
-  "preview": {
-    "url": "/news/preview/"
-  },
 
   "deploy": {
     "skipCiForDrafts": true

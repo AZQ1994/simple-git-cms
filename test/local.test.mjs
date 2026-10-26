@@ -12,6 +12,7 @@ import { LocalStore } from '../src/local.js';
 import { ConflictError } from '../src/github.js';
 
 const CONTENT = 'site/content/news';
+const NOTICES = 'site/content/notices';
 const MEDIA = 'site/public/uploads';
 
 let root;
@@ -34,7 +35,7 @@ beforeEach(async () => {
   git('add', '-A');
   git('commit', '-qm', 'seed');
 
-  const handle = localApi({ root, contentDir: CONTENT, mediaDir: MEDIA, timeZone: 'UTC' });
+  const handle = localApi({ root, contentDirs: [CONTENT, NOTICES], mediaDir: MEDIA, timeZone: 'UTC' });
   server = createServer(async (req, res) => {
     if (await handle(req, res)) return;
     res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -169,4 +170,34 @@ test('the history is git log for that one file, and each version is the file at 
   assert.equal(await store.getArticle('202603030000', history[0].sha), null, 'not there at that commit');
   await assert.rejects(store.getArticle(id, 'HEAD; rm -rf'), 'only a commit hash is taken as a ref');
   await assert.rejects(store.history('../../etc'), 'and only an article id as an id');
+});
+
+test('each collection is its own directory, and the server answers for no other', async () => {
+  mkdirSync(join(root, NOTICES), { recursive: true });
+  writeFileSync(join(root, NOTICES, '202603030000.md'), article('お知らせ', '2026-03-03T00:00:00.000Z'));
+
+  store.contentDir = NOTICES; // what switching in the sidebar does
+  assert.deepEqual((await store.listFiles()).map((f) => f.id), ['202603030000']);
+  const r = await store.saveArticle(
+    { id: null, title: '新しいお知らせ', description: '', date: '2026-03-04T00:00:00.000Z', tags: [], draft: true, extra: {}, body: '' },
+    { message: 'Create' },
+  );
+  assert.ok(existsSync(join(root, NOTICES, `${r.id}.md`)), 'a new article goes in the collection it was written in');
+  assert.equal(existsSync(file(r.id)), false);
+
+  store.contentDir = 'site/content';
+  await assert.rejects(store.listFiles(), /not a collection directory/);
+  store.contentDir = '../..';
+  await assert.rejects(store.listFiles(), /not a collection directory/);
+});
+
+test('an article id is a file name, never a way out of the collection', async () => {
+  const outside = join(root, 'site', 'escaped.md');
+  const save = (id) =>
+    store.saveArticle({ id, title: 'x', description: '', date: '2026-01-01T00:00:00.000Z', tags: [], draft: false, extra: {}, body: '' }, { message: 'x' });
+  await assert.rejects(save('../../escaped'), /not an article id/);
+  assert.equal(existsSync(outside), false, 'nothing was written outside the directory');
+
+  writeFileSync(outside, article('外', '2026-01-01T00:00:00.000Z'));
+  assert.equal((await store.readFiles(['../../escaped', '202601010000'])).size, 1, 'and nothing outside it is read');
 });

@@ -36,40 +36,49 @@ function repoState(root) {
 /**
  * @param {object} o
  * @param {string} o.root The site repository on this machine.
- * @param {string} o.contentDir Article directory inside it.
+ * @param {string[]} o.contentDirs The article directories inside it, one per collection. Every
+ * request names the one it is about (`?dir=`), and is refused for any other.
  * @param {string} o.mediaDir Where uploads go.
  * @param {string} [o.timeZone] Which time zone's numbers a new article's id is made of.
  * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => Promise<boolean>}
  * Handles the request and says so, or says it isn't one of ours.
  */
-export function localApi({ root, contentDir, mediaDir, timeZone = 'UTC' }) {
+export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
   const base = resolve(root);
-  const content = resolve(base, contentDir);
+  const strip = (dir) => String(dir ?? '').replace(/^\/+|\/+$/g, '');
+  const contents = new Map(contentDirs.map((dir) => [strip(dir), resolve(base, strip(dir))]));
   const media = resolve(base, mediaDir);
 
-  // Everything this writes has to stay inside the two directories the config named
+  // Everything this writes has to stay inside the directories the config named
   const inside = (path) => {
     const full = resolve(base, path);
-    return [content, media].some((dir) => full === dir || full.startsWith(dir + '/')) ? full : null;
+    return [...contents.values(), media].some((dir) => full === dir || full.startsWith(dir + '/')) ? full : null;
   };
-  const articlePath = (id) => join(content, `${id}.md`);
   const read = (file) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
-  const ids = () =>
-    (existsSync(content) ? readdirSync(content) : [])
-      .filter((name) => name.endsWith('.md'))
-      .map((name) => name.replace(/\.md$/, ''));
+  // An article id is a file name in the collection's directory, never a path out of it
+  const isId = (id) => /^[\w-]+$/.test(String(id));
 
-  /** The same rule as a new article gets on GitHub: the minute it was made, in the site's time
-   * zone, plus one where that is taken. */
-  const newId = () => {
-    const parts = Object.fromEntries(
-      new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-        .formatToParts(new Date())
-        .map((p) => [p.type, p.value]),
-    );
-    let id = Number(`${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}`);
-    while (existsSync(articlePath(String(id)))) id++;
-    return String(id);
+  /** One collection's files: the article directory a request named, and what is in it. */
+  const collection = (content) => {
+    const articlePath = (id) => join(content, `${id}.md`);
+    const ids = () =>
+      (existsSync(content) ? readdirSync(content) : [])
+        .filter((name) => name.endsWith('.md'))
+        .map((name) => name.replace(/\.md$/, ''));
+
+    /** The same rule as a new article gets on GitHub: the minute it was made, in the site's time
+     * zone, plus one where that is taken. */
+    const newId = () => {
+      const parts = Object.fromEntries(
+        new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+          .formatToParts(new Date())
+          .map((p) => [p.type, p.value]),
+      );
+      let id = Number(`${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}`);
+      while (existsSync(articlePath(String(id)))) id++;
+      return String(id);
+    };
+    return { content, articlePath, ids, newId };
   };
 
   const commit = (paths, message) => {
@@ -113,6 +122,13 @@ export function localApi({ root, contentDir, mediaDir, timeZone = 'UTC' }) {
       );
     }
 
+    // Which collection: the one the request names, of those config.json lists — or, with only
+    // one, that one
+    const asked = url.searchParams.get('dir');
+    const content = asked === null && contents.size === 1 ? [...contents.values()][0] : contents.get(strip(asked));
+    if (!content) return (send(400, { error: `not a collection directory: ${asked}` }), true);
+    const { articlePath, ids, newId } = collection(content);
+
     if (what === 'files') {
       return (send(200, ids().map((id) => ({ id, oid: blobSha(read(articlePath(id)) ?? '') }))), true);
     }
@@ -120,7 +136,7 @@ export function localApi({ root, contentDir, mediaDir, timeZone = 'UTC' }) {
     if (what === 'read') {
       const { ids: wanted = [] } = await body(req);
       const out = {};
-      for (const id of wanted) {
+      for (const id of wanted.filter(isId)) {
         const text = read(articlePath(id));
         if (text !== null) out[id] = text;
       }
@@ -131,7 +147,7 @@ export function localApi({ root, contentDir, mediaDir, timeZone = 'UTC' }) {
     // left it. Read only, and only ever about a file in the collection.
     if (what === 'history' || what === 'version') {
       const { id, ref } = await body(req);
-      if (!/^[\w-]+$/.test(String(id))) return (send(400, { error: 'not an article id' }), true);
+      if (!isId(id)) return (send(400, { error: 'not an article id' }), true);
       const rel = relative(base, articlePath(id));
       if (what === 'history') {
         if (!repoState(base).repo) return (send(200, []), true);
@@ -149,6 +165,7 @@ export function localApi({ root, contentDir, mediaDir, timeZone = 'UTC' }) {
 
     if (what === 'save') {
       const { id: given, text, images = [], message, baseSha = null, force = false, remove = false } = await body(req);
+      if (given && !isId(given)) return (send(400, { error: 'not an article id' }), true);
       const id = given || newId();
       const file = articlePath(id);
       const now = read(file);
