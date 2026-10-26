@@ -63,3 +63,38 @@ export default defineConfig({
 .prose .gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 @media (max-width: 560px) { .prose .gallery.cols-3 { grid-template-columns: 1fr 1fr; } }
 ```
+
+## 文章目录
+
+`rehype-toc.mjs` 让长文章更好读：
+
+- 每个 `##` 和 `###` 标题都会加上 `id`，用 `#getting-started` 就能直接跳过去。生成的 id 和 GitHub、
+  Astro 的一致；中文、日文都会保留，所以 `## 第一章` 就是 `#第一章`，和前面重名的标题会在后面加 `-1`、`-2`
+- 有 3 个及以上这种标题的文章，会在正文开头加一个 `<nav class="toc">`，把标题列成链接，`###`
+  缩进在它前面的 `##` 下面
+
+某篇文章不想要目录的话，在 frontmatter 里写 `toc: false`。接法是加在 `rehypeFigures` 旁边，选项可选：
+
+```js
+import rehypeToc from 'simple-git-cms/rehype-toc';
+
+rehypePlugins: [rehypeFigures, [rehypeToc, { minHeadings: 3, title: '目录' }]],
+```
+
+| 选项 | 默认 | |
+| --- | --- | --- |
+| `minHeadings` | `3` | 标题数量达到多少才显示目录 |
+| `title` | 无 | 目录上方的标题（`<p class="toc-title">`），同时作为 nav 的 `aria-label` |
+| `insert` | `true` | 设为 `false` 时只加 id，适合网站自己排目录，比如放在侧栏。Astro 的 `render()` 返回的 `headings` 用的就是这些 id |
+
+编辑器的预览也会按默认选项跑这个插件。可以从下面的样式开始改：
+
+```css
+html { scroll-behavior: smooth; }
+.prose :is(h2, h3) { scroll-margin-top: 80px; } /* 避开固定的顶栏 */
+.prose .toc { margin: 16px 0 24px; padding: 12px 16px; border-left: 3px solid #d6dae1; background: #f6f7f9; }
+.prose .toc-title { margin: 0 0 6px; font-weight: 600; }
+.prose .toc ol { margin: 0; padding-left: 1.2em; }
+.prose .toc ol ol { margin-top: 2px; }
+.prose .toc a { text-decoration: none; }
+```

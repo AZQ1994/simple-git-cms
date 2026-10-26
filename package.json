@@ -30,6 +30,7 @@
   "exports": {
     "./preview-client": "./integrations/preview-client.js",
     "./rehype-figures": "./integrations/astro/rehype-figures.mjs",
+    "./rehype-toc": "./integrations/astro/rehype-toc.mjs",
     "./package.json": "./package.json"
   },
   "files": [

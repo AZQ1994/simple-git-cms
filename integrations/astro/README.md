@@ -64,3 +64,40 @@ Add these wherever your article body is styled:
 .prose .gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 @media (max-width: 560px) { .prose .gallery.cols-3 { grid-template-columns: 1fr 1fr; } }
 ```
+
+## Table of contents
+
+`rehype-toc.mjs` makes long articles easier to find your way around:
+
+- every `##` and `###` heading gets an `id`, so `#getting-started` links straight to it. Ids are the
+  ones GitHub and Astro would give it; letters of any script stay, so `## 第一章` is `#第一章`, and a
+  heading that repeats an earlier one gets `-1`, `-2` on the end
+- an article with three or more such headings gets a `<nav class="toc">` at the top of its body,
+  listing them as links, with `###` nested under the `##` before it
+
+An article that should not have one says so in its frontmatter: `toc: false`. Add it next to
+`rehypeFigures`, with any of its options:
+
+```js
+import rehypeToc from 'simple-git-cms/rehype-toc';
+
+rehypePlugins: [rehypeFigures, [rehypeToc, { minHeadings: 3, title: 'Contents' }]],
+```
+
+| Option | Default | |
+| --- | --- | --- |
+| `minHeadings` | `3` | How many headings an article needs before it gets a table of contents |
+| `title` | none | A heading above the list (`<p class="toc-title">`), also the nav's `aria-label` |
+| `insert` | `true` | `false` only adds the ids, for a site that lays out its own contents — in a sidebar, say. Astro's `render()` returns the headings as `headings`, with these same ids |
+
+The editor's preview runs this plugin too, with its defaults. Styles to start from:
+
+```css
+html { scroll-behavior: smooth; }
+.prose :is(h2, h3) { scroll-margin-top: 80px; } /* clear of a fixed header */
+.prose .toc { margin: 16px 0 24px; padding: 12px 16px; border-left: 3px solid #d6dae1; background: #f6f7f9; }
+.prose .toc-title { margin: 0 0 6px; font-weight: 600; }
+.prose .toc ol { margin: 0; padding-left: 1.2em; }
+.prose .toc ol ol { margin-top: 2px; }
+.prose .toc a { text-decoration: none; }
+```

@@ -68,7 +68,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 | `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js`・`history.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決め、`html-scan.js` が本文の HTML が開いたものを閉じているかを調べます。`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
-| `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
+| `integrations/astro/` | サイト側で画像の説明・横並び・記事の目次を表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
 | `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません。`npm run test:e2e` はビルド済みのエディターを実際のブラウザーで動かします（[詳細](test/e2e/README.md)） |
 | `www/` | このプロジェクト自身のサイト [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[詳細](www/README.md)） |
 
@@ -165,12 +165,12 @@ GitHub へ直接送ります——ので、効いてくるのはサイトをど�
 
 ### 4. サイト側
 
-画像の説明と横並びの表示は [integrations/astro/README.ja.md](integrations/astro/README.ja.md) を参照。
+画像の説明・横並び、長い記事の目次の表示は [integrations/astro/README.ja.md](integrations/astro/README.ja.md) を参照。
 
 プレビューを使うには、記事ページと同じレイアウトのページをサイトに 1 枚足して、
 `simple-git-cms/preview-client` の `connectPreview`（[ソース](integrations/preview-client.js)）を読み込み、
 `connectPreview(article => …)` の中でタイトル・日付・タグ・`article.html` をページに入れてください。
-エディターは本文をサイトと同じ流れ（remark-gfm、smartypants、rehype-figures）で HTML に変換して送るので、
+エディターは本文をサイトと同じ流れ（remark-gfm、smartypants、rehype-figures、rehype-toc）で HTML に変換して送るので、
 プレビューページは表示するだけで済みます。
 
 記事ページにそれ以外のものを出している場合も、プレビューに届きます。`article.image` はカバー画像

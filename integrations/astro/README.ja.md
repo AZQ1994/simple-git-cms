@@ -65,3 +65,40 @@ export default defineConfig({
 .prose .gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 @media (max-width: 560px) { .prose .gallery.cols-3 { grid-template-columns: 1fr 1fr; } }
 ```
+
+## 記事の目次
+
+`rehype-toc.mjs` は長い記事を読みやすくします。
+
+- `##` と `###` の見出しすべてに `id` が付き、`#getting-started` でそこへ直接飛べます。id は GitHub や
+  Astro が付けるものと同じで、日本語や中国語もそのまま残るので `## 第一章` は `#第一章` になります。
+  前の見出しと同じ名前なら末尾に `-1`、`-2` が付きます
+- こうした見出しが 3 つ以上ある記事には、本文の先頭に `<nav class="toc">` が入り、見出しをリンクとして
+  並べます。`###` はその前の `##` の下に入れ子になります
+
+目次の要らない記事は frontmatter に `toc: false` と書きます。つなぎ方は `rehypeFigures` の隣に
+加えるだけで、オプションは任意です。
+
+```js
+import rehypeToc from 'simple-git-cms/rehype-toc';
+
+rehypePlugins: [rehypeFigures, [rehypeToc, { minHeadings: 3, title: '目次' }]],
+```
+
+| オプション | 既定 | |
+| --- | --- | --- |
+| `minHeadings` | `3` | 見出しがいくつ以上あれば目次を出すか |
+| `title` | なし | 目次の上の見出し（`<p class="toc-title">`）。nav の `aria-label` にもなります |
+| `insert` | `true` | `false` にすると id だけ付けます。サイドバーなど、サイト側で目次を組む場合に。Astro の `render()` が返す `headings` もこの id を使います |
+
+エディターのプレビューも既定のオプションでこのプラグインを実行します。スタイルの出発点：
+
+```css
+html { scroll-behavior: smooth; }
+.prose :is(h2, h3) { scroll-margin-top: 80px; } /* 固定ヘッダーに隠れないように */
+.prose .toc { margin: 16px 0 24px; padding: 12px 16px; border-left: 3px solid #d6dae1; background: #f6f7f9; }
+.prose .toc-title { margin: 0 0 6px; font-weight: 600; }
+.prose .toc ol { margin: 0; padding-left: 1.2em; }
+.prose .toc ol ol { margin-top: 2px; }
+.prose .toc a { text-decoration: none; }
+```

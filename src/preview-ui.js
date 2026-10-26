@@ -60,7 +60,7 @@ function sendPreview() {
     fields: a.extra,
   };
   previewFrame.contentWindow.postMessage(
-    { type: 'simple-git-cms-preview', article, html: renderMarkdown(a.body), images },
+    { type: 'simple-git-cms-preview', article, html: renderMarkdown(a.body, a.extra), images },
     new URL(previewFrame.src).origin,
   );
 }
