@@ -71,6 +71,7 @@ export default {
   'fields.none': '—',
   'fields.kept': 'The file says {value} here, which this field can’t show. It stays as it is unless you change it.',
   'fields.notInList': '{value} (not in the list)',
+  'fields.pluginFailed': 'The script for this field ({module}) didn’t load: {message}. What the file has here is kept as it is.',
 
   // Toolbar
   'toolbar.h2': 'Heading',
@@ -284,6 +285,7 @@ export default {
   'config.fieldOptions': '{key} is needed: a select is a list of options to choose from.',
   'config.fieldOption': '{key} has to be text, a number, or { "value": …, "label": "…" }.',
   'config.fieldDefault': '{key} isn’t something this field could hold (for a select, it has to be one of the options’ values).',
+  'config.fieldModule': '{key} is needed for a plugin field: the address of its script on this site, starting with / or ./ (the editor only loads scripts from its own site).',
   'github.error': 'GitHub: {message}',
   'github.requestFailed': 'The GitHub request failed ({status}).',
 };

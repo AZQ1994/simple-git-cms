@@ -347,7 +347,7 @@ the date and tags:
 |---|---|
 | `name` | The frontmatter key (required). Not `title`, `description`, `date`, `tags`, `draft` or the collection's `imageField`, which the editor already writes |
 | `label` | What the form calls it; `name` when left out |
-| `type` | `text` (the default), `number`, `select`, `boolean` (a checkbox) or `date` |
+| `type` | `text` (the default), `number`, `select`, `boolean` (a checkbox), `date`, or `plugin` (an input the site provides; [below](#an-input-of-your-own)) |
 | `required` | Publishing needs it filled in. A draft can be saved without it |
 | `default` | What a new article starts with |
 | `placeholder` | A hint in the empty input |
@@ -355,6 +355,7 @@ the date and tags:
 | `multiline` | `text` only: room for several lines |
 | `min` / `max` / `step` / `unit` | `number` only. `unit` is shown next to the input and is not written to the file |
 | `options` | `select` only (required): the choices, as values, or as `{ "value", "label" }` to show something other than what the file holds |
+| `module` | `plugin` only (required): the address of its script on the editor's own site, starting with `/` or `./` |
 
 They go in the frontmatter as what they are:
 
@@ -378,6 +379,35 @@ starts: 2026-11-15
   choice that has since left the list. The form says what the file has there, and it stays that
   way until someone changes it.
 - The preview page gets them as `article.fields`, before they are saved.
+
+### An input of your own
+
+When none of the types fits — a few rows to fill in, a figure worked out from the other fields — a
+field can have an input the site writes itself:
+
+```json
+{ "name": "costs", "label": "Costs", "type": "plugin", "module": "/editor-plugins/costs.js" }
+```
+
+The script is an ES module on the editor's own site — the policy in
+[Locking the editor down](#locking-the-editor-down) loads no other — and exports `mount`:
+
+```js
+export function mount(el, { value, get, set, onFieldChange, field, lang }) {
+  // Draw the input into el. value is a copy of what the file has here.
+  // get('seats') is another field as it stands now, unsaved changes included.
+  // set(newValue) is what goes in the file: text, a number, a list or a group; null leaves it out.
+  // onFieldChange((name) => …) is called when someone changes one of the other fields.
+}
+```
+
+- Whatever `set()` is given goes into the frontmatter as it is, so the site reads a finished value
+  rather than working it out again. Until `set()` is called the field is untouched, and the file
+  keeps what it had.
+- `required` counts it as filled in once it holds anything. `list` shows it only when it is text or
+  a number.
+- A script that doesn't load, or exports no `mount`, is named under the field, and the file keeps
+  its value.
 
 ## Blocks of your own
 

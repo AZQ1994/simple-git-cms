@@ -72,6 +72,7 @@ export default {
   'fields.none': '—',
   'fields.kept': 'ファイルのこの項目は {value} で、この入力欄では表示できません。変更しない限りそのまま残ります。',
   'fields.notInList': '{value}（選択肢にない値）',
+  'fields.pluginFailed': 'このフィールドのスクリプト（{module}）を読み込めませんでした：{message}。ファイルのこの項目はそのまま残ります。',
 
   // ツールバー
   'toolbar.h2': '見出し',
@@ -285,6 +286,7 @@ export default {
   'config.fieldOptions': '{key} が必要です：select は選択肢から選ぶフィールドです。',
   'config.fieldOption': '{key} は文字列、数値、または { "value": …, "label": "…" } にしてください。',
   'config.fieldDefault': '{key} はこのフィールドに入らない値です（select の場合は、いずれかの選択肢の value にしてください）。',
+  'config.fieldModule': '{key} が必要です：plugin フィールドには、このサイト上のスクリプトのアドレスを / か ./ で始めて書いてください（エディターは自分のサイトのスクリプトしか読み込みません）。',
   'github.error': 'GitHub：{message}',
   'github.requestFailed': 'GitHub へのリクエストが失敗しました（{status}）',
 };

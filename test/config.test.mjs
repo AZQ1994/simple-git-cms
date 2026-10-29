@@ -217,6 +217,18 @@ test('a field is told what is wrong with it, setting by setting', () => {
   assert.deepEqual(with_({ name: 'a', type: 'number', step: '10' }), ['collections[0].fields[0].step']);
 });
 
+test('a plugin field needs its script, and the script has to be on the editor’s own site', () => {
+  const one = (field) => keys({ ...good(), collections: [{ dir: 'events', fields: [{ name: 'a', ...field }] }] });
+  assert.deepEqual(one({ type: 'plugin', module: '/editor-plugins/costs.js' }), []);
+  assert.deepEqual(one({ type: 'plugin', module: './plugins/costs.js' }), []);
+  assert.deepEqual(one({ type: 'plugin', module: '../plugins/costs.js' }), []);
+  assert.deepEqual(one({ type: 'plugin' }), ['collections[0].fields[0].module']);
+  assert.deepEqual(one({ type: 'plugin', module: 'https://cdn.example.com/costs.js' }), ['collections[0].fields[0].module']);
+  assert.deepEqual(one({ type: 'plugin', module: 'costs.js' }), ['collections[0].fields[0].module']);
+  assert.deepEqual(one({ type: 'plugin', module: '//cdn.example.com/costs.js' }), ['collections[0].fields[0].module'], 'another site, however it is written');
+  assert.deepEqual(one({ type: 'text', module: '/x.js' }), ['collections[0].fields[0].module'], 'a script only means something to a plugin');
+});
+
 test('a default has to be something the field could hold', () => {
   const one = (field) => keys({ ...good(), collections: [{ dir: 'events', fields: [{ name: 'a', ...field }] }] });
   assert.deepEqual(one({ type: 'number', default: '30' }), ['collections[0].fields[0].default']);
@@ -232,7 +244,7 @@ test('every setting a field can have is in the JSON schema too', () => {
   const inSchema = Object.keys(schema.properties.collections.items.properties.fields.items.properties).sort();
   const field = { name: 'a', label: 'A', type: 'text', required: true, default: 'x', placeholder: 'p', list: true, multiline: true };
   assert.deepEqual(keys({ ...good(), collections: [{ dir: 'e', fields: [field] }] }), []);
-  assert.deepEqual(inSchema, ['default', 'label', 'list', 'max', 'min', 'multiline', 'name', 'options', 'placeholder', 'required', 'step', 'type', 'unit']);
+  assert.deepEqual(inSchema, ['default', 'label', 'list', 'max', 'min', 'module', 'multiline', 'name', 'options', 'placeholder', 'required', 'step', 'type', 'unit']);
   for (const key of inSchema) {
     const unknown = keys({ ...good(), collections: [{ dir: 'e', fields: [{ name: 'a', [key + 'x']: 1 }] }] });
     assert.ok(unknown.includes(`collections[0].fields[0].${key}x`), `${key}x is not a setting`);

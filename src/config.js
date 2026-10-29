@@ -4,7 +4,7 @@
 // produced the same sentence whichever it was. Everything here is a plain function over the parsed
 // JSON — no DOM, no network — so test/config.test.mjs can check the awkward cases.
 import { locales } from './i18n/index.js';
-import { BUILT_IN, FIELD_NAME, FIELD_TYPES, ONLY_FOR, defaultFits, fieldType } from './fields.js';
+import { BUILT_IN, FIELD_NAME, FIELD_TYPES, MODULE_PATH, ONLY_FOR, defaultFits, fieldType } from './fields.js';
 
 /** Thrown when config.json can't be used. `problems` is every reason at once, not just the first. */
 export class ConfigError extends Error {
@@ -59,6 +59,7 @@ const SPEC = {
           step: { type: 'number' },
           unit: str,
           options: { any: true },
+          module: str,
         },
       },
     },
@@ -254,6 +255,7 @@ function checkFields(collection, prefix, add) {
           if (!good) add(`${path}.options[${j}]`, 'config.fieldOption');
         });
     }
+    if (type === 'plugin' && (typeof f.module !== 'string' || !MODULE_PATH.test(f.module))) add(`${path}.module`, 'config.fieldModule');
     if (f.default !== undefined && !defaultFits(f)) add(`${path}.default`, 'config.fieldDefault');
   });
 }

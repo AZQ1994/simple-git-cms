@@ -36,6 +36,9 @@ before(async () => {
       '/preview/index.html': join(root, 'test', 'e2e', 'preview', 'index.html'),
       '/preview/preview-page.js': join(root, 'test', 'e2e', 'preview', 'preview-page.js'),
       '/preview/preview-client.js': join(root, 'integrations', 'preview-client.js'),
+      // The site's own scripts for its plugin fields
+      '/plugins/tally.js': join(root, 'test', 'e2e', 'plugins', 'tally.js'),
+      '/plugins/no-mount.js': join(root, 'test', 'e2e', 'plugins', 'no-mount.js'),
     },
     headers: {
       'Content-Security-Policy': policy,
@@ -65,6 +68,8 @@ before(async () => {
             { name: 'status', label: 'Status', type: 'select', list: true, default: 'open', options: [{ value: 'open', label: 'Open' }, { value: 'full', label: 'Full' }] },
             { name: 'online', label: 'Online', type: 'boolean' },
             { name: 'starts', label: 'Starts', type: 'date', required: true },
+            { name: 'tally', label: 'Tally', type: 'plugin', module: '/plugins/tally.js' },
+            { name: 'broken', label: 'Broken', type: 'plugin', module: './plugins/no-mount.js' },
           ],
         },
       ],
@@ -902,6 +907,39 @@ test('a collection with fields of its own: what the file says, what is changed, 
   const published = gh.files.get(`${EVENTS_DIR}/${id}.md`);
   assert.doesNotMatch(published, /^draft: true$/m);
   assert.match(published, /\ntags: \[\]\nstatus: open\nvenue: Concert hall\nseats: 250\nonline: true\nstarts: 2026-12-20\n---/, 'numbers and ticks as what they are, new ones in the order config.json lists them');
+});
+
+test('a plugin field draws its own input, reads the other fields, and what it hands back is saved', async () => {
+  const pick = (name) => page.evaluate(`(() => { const s = document.getElementById('collection-select'); s.value = ${JSON.stringify(name)}; s.dispatchEvent(new Event('change')); })()`);
+  const text = (id) => page.evaluate(`document.getElementById(${JSON.stringify(id)})?.textContent`);
+  const file = `${EVENTS_DIR}/202610200000.md`;
+  await pick('events');
+  await page.until(`document.querySelectorAll('#list .item').length >= 1`, { label: 'the events' });
+  await page.evaluate(`[...document.querySelectorAll('#list .item')].find((b) => b.textContent.includes('Open day')).click()`);
+  await page.until(`document.getElementById('tally-count')`, { label: 'the plugin, loaded and mounted' });
+  assert.equal(await text('tally-out'), 'nothing yet', 'it is given what the file has, which is nothing');
+
+  // It hears about the other fields, and reads them as they stand, unsaved
+  await page.evaluate(`(() => { const el = document.getElementById('f-field-seats'); el.value = '250'; el.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  assert.equal(await text('tally-heard'), 'seats');
+  await page.evaluate(`document.getElementById('tally-count').click()`);
+  assert.equal(await text('tally-out'), '250 seats');
+  assert.match(await page.evaluate(`document.getElementById('status').textContent`), /unsaved/);
+
+  const before = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && gh.commits.length === before; i++) await sleep(100);
+  const saved = gh.files.get(file);
+  assert.match(saved, /^seats: 250$/m);
+  assert.match(saved, /\ntally:\n {2}seats: 250\n {2}venue: Main hall\n {2}rows:\n {4}- label: Hall\n {6}seats: 250\n/, 'a group with a list in it, in the frontmatter as it is');
+  assert.doesNotMatch(saved, /^broken:/m, 'a plugin that never loaded writes nothing');
+
+  // A script that isn't a plugin says so, instead of quietly showing nothing
+  assert.match(await page.evaluate(`document.querySelector('[data-field="broken"]').closest('.field').querySelector('.field-warn').textContent`), /no mount\(\)/);
+
+  // Opened again, the plugin is handed what was saved
+  await page.navigate(`${site.origin}/?c=events&id=202610200000`);
+  await page.until(`document.getElementById('tally-out')?.textContent === '250 seats'`, { label: 'the saved value, handed back' });
 });
 
 test('nothing went wrong in the browser', async () => {

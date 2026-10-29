@@ -72,6 +72,7 @@ export default {
   'fields.none': '—',
   'fields.kept': '文件里这一项是 {value}，这个输入框显示不了。不改它的话会原样保留。',
   'fields.notInList': '{value}（不在选项里）',
+  'fields.pluginFailed': '这个字段的脚本（{module}）没有加载成功：{message}。文件里这一项会原样保留。',
 
   // 工具条
   'toolbar.h2': '小标题',
@@ -285,6 +286,7 @@ export default {
   'config.fieldOptions': '{key} 不能少：select 是从选项里选一个。',
   'config.fieldOption': '{key} 要是文字、数字，或者 { "value": …, "label": "…" }。',
   'config.fieldDefault': '{key} 不是这个字段能放的值（select 的话，要是某个选项的 value）。',
+  'config.fieldModule': '{key} 不能少：plugin 字段要写它的脚本在这个网站上的地址，以 / 或 ./ 开头（编辑器只加载自己网站上的脚本）。',
   'github.error': 'GitHub：{message}',
   'github.requestFailed': 'GitHub 请求失败（{status}）',
 };
