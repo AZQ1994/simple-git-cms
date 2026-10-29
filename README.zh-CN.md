@@ -271,7 +271,7 @@ npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 |---|---|
 | `name` | frontmatter 的键名（必填）。不能是 `title`、`description`、`date`、`tags`、`draft` 和这种文章的 `imageField`，这些编辑器已经在写了 |
 | `label` | 表单上显示的名字，不填就用 `name` |
-| `type` | `text`（默认）、`number`、`select`、`boolean`（勾选框）或 `date` |
+| `type` | `text`（默认）、`number`、`select`、`boolean`（勾选框）、`date`，或者 `plugin`（网站自己提供的输入界面，见[下面](#自己做输入界面)） |
 | `required` | 发布时必须填。存草稿时可以空着 |
 | `default` | 新文章的初始值 |
 | `placeholder` | 输入框空着时的提示 |
@@ -279,6 +279,7 @@ npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 | `multiline` | 只用于 `text`：多行输入 |
 | `min` / `max` / `step` / `unit` | 只用于 `number`。`unit` 显示在输入框旁边，不写进文件 |
 | `options` | 只用于 `select`（必填）：选项，写值，或者写 `{ "value", "label" }` 让界面显示的和文件里存的不一样 |
+| `module` | 只用于 `plugin`（必填）：它的脚本在编辑器所在网站上的地址，以 `/` 或 `./` 开头 |
 
 写进 frontmatter 时保持原本的类型：
 
@@ -298,6 +299,30 @@ starts: 2026-11-15
   比如数字字段里写了文字、某个选项后来从列表里删掉了。表单会说文件里这一项是什么，有人改之前一直
   保持原样。
 - 预览页从 `article.fields` 拿到它们，保存之前就能看到。
+
+### 自己做输入界面
+
+上面的类型都不合适的时候——要填几行表格、要根据其他字段算出一个数——可以让网站自己提供这个字段的输入界面：
+
+```json
+{ "name": "costs", "label": "Costs", "type": "plugin", "module": "/editor-plugins/costs.js" }
+```
+
+脚本是放在编辑器所在网站上的 ES module（[把编辑器锁紧一点](#把编辑器锁紧一点)里的安全策略不加载别的网站的脚本），导出 `mount`：
+
+```js
+export function mount(el, { value, get, set, onFieldChange, field, lang }) {
+  // 把输入界面画进 el。value 是文件里这一项的副本。
+  // get('seats')：另一个字段现在的值，包括还没保存的修改。
+  // set(newValue)：写进文件的值，可以是文字、数字、列表或对象；null 表示不写。
+  // onFieldChange((name) => …)：有人改了其他字段时调用。
+}
+```
+
+- `set()` 交过来的值原样写进 frontmatter，网站读到的就是算好的结果，不用再算一遍。没调用 `set()` 之前，
+  这个字段算没动过，文件里的值原样保留。
+- `required`：里面有值就算填了。`list`：只有值是文字或数字时才显示。
+- 脚本没加载成功、或者没有导出 `mount` 的话，字段下面会写出来，文件里的值原样保留。
 
 ## 自己定义控件
 

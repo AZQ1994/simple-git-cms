@@ -304,7 +304,7 @@ localhost で `localStorage['simple-git-cms-api']` を設定すると、GitHub A
 |---|---|
 | `name` | frontmatter のキー（必須）。`title`、`description`、`date`、`tags`、`draft` と、その種類の `imageField` はエディターがすでに書くので使えません |
 | `label` | フォームに出る名前。省くと `name` |
-| `type` | `text`（既定）、`number`、`select`、`boolean`（チェックボックス）、`date` |
+| `type` | `text`（既定）、`number`、`select`、`boolean`（チェックボックス）、`date`、`plugin`（サイトが用意する入力欄。[下記](#入力欄を自分で作る)） |
 | `required` | 公開には入力が必要です。下書きは空のままでも保存できます |
 | `default` | 新しい記事の初期値 |
 | `placeholder` | 空の入力欄に出るヒント |
@@ -312,6 +312,7 @@ localhost で `localStorage['simple-git-cms-api']` を設定すると、GitHub A
 | `multiline` | `text` のみ：複数行の入力欄 |
 | `min` / `max` / `step` / `unit` | `number` のみ。`unit` は入力欄の横に出るだけで、ファイルには書きません |
 | `options` | `select` のみ（必須）：選択肢。値だけ、またはファイルに入る値と画面の表示を変えたいときは `{ "value", "label" }` |
+| `module` | `plugin` のみ（必須）：エディターと同じサイト上のスクリプトのアドレス。`/` か `./` で始めます |
 
 frontmatter にはその型のまま入ります：
 
@@ -333,6 +334,31 @@ starts: 2026-11-15
   フィールドに入った文字や、あとで一覧から消えた選択肢——も、開いて保存しただけでは変わりません。
   フォームはファイルに何が入っているかを示し、誰かが変えるまでそのままです。
 - プレビューページには `article.fields` として、保存前の値が渡ります。
+
+### 入力欄を自分で作る
+
+どの型も合わないとき——数行の表を埋める、ほかのフィールドから金額を計算する——は、サイト側で入力欄を用意できます：
+
+```json
+{ "name": "costs", "label": "Costs", "type": "plugin", "module": "/editor-plugins/costs.js" }
+```
+
+スクリプトはエディターと同じサイトに置く ES module で（[エディターを締めておく](#エディターを締めておく)のポリシーはほかのサイトのスクリプトを読み込みません）、`mount` を export します：
+
+```js
+export function mount(el, { value, get, set, onFieldChange, field, lang }) {
+  // el に入力欄を描きます。value はファイルのこの項目のコピーです。
+  // get('seats')：ほかのフィールドの今の値（未保存の変更も含む）。
+  // set(newValue)：ファイルに書く値。文字列、数値、リスト、オブジェクト。null なら書きません。
+  // onFieldChange((name) => …)：ほかのフィールドが変わったときに呼ばれます。
+}
+```
+
+- `set()` に渡した値はそのまま frontmatter に入るので、サイトは計算済みの値を読むだけです。`set()` が
+  呼ばれるまでは触っていない扱いで、ファイルの値はそのまま残ります。
+- `required` は何か入っていれば入力済みとみなします。`list` は文字列か数値のときだけ表示します。
+- スクリプトが読み込めない、または `mount` を export していないときは、フィールドの下にそう表示し、
+  ファイルの値はそのまま残ります。
 
 ## 自分でブロックを定義する
 

@@ -131,10 +131,11 @@
                     "number",
                     "select",
                     "boolean",
-                    "date"
+                    "date",
+                    "plugin"
                   ],
                   "default": "text",
-                  "description": "text, number, select (one of options), boolean (a checkbox) or date (YYYY-MM-DD)."
+                  "description": "text, number, select (one of options), boolean (a checkbox), date (YYYY-MM-DD), or plugin (an input the site provides; see module)."
                 },
                 "required": {
                   "type": "boolean",
@@ -171,6 +172,11 @@
                 "step": {
                   "type": "number",
                   "description": "number only: what the arrows add or take away."
+                },
+                "module": {
+                  "type": "string",
+                  "pattern": "^(/(?!/)|\\.{1,2}/)",
+                  "description": "plugin only (required): the address of the script that draws this field's input, on the editor's own site, e.g. /editor-plugins/costs.js."
                 },
                 "unit": {
                   "type": "string",

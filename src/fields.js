@@ -6,7 +6,7 @@
 // even when it is something the input couldn't have shown. These functions only decide what a
 // field the person did fill in becomes.
 
-export const FIELD_TYPES = ['text', 'number', 'select', 'boolean', 'date'];
+export const FIELD_TYPES = ['text', 'number', 'select', 'boolean', 'date', 'plugin'];
 export const FIELD_NAME = /^[A-Za-z_][\w-]*$/;
 /** Frontmatter the editor already has a control of its own for. */
 export const BUILT_IN = ['title', 'description', 'date', 'tags', 'draft'];
@@ -33,6 +33,8 @@ export function fits(f, v) {
       return typeof v === 'string' && DAY.test(v);
     case 'select':
       return fieldOptions(f).some((o) => o.value === v);
+    case 'plugin':
+      return true; // what it holds is the plugin's business
     default:
       return typeof v === 'string';
   }
@@ -59,6 +61,9 @@ export function fromInput(f, input) {
     }
     case 'date':
       return DAY.test(input) ? input : undefined;
+    case 'plugin':
+      // Whatever the plugin handed over, as it is: text, a number, a list, a group
+      return input === null || input === '' ? undefined : input;
     case 'select': {
       if (input === '') return undefined;
       // The option's own value, so a number in the options is a number in the file. One that isn't
@@ -106,4 +111,8 @@ export function display(f, v) {
 export const defaultFits = (f) => fits(f, f.default);
 
 /** Settings that only mean something for one type of field. */
-export const ONLY_FOR = { options: 'select', multiline: 'text', min: 'number', max: 'number', step: 'number', unit: 'number' };
+export const ONLY_FOR = { options: 'select', multiline: 'text', min: 'number', max: 'number', step: 'number', unit: 'number', module: 'plugin' };
+
+/** Where a plugin's script has to be: on the editor's own site, which is all its policy lets it load.
+ * A path, then, from the site's root or from the editor — never //host/…, which is another site. */
+export const MODULE_PATH = /^(\/(?!\/)|\.{1,2}\/)/;

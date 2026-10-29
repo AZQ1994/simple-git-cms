@@ -12,6 +12,10 @@ behind it are in the repository history.
   without them; `list` ones show in the sidebar and are found by the search. A field nobody changed
   is never rewritten, so a value the input can't show stays in the file as it was, and the form
   says what it is. See [Fields of your own](README.md#fields-of-your-own).
+- **An input of your own** (`"type": "plugin"`). When none of the types fits, a field's input can be
+  a script on the site: it draws into the form, reads the other fields as they stand, hears when
+  they change, and hands back a value — a list, a group — that is saved into the frontmatter as it
+  is. See [An input of your own](README.md#an-input-of-your-own).
 
 ## 1.0.0 — 2026-10-27
 

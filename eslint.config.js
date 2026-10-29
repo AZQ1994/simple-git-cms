@@ -32,9 +32,9 @@ export default [
     rules: { 'no-console': 'off' },
   },
   {
-    // The demo's own pages, and the browser tests' preview page, run in the browser; the demo's
+    // The demo's own pages, and the browser tests' preview page and plugin fields, run in the browser; the demo's
     // stand-in for GitHub runs as a service worker
-    files: ['www/demo/**/*.js', 'test/e2e/preview/*.js'],
+    files: ['www/demo/**/*.js', 'test/e2e/preview/*.js', 'test/e2e/plugins/*.js'],
     languageOptions: { globals: globals.browser },
   },
   {

@@ -36,6 +36,17 @@ test('each type writes back what its input says, and an empty input leaves the f
   assert.equal(fromInput(starts, ''), undefined);
 });
 
+test('a plugin field holds whatever its script hands over, and nothing when it hands over nothing', () => {
+  const tally = { name: 'tally', type: 'plugin', module: '/plugins/tally.js' };
+  const value = { seats: 250, rows: [{ label: 'Hall', seats: 250 }] };
+  assert.deepEqual(fromInput(tally, value), value);
+  assert.equal(fromInput(tally, null), undefined);
+  assert.equal(fromInput(tally, ''), undefined);
+  assert.ok(fits(tally, value) && fits(tally, 'anything'), 'the editor has no say in what it holds');
+  assert.deepEqual(missingFields([{ ...tally, required: true }], {}).map((f) => f.name), ['tally']);
+  assert.deepEqual(missingFields([{ ...tally, required: true }], { tally: value }), []);
+});
+
 test('the input shows what the file says, and nothing for what it could not show', () => {
   assert.equal(toInput(seats, 120), '120');
   assert.equal(toInput(seats, undefined), '');
