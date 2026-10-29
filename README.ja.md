@@ -38,6 +38,9 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 - **複数の種類の記事**：ニュース、お知らせ、イベント……それぞれ自分のディレクトリに置き、サイト上の
   アドレス、アイキャッチ画像の項目、プレビューページも別々に設定して、サイドバーで切り替えます。保存・公開・
   デプロイはどれも同じです
+- **独自のフィールド**：会場、価格、ステータス……テキスト、数値、選択肢、チェックボックス、日付を
+  記事のフォームにそれぞれ入力欄として出し、その型のまま frontmatter に書き込みます。誰も触って
+  いないフィールドは、ファイルに書かれたとおりに残ります
 - **記事**：タイトル、日付、タグ、要約、下書き / 公開 / 下書きに戻す / 下書きの削除。開いている
   記事はアドレスバーに入るので、再読み込みしても元の記事に戻り、その URL はログインできる人への
   リンクにもなります
@@ -65,7 +68,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 
 | ディレクトリ | 中身 |
 |---|---|
-| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`preview-ui.js`・`history.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決め、`html-scan.js` が本文の HTML が開いたものを閉じているかを調べます。`app.js` は設定の読み込みと起動だけを担当します |
+| `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`fields.js`（独自フィールドの読み書き）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`field-form.js`・`preview-ui.js`・`history.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決め、`html-scan.js` が本文の HTML が開いたものを閉じているかを調べます。`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
@@ -110,6 +113,7 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `collections[].url` | 記事の URL。`{id}` が置き換わります |
 | `collections[].imageField` | アイキャッチ画像を書き込む frontmatter の項目名（例：`image`）。省くとアイキャッチ画像の欄は出ません |
 | `collections[].preview` | この種類の記事のサイト側プレビューページ（下の手順 4）。空なら「プレビュー」ボタンは出ません |
+| `collections[].fields` | この種類の記事独自の frontmatter のフィールド。フォームにそれぞれ入力欄が出ます。[自分でフィールドを定義する](#自分でフィールドを定義する)を参照 |
 | `media.dir` / `media.url` | 画像のリポジトリ内ディレクトリ / サイト上のパス。新しい画像は `<日付>/` の下に入ります |
 | `media.maxWidth` / `media.quality` | アップロード時に圧縮する最大幅と webp の品質 |
 | `media.maxFileMB` | 添付ファイルの上限サイズ（MB、既定は 20。理由は下記） |
@@ -276,6 +280,60 @@ localhost で `localStorage['simple-git-cms-api']` を設定すると、GitHub A
 キーの不足・余り・空文字、`{プレースホルダー}` が英語と合わない場合はテストが落ちるので、
 訳し残したまま出ることはありません。
 
+## 自分でフィールドを定義する
+
+どの記事にもタイトル、日付、タグ、要約があります。種類ごとに独自のフィールド——イベントの会場や
+開催日、講座の受講料など——を足すと、記事のフォームの日付とタグの下にそれぞれの入力欄が出ます：
+
+```json
+{
+  "name": "events", "label": "Events", "dir": "src/content/events", "url": "/events/{id}/",
+  "fields": [
+    { "name": "starts", "label": "Starts", "type": "date", "required": true },
+    { "name": "venue", "label": "Venue", "required": true },
+    { "name": "seats", "label": "Seats", "type": "number", "min": 0, "unit": "people" },
+    { "name": "status", "label": "Status", "type": "select", "list": true, "default": "open",
+      "options": [{ "value": "open", "label": "Open" }, { "value": "full", "label": "Full" }] },
+    { "name": "online", "label": "Online", "type": "boolean" },
+    { "name": "access", "label": "Getting there", "multiline": true }
+  ]
+}
+```
+
+| 設定 | 意味 |
+|---|---|
+| `name` | frontmatter のキー（必須）。`title`、`description`、`date`、`tags`、`draft` と、その種類の `imageField` はエディターがすでに書くので使えません |
+| `label` | フォームに出る名前。省くと `name` |
+| `type` | `text`（既定）、`number`、`select`、`boolean`（チェックボックス）、`date` |
+| `required` | 公開には入力が必要です。下書きは空のままでも保存できます |
+| `default` | 新しい記事の初期値 |
+| `placeholder` | 空の入力欄に出るヒント |
+| `list` | サイドバーの一覧で日付の横に値を表示し、検索の対象にもします |
+| `multiline` | `text` のみ：複数行の入力欄 |
+| `min` / `max` / `step` / `unit` | `number` のみ。`unit` は入力欄の横に出るだけで、ファイルには書きません |
+| `options` | `select` のみ（必須）：選択肢。値だけ、またはファイルに入る値と画面の表示を変えたいときは `{ "value", "label" }` |
+
+frontmatter にはその型のまま入ります：
+
+```yaml
+venue: Main hall
+seats: 120
+status: open
+online: true
+starts: 2026-11-15
+```
+
+- 数値は数値、チェックは `true`、日付は `YYYY-MM-DD`、選択肢はその `value`。日付を知っている YAML
+  リーダー（Astro のものもそう）は `2026-11-15` を文字ではなく日付として読むので、サイトの schema
+  でも日付として書いてください（`z.coerce.date()`）。
+- 空のフィールドやチェックしていないボックスはファイルに書きません。既定値はサイトの schema で。
+- 変更したフィールドは frontmatter の同じ位置に残ります。記事になかったフィールドは後ろに、
+  config.json の順で並びます。
+- **誰も触っていないフィールドはまったく書きません**。そのため、入力欄では表示できない値——数値の
+  フィールドに入った文字や、あとで一覧から消えた選択肢——も、開いて保存しただけでは変わりません。
+  フォームはファイルに何が入っているかを示し、誰かが変えるまでそのままです。
+- プレビューページには `article.fields` として、保存前の値が渡ります。
+
 ## 自分でブロックを定義する
 
 ここでの Markdown は Markdown ＋ HTML です。`<table>`、`<iframe>`、ビルドがもともと素通しする
@@ -417,8 +475,8 @@ nginx は `location /editor/` の中に `add_header Content-Security-Policy "…
 
 - 書く人に GitHub アカウントが必要です（なしで済ませるなら、GitHub App としてコミットする
   自前のログインを別に用意することになります）
-- どの種類の記事も項目は同じ（タイトル・日付・タグ・要約・アイキャッチ画像）で、それぞれ 1 つの平らな
-  ディレクトリです。サブディレクトリの中の記事は一覧に出ません
+- 種類ごとに[独自のフィールド](#自分でフィールドを定義する)を足しても、タイトル・日付・タグ・要約は
+  常にあります。また、それぞれ 1 つの平らなディレクトリで、サブディレクトリの中の記事は一覧に出ません
 - プレビューはブラウザ内で Markdown を変換するので、サイト側で別途足した Markdown プラグインは
   反映されません
 - 外部の画像アドレス（他のページから貼り付けたもの）は保存時に弾かれます。ダウンロードして

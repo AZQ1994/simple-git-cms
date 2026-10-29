@@ -68,6 +68,10 @@ export default {
   'doc.descPlaceholder': '显示在搜索结果里的简介（60～110 字）。不填会自动取正文开头。',
   'doc.descAuto': '自动生成',
   'doc.descCount': '{n} 字',
+  'fields.heading': '详细信息',
+  'fields.none': '—',
+  'fields.kept': '文件里这一项是 {value}，这个输入框显示不了。不改它的话会原样保留。',
+  'fields.notInList': '{value}（不在选项里）',
 
   // 工具条
   'toolbar.h2': '小标题',
@@ -154,6 +158,7 @@ export default {
   'validate.title': '请填写标题',
   'validate.body': '请填写正文',
   'validate.externalImage': '正文里有外部图片地址（可能是从别处粘贴的），请下载后用「图片」按钮重新上传',
+  'validate.required': '发布前请填写：{fields}。存草稿时可以先空着。',
 
   // 保存
   'save.saving': '正在保存…',
@@ -273,6 +278,13 @@ export default {
   'config.missing': '找不到 config.json',
   'config.defaultTitle': '内容管理',
   'config.defaultCollection': '文章',
+  'config.fieldName': '{key} 要以字母或 _ 开头，后面只能用字母、数字、- 和 _：它是 frontmatter 的键名。',
+  'config.fieldDuplicate': '{key}：这个 collection 已经有一个叫 {name} 的字段了。',
+  'config.fieldTaken': '{key}：编辑器已经有 {name} 的输入框了，请给这个字段换个名字。',
+  'config.fieldOnlyFor': '{key} 只能用在 type 为 {type} 的字段上。',
+  'config.fieldOptions': '{key} 不能少：select 是从选项里选一个。',
+  'config.fieldOption': '{key} 要是文字、数字，或者 { "value": …, "label": "…" }。',
+  'config.fieldDefault': '{key} 不是这个字段能放的值（select 的话，要是某个选项的 value）。',
   'github.error': 'GitHub：{message}',
   'github.requestFailed': 'GitHub 请求失败（{status}）',
 };

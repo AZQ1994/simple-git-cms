@@ -41,7 +41,25 @@ export const EMBED = '<iframe src="https://www.youtube.com/embed/abc123" width="
 export const CONTENT_DIR = 'site/content/news';
 /** A second collection, for switching between them. */
 export const NOTICES_DIR = 'site/content/notices';
+/** A third, whose articles have fields of their own (collections[].fields). */
+export const EVENTS_DIR = 'site/content/events';
 export const MEDIA_DIR = 'site/public/uploads';
+
+/** An event as the editor would write it. Its seats are text where the config says a number, as a
+ * file written by hand might have them: the editor has to leave that alone unless it is changed. */
+export const EVENT = `---
+title: "Open day"
+description: "Come and see the school."
+date: 2026-10-20T00:00:00.000Z
+tags: []
+venue: Main hall
+seats: about 100
+status: open
+starts: 2026-11-15
+---
+
+Come and see the school.
+`;
 
 /** The repository every test starts from. */
 export const seed = () =>
@@ -52,6 +70,7 @@ export const seed = () =>
     [`${CONTENT_DIR}/202610010000.md`, article('Draft: timetable changes', '2026-10-01T00:00:00.000Z', ['notice'], 'Still being finalised.', true)],
     // Its id is one the news has too: an id is only unique within its own collection
     [`${NOTICES_DIR}/202610120800.md`, article('Library closed on Monday', '2026-10-12T08:00:00.000Z', [], 'For the inventory.', false)],
+    [`${EVENTS_DIR}/202610200000.md`, EVENT],
   ]);
 
 const CORS = {

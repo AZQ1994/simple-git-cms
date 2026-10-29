@@ -3,6 +3,16 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## Unreleased
+
+- **Fields of your own** (`collections[].fields` in config.json). A collection can add frontmatter
+  fields — text, a number, a choice from a list, a checkbox or a date — and the article form gets an
+  input for each, under the date and tags. They are written as the type they are; an empty one is
+  left out. `required` ones have to be filled in before publishing, though a draft can be saved
+  without them; `list` ones show in the sidebar and are found by the search. A field nobody changed
+  is never rewritten, so a value the input can't show stays in the file as it was, and the form
+  says what it is. See [Fields of your own](README.md#fields-of-your-own).
+
 ## 1.0.0 — 2026-10-27
 
 More than one kind of article: news, notices, events, each in its own directory, in one editor.

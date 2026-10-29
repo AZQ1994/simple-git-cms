@@ -30,6 +30,8 @@
   指定的 frontmatter 字段——就是网站用来做列表缩略图和分享图的那张
 - 多种文章：新闻、公告、活动……各放在自己的目录里，网址、封面图字段、预览页也各自设置，在侧栏切换。
   保存、发布、部署对它们都一样
+- 自定义字段：地点、价格、状态……文本、数字、下拉选择、勾选框、日期，在文章表单里各有一个输入框，
+  按原本的类型写进 frontmatter。没人动过的字段，文件里怎么写的就原样留着
 - 文章：标题、日期、标签、摘要、草稿 / 发布 / 撤回 / 删除草稿。打开的是哪一篇写在地址栏里，所以
   刷新会回到原处，这个地址也可以直接发给另一个能登录的人
 - 保存：文章 + 新图片合成一个提交；文章在打开后被别人改过时提示冲突（载入对方版本 / 覆盖）
@@ -48,7 +50,7 @@
 
 | 目录 | 内容 |
 |---|---|
-| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`preview-ui.js`、`history.js`；`schema.js` 规定正文能放什么、以及怎么写回 Markdown，`html-scan.js` 查正文里的 HTML 有没有开了不关的标签，`app.js` 只负责读配置和启动 |
+| `src/` | 编辑器源码。`github.js`（GitHub 读写，可在 Node 里单独用）、`article.js`（文章格式）、`fields.js`（自定义字段怎么读写）、`images.js`（压缩 / 裁剪）、`i18n/`（界面语言）；界面拆成 `store.js`、`dom.js`、`lang.js`、`auth.js`、`list.js`、`editor.js`、`doc.js`、`field-form.js`、`preview-ui.js`、`history.js`；`schema.js` 规定正文能放什么、以及怎么写回 Markdown，`html-scan.js` 查正文里的 HTML 有没有开了不关的标签，`app.js` 只负责读配置和启动 |
 | `public/` | 页面、样式、`config.example.json` |
 | `auth/` | 「用 GitHub 登录」的中转。一个没有依赖的文件，可以跑在 Cloudflare Workers、Deno Deploy、Vercel、Netlify、Bun 或自己的 Node 服务器上（见[说明](auth/README.zh-CN.md)） |
 | `integrations/astro/` | 网站端显示图片说明和并排的 rehype 插件（见[说明](integrations/astro/README.zh-CN.md)） |
@@ -91,6 +93,7 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 | `collections[].url` | 文章网址，`{id}` 会被替换 |
 | `collections[].imageField` | 封面图写在 frontmatter 的哪个字段，比如 `image`。不填就没有封面图这个控件 |
 | `collections[].preview` | 这种文章在网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
+| `collections[].fields` | 这种文章自己的 frontmatter 字段，表单里各有一个输入框，见[自己定义字段](#自己定义字段) |
 | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
 | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
 | `media.maxFileMB` | 附件大小上限，单位 MB（默认 20，理由见下） |
@@ -244,6 +247,58 @@ npm run dev     # 构建并在 http://localhost:4173 打开编辑器
 要加一种语言，复制 `en.js` 翻译内容，再加进 `src/i18n/index.js` 的 `locales`。
 键少了、多了、为空，或者 `{占位符}` 和英文对不上，测试都会报错，所以不会漏翻译。
 
+## 自己定义字段
+
+每篇文章都有标题、日期、标签和摘要。一种文章还可以有自己的字段——活动的地点和日期、课程的学费——
+文章表单里日期和标签下面会给每个字段一个输入框：
+
+```json
+{
+  "name": "events", "label": "Events", "dir": "src/content/events", "url": "/events/{id}/",
+  "fields": [
+    { "name": "starts", "label": "Starts", "type": "date", "required": true },
+    { "name": "venue", "label": "Venue", "required": true },
+    { "name": "seats", "label": "Seats", "type": "number", "min": 0, "unit": "people" },
+    { "name": "status", "label": "Status", "type": "select", "list": true, "default": "open",
+      "options": [{ "value": "open", "label": "Open" }, { "value": "full", "label": "Full" }] },
+    { "name": "online", "label": "Online", "type": "boolean" },
+    { "name": "access", "label": "Getting there", "multiline": true }
+  ]
+}
+```
+
+| 设置 | 含义 |
+|---|---|
+| `name` | frontmatter 的键名（必填）。不能是 `title`、`description`、`date`、`tags`、`draft` 和这种文章的 `imageField`，这些编辑器已经在写了 |
+| `label` | 表单上显示的名字，不填就用 `name` |
+| `type` | `text`（默认）、`number`、`select`、`boolean`（勾选框）或 `date` |
+| `required` | 发布时必须填。存草稿时可以空着 |
+| `default` | 新文章的初始值 |
+| `placeholder` | 输入框空着时的提示 |
+| `list` | 在侧栏列表里、日期旁边显示这个值，搜索也能搜到 |
+| `multiline` | 只用于 `text`：多行输入 |
+| `min` / `max` / `step` / `unit` | 只用于 `number`。`unit` 显示在输入框旁边，不写进文件 |
+| `options` | 只用于 `select`（必填）：选项，写值，或者写 `{ "value", "label" }` 让界面显示的和文件里存的不一样 |
+
+写进 frontmatter 时保持原本的类型：
+
+```yaml
+venue: Main hall
+seats: 120
+status: open
+online: true
+starts: 2026-11-15
+```
+
+- 数字是数字，勾上是 `true`，日期是 `YYYY-MM-DD`，选项写它的 `value`。认识日期的 YAML 解析器（Astro
+  的就是）会把 `2026-11-15` 读成日期而不是文字，所以网站的 schema 里要按日期写（`z.coerce.date()`）。
+- 空着的字段、没勾的勾选框不写进文件。默认值请在网站的 schema 里给。
+- 改过的字段在 frontmatter 里位置不变；文章原来没有的字段排在后面，顺序和 config.json 里一样。
+- **没人动过的字段根本不会写**，所以文件里写的东西打开再保存也不会变——即使是输入框显示不了的值，
+  比如数字字段里写了文字、某个选项后来从列表里删掉了。表单会说文件里这一项是什么，有人改之前一直
+  保持原样。
+- 预览页从 `article.fields` 拿到它们，保存之前就能看到。
+
 ## 自己定义控件
 
 这里的 Markdown 是 Markdown 加 HTML——`<table>`、`<iframe>`，以及你的构建流程本来就会透传的东西。
@@ -379,8 +434,8 @@ nginx：在 `location /editor/` 里写 `add_header Content-Security-Policy "…"
 ## 已知限制
 
 - 编辑者必须有 GitHub 账号（不想用 GitHub 账号的话，需要再加一层自己的登录服务，以 GitHub App 身份提交）
-- 每种文章的字段都一样——标题、日期、标签、摘要和封面图——而且各是一个平的目录：子目录里的文章不会
-  列出来
+- 不管一种文章加了哪些[自己的字段](#自己定义字段)，标题、日期、标签和摘要总是在的；而且每种文章是
+  一个平的目录：子目录里的文章不会列出来
 - 预览是在浏览器里转换 Markdown，网站另外加的 Markdown 插件不会体现在预览里
 - 外部图片地址（从别的网页粘贴来的）会被拒绝保存，需要下载后重新上传
 - GitHub 令牌存在 `localStorage` 里。这是「没有后端的编辑器」的通常取舍：

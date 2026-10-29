@@ -68,6 +68,10 @@ export default {
   'doc.descPlaceholder': '検索結果に表示される説明文（60〜110 文字程度）。空のままなら本文の冒頭が使われます。',
   'doc.descAuto': '自動生成',
   'doc.descCount': '{n} 文字',
+  'fields.heading': '詳細',
+  'fields.none': '—',
+  'fields.kept': 'ファイルのこの項目は {value} で、この入力欄では表示できません。変更しない限りそのまま残ります。',
+  'fields.notInList': '{value}（選択肢にない値）',
 
   // ツールバー
   'toolbar.h2': '見出し',
@@ -154,6 +158,7 @@ export default {
   'validate.title': 'タイトルを入力してください',
   'validate.body': '本文を入力してください',
   'validate.externalImage': '本文に外部の画像アドレス（他のページから貼り付けたもの）があります。ダウンロードして「画像」ボタンから改めてアップロードしてください。',
+  'validate.required': '公開する前に {fields} を入力してください。下書きは空のままでも保存できます。',
 
   // 保存
   'save.saving': '保存しています…',
@@ -273,6 +278,13 @@ export default {
   'config.missing': 'config.json が見つかりません',
   'config.defaultTitle': 'コンテンツ管理',
   'config.defaultCollection': '記事',
+  'config.fieldName': '{key} は英字か _ で始め、英数字と - と _ だけを使ってください（frontmatter のキーになります）。',
+  'config.fieldDuplicate': '{key}：この collection にはすでに {name} というフィールドがあります。',
+  'config.fieldTaken': '{key}：{name} はエディタがすでに入力欄を持っています。別の名前にしてください。',
+  'config.fieldOnlyFor': '{key} は type が {type} のフィールドでしか使えません。',
+  'config.fieldOptions': '{key} が必要です：select は選択肢から選ぶフィールドです。',
+  'config.fieldOption': '{key} は文字列、数値、または { "value": …, "label": "…" } にしてください。',
+  'config.fieldDefault': '{key} はこのフィールドに入らない値です（select の場合は、いずれかの選択肢の value にしてください）。',
   'github.error': 'GitHub：{message}',
   'github.requestFailed': 'GitHub へのリクエストが失敗しました（{status}）',
 };

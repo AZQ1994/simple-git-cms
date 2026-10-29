@@ -40,6 +40,9 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 - **Several kinds of article**: news, notices, events — each in a directory of its own, with its
   own address on the site, cover field and preview page, switched between in the sidebar. Saving,
   publishing and deployment are the same for all of them
+- **Fields of your own**: a venue, a price, a status — text, numbers, a choice from a list, a
+  checkbox or a date, each with an input in the article form, written to the frontmatter as the
+  type it is. A field nobody touched is left in the file exactly as it was
 - **Articles**: title, date, tags, summary; draft / publish / revert / delete a draft. The open
   one is in the address bar, so reloading comes back to it and the link opens it for anyone else
   who can sign in
@@ -75,7 +78,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 
 | Directory | What's in it |
 |---|---|
-| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js`, `preview-ui.js` and `history.js`; `schema.js` says what a document may contain and how it is written back as Markdown, `html-scan.js` whether its HTML closes what it opens — `app.js` reads the config and starts them up |
+| `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `fields.js` (what a collection's own fields read and write), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js`, `field-form.js`, `preview-ui.js` and `history.js`; `schema.js` says what a document may contain and how it is written back as Markdown, `html-scan.js` whether its HTML closes what it opens — `app.js` reads the config and starts them up |
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
@@ -119,6 +122,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `collections[].url` | The article's URL on the site; `{id}` is substituted |
 | `collections[].imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `collections[].preview` | This collection's preview page on your site (step 4). Leave it out and there is no Preview button |
+| `collections[].fields` | Frontmatter fields of this collection's own, each with an input in the form; see [Fields of your own](#fields-of-your-own) |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
 | `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default; see below) |
@@ -318,6 +322,63 @@ copy `en.js`, translate the values, and add it to `locales` in `src/i18n/index.j
 on any key that is missing, extra, empty, or whose `{placeholders}` don't match English, so a new
 language can't ship half-done.
 
+## Fields of your own
+
+Every article has a title, a date, tags and a summary. A collection can add fields of its own — an
+event's venue and start date, a course's fee — and the article form gets an input for each, under
+the date and tags:
+
+```json
+{
+  "name": "events", "label": "Events", "dir": "src/content/events", "url": "/events/{id}/",
+  "fields": [
+    { "name": "starts", "label": "Starts", "type": "date", "required": true },
+    { "name": "venue", "label": "Venue", "required": true },
+    { "name": "seats", "label": "Seats", "type": "number", "min": 0, "unit": "people" },
+    { "name": "status", "label": "Status", "type": "select", "list": true, "default": "open",
+      "options": [{ "value": "open", "label": "Open" }, { "value": "full", "label": "Full" }] },
+    { "name": "online", "label": "Online", "type": "boolean" },
+    { "name": "access", "label": "Getting there", "multiline": true }
+  ]
+}
+```
+
+| Setting | Meaning |
+|---|---|
+| `name` | The frontmatter key (required). Not `title`, `description`, `date`, `tags`, `draft` or the collection's `imageField`, which the editor already writes |
+| `label` | What the form calls it; `name` when left out |
+| `type` | `text` (the default), `number`, `select`, `boolean` (a checkbox) or `date` |
+| `required` | Publishing needs it filled in. A draft can be saved without it |
+| `default` | What a new article starts with |
+| `placeholder` | A hint in the empty input |
+| `list` | Show the value in the sidebar's list, next to the date, and let the search find it |
+| `multiline` | `text` only: room for several lines |
+| `min` / `max` / `step` / `unit` | `number` only. `unit` is shown next to the input and is not written to the file |
+| `options` | `select` only (required): the choices, as values, or as `{ "value", "label" }` to show something other than what the file holds |
+
+They go in the frontmatter as what they are:
+
+```yaml
+venue: Main hall
+seats: 120
+status: open
+online: true
+starts: 2026-11-15
+```
+
+- A number is a number, a ticked box is `true`, a date is `YYYY-MM-DD`, a choice is its `value`.
+  YAML readers that know dates — Astro's among them — read `2026-11-15` as a date rather than text,
+  so describe it as one in the site's schema (`z.coerce.date()`).
+- An empty field, or an unticked box, is left out of the file. Give it its default in the site's
+  schema.
+- Changing a field keeps its place in the frontmatter; one an article didn't have goes after the
+  others, in the order config.json lists them.
+- **A field nobody touched is not written at all**, so what the file says survives being opened and
+  saved — even when it is something the input can't show, such as text in a number field or a
+  choice that has since left the list. The form says what the file has there, and it stays that
+  way until someone changes it.
+- The preview page gets them as `article.fields`, before they are saved.
+
 ## Blocks of your own
 
 Markdown here is Markdown plus HTML — `<table>`, `<iframe>` and anything your pipeline already
@@ -464,8 +525,8 @@ the usual way of reaching it, not the only conceivable one.
 
 - Editors need a GitHub account. Letting people in without one would mean adding your own sign-in
   service that commits as the GitHub App.
-- Every collection has the same fields — title, date, tags, summary and a cover — and is one flat
-  directory: articles in its subdirectories are not listed
+- Title, date, tags and summary are always there, whatever [fields](#fields-of-your-own) a collection
+  adds, and a collection is one flat directory: articles in its subdirectories are not listed
 - The preview converts Markdown in the browser, so Markdown plugins your site adds separately are
   not reflected in it
 - Image addresses pointing somewhere else (pasted from another page) are refused on save — download
