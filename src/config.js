@@ -4,6 +4,7 @@
 // produced the same sentence whichever it was. Everything here is a plain function over the parsed
 // JSON — no DOM, no network — so test/config.test.mjs can check the awkward cases.
 import { locales } from './i18n/index.js';
+import { BUILT_IN, FIELD_NAME, FIELD_TYPES, ONLY_FOR, defaultFits, fieldType } from './fields.js';
 
 /** Thrown when config.json can't be used. `problems` is every reason at once, not just the first. */
 export class ConfigError extends Error {
@@ -40,6 +41,26 @@ const SPEC = {
       url: { ...str, slash: true, wants: '{id}', hint: 'config.noId' },
       imageField: str,
       preview: { ...str, slash: true },
+      // Frontmatter fields of this collection's own, each with an input in the article form. What
+      // only makes sense across them — a name used twice, options on a field that isn't a list to
+      // choose from — is checked in checkFields below
+      fields: {
+        each: {
+          name: { ...str, required: true, pattern: FIELD_NAME, hint: 'config.fieldName' },
+          label: str,
+          type: { ...str, oneOf: FIELD_TYPES },
+          required: { type: 'boolean' },
+          default: { any: true },
+          placeholder: str,
+          list: { type: 'boolean' },
+          multiline: { type: 'boolean' },
+          min: { type: 'number' },
+          max: { type: 'number' },
+          step: { type: 'number' },
+          unit: str,
+          options: { any: true },
+        },
+      },
     },
   },
   // Before 1.0 there was one collection, and the preview page was set apart from it
@@ -177,6 +198,7 @@ export function checkConfig(raw, t) {
         }
         continue;
       }
+      if (rule.any) continue; // whatever it is, checkFields has the say
       if (rule.free) {
         if (value === null || typeof value !== 'object' || Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.group') });
         continue;
@@ -199,5 +221,39 @@ export function checkConfig(raw, t) {
   };
 
   walk(raw, SPEC, '');
+  if (Array.isArray(raw.collections)) {
+    raw.collections.forEach((c, i) => {
+      if (c && typeof c === 'object' && Array.isArray(c.fields)) checkFields(c, `collections[${i}].fields`, (key, msg, params) => add(problems, key, msg, params));
+    });
+  }
   return { problems, warnings };
+}
+
+/** What only makes sense across a collection's fields, or between one field's settings: walk()
+ * has already said whether each setting is the right kind of thing on its own. */
+function checkFields(collection, prefix, add) {
+  const seen = new Set();
+  collection.fields.forEach((f, i) => {
+    if (f === null || typeof f !== 'object' || Array.isArray(f) || typeof f.name !== 'string') return;
+    const path = `${prefix}[${i}]`;
+    const type = f.type === undefined || FIELD_TYPES.includes(f.type) ? fieldType(f) : null; // a wrong one is already said
+    if (seen.has(f.name)) add(path, 'config.fieldDuplicate', { name: f.name });
+    seen.add(f.name);
+    // The editor writes these itself; a second input for the same key would fight it
+    if (BUILT_IN.includes(f.name) || f.name === collection.imageField) add(`${path}.name`, 'config.fieldTaken', { name: f.name });
+    if (!type) return;
+    for (const [setting, only] of Object.entries(ONLY_FOR)) {
+      if (f[setting] !== undefined && type !== only) add(`${path}.${setting}`, 'config.fieldOnlyFor', { type: only });
+    }
+    if (type === 'select') {
+      const ok = (v) => typeof v === 'string' || typeof v === 'number';
+      if (!Array.isArray(f.options) || !f.options.length) add(`${path}.options`, 'config.fieldOptions');
+      else
+        f.options.forEach((o, j) => {
+          const good = ok(o) || (o !== null && typeof o === 'object' && ok(o.value) && (o.label === undefined || typeof o.label === 'string') && Object.keys(o).every((k) => k === 'value' || k === 'label'));
+          if (!good) add(`${path}.options[${j}]`, 'config.fieldOption');
+        });
+    }
+    if (f.default !== undefined && !defaultFits(f)) add(`${path}.default`, 'config.fieldDefault');
+  });
 }

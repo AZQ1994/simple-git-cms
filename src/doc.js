@@ -11,7 +11,9 @@ import { renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
 import { serializeArticle } from './article.js';
 import { icons } from './icons.js';
-import { t } from './i18n/index.js';
+import { defaults, fieldLabel, missingFields } from './fields.js';
+import { collectFields, formFields, markMissing, onFieldChange, relabelFields, showFields } from './field-form.js';
+import { getLocale, t } from './i18n/index.js';
 
 // ---------- Tags ----------
 
@@ -83,6 +85,7 @@ function markDirty() {
   emit('doc:changed');
 }
 on('doc:edited', markDirty);
+onFieldChange(markDirty);
 on('doc:changed', queueDraft);
 
 // ---------- Unsaved work ----------
@@ -305,6 +308,7 @@ function load(a) {
   renderTags();
   cover = coverField() ? (typeof a.extra?.[coverField()] === 'string' ? a.extra[coverField()] : null) : null;
   renderCover();
+  showFields(a.extra);
   setBody(a.body);
   updateDescHint();
   $('#empty').hidden = true;
@@ -334,7 +338,7 @@ on('article:open', openArticle);
 
 $('#new-article').addEventListener('click', () => {
   if (!confirmDiscard()) return;
-  load({ id: null, sha: null, title: '', description: '', date: new Date().toISOString(), tags: [], draft: true, extra: {}, body: '' });
+  load({ id: null, sha: null, title: '', description: '', date: new Date().toISOString(), tags: [], draft: true, extra: defaults(formFields()), body: '' });
   setSidebar(false);
   $('#f-title').focus();
 });
@@ -459,7 +463,7 @@ $('#cover-acts').addEventListener('click', async (e) => {
 export function collect() {
   const date = $('#f-date').value;
   const keepTime = state.current.date && fmtDateInput(state.current.date) === date;
-  const extra = { ...state.current.extra };
+  const extra = collectFields({ ...state.current.extra });
   // Assigning to a field that is already there keeps its place in the frontmatter
   if (coverField()) {
     if (cover) extra[coverField()] = cover;
@@ -482,6 +486,12 @@ function validate(a) {
   if (!a.body.trim()) return t('validate.body');
   const externalImage = new RegExp(`!\\[[^\\]]*\\]\\((?!${CONFIG.media.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/)[^)]+\\)`);
   if (externalImage.test(a.body)) return t('validate.externalImage');
+  // A draft can be saved half filled in; what goes on the site has to have what the site expects
+  const gaps = a.draft ? [] : missingFields(formFields(), a.extra);
+  if (gaps.length) {
+    markMissing(gaps);
+    return t('validate.required', { fields: new Intl.ListFormat(getLocale(), { type: 'conjunction' }).format(gaps.map(fieldLabel)) });
+  }
   return null;
 }
 
@@ -693,4 +703,5 @@ on('relabel', () => {
   renderTags();
   updateBar();
   updateDescHint();
+  relabelFields();
 });

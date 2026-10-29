@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findChrome, launchChrome, openPage, sleep } from './cdp.mjs';
-import { BLOCK, CONTENT_DIR, EMBED, HTML_TABLE, MEDIA_DIR, NOTICES_DIR, TABLE, VIDEO, startFakeGitHub } from './fake-github.mjs';
+import { BLOCK, CONTENT_DIR, EMBED, EVENT, EVENTS_DIR, HTML_TABLE, MEDIA_DIR, NOTICES_DIR, TABLE, VIDEO, startFakeGitHub } from './fake-github.mjs';
 import { startEditor } from './serve.mjs';
 import { policyFromReadme } from './policy.mjs';
 
@@ -54,6 +54,19 @@ before(async () => {
         { name: 'news', label: 'News', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image', preview: '/preview/' },
         // No cover and no preview: what the editor offers follows the collection
         { name: 'notices', label: 'Notices', dir: NOTICES_DIR, url: '/notices/{id}/' },
+        {
+          name: 'events',
+          label: 'Events',
+          dir: EVENTS_DIR,
+          url: '/events/{id}/',
+          fields: [
+            { name: 'venue', label: 'Venue', required: true },
+            { name: 'seats', label: 'Seats', type: 'number', min: 0, unit: 'people' },
+            { name: 'status', label: 'Status', type: 'select', list: true, default: 'open', options: [{ value: 'open', label: 'Open' }, { value: 'full', label: 'Full' }] },
+            { name: 'online', label: 'Online', type: 'boolean' },
+            { name: 'starts', label: 'Starts', type: 'date', required: true },
+          ],
+        },
       ],
       media: { dir: MEDIA_DIR, url: '/uploads' },
       actions: [
@@ -824,6 +837,71 @@ test('the sidebar switches to another collection, and what it saves goes there',
   await page.until(`!document.getElementById('app').hidden && document.querySelectorAll('#list .item').length >= 3`, { label: 'the news' });
   assert.equal(await page.evaluate(`${select}.value`), 'news');
   assert.equal(await page.evaluate(`location.search`), '?c=news');
+});
+
+test('a collection with fields of its own: what the file says, what is changed, and nothing else', async () => {
+  const pick = (name) => page.evaluate(`(() => { const s = document.getElementById('collection-select'); s.value = ${JSON.stringify(name)}; s.dispatchEvent(new Event('change')); })()`);
+  const value = (name) => page.evaluate(`document.getElementById('f-field-${name}').value`);
+  const setField = (name, v, event = 'input') =>
+    page.evaluate(`(() => { const el = document.getElementById('f-field-${name}'); el.value = ${JSON.stringify(v)}; el.dispatchEvent(new Event(${JSON.stringify(event)}, { bubbles: true })); })()`);
+  const file = `${EVENTS_DIR}/202610200000.md`;
+
+  await pick('events');
+  await page.until(`document.querySelectorAll('#list .item').length === 1`, { label: 'the one event' });
+  assert.equal(await page.evaluate(`document.querySelector('#list .item-field').textContent`), 'Open', 'the list shows the status, by its label');
+
+  await openArticle(0);
+  assert.equal(await page.evaluate(`document.getElementById('fields').hidden`), false);
+  assert.equal(await value('venue'), 'Main hall');
+  assert.equal(await value('status'), 'open');
+  assert.equal(await value('starts'), '2026-11-15');
+  assert.equal(await page.evaluate(`document.getElementById('f-field-online').checked`), false);
+  assert.equal(await value('seats'), '', 'text in a number field is not something the input can show');
+  const warning = await page.evaluate(`document.getElementById('f-field-seats').closest('.field').querySelector('.field-warn')`);
+  assert.ok(warning, 'so it says what the file has instead');
+  assert.match(await page.evaluate(`document.getElementById('f-field-seats').closest('.field').querySelector('.field-warn').textContent`), /"about 100"/);
+
+  // Changing one field writes that field, and only that one
+  await setField('status', 'full', 'change');
+  assert.match(await page.evaluate(`document.getElementById('status').textContent`), /unsaved/);
+  const before = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && gh.commits.length === before; i++) await sleep(100);
+  assert.equal(gh.files.get(file), EVENT.replace('status: open', 'status: full'), 'the seats stay as the file had them');
+  await page.until(`document.querySelector('#list .item-field').textContent === 'Full'`, { label: 'the new status in the list' });
+
+  // A new event starts with the defaults; publishing it needs the required fields, a draft doesn't
+  await page.evaluate(`document.getElementById('new-article').click()`);
+  await page.until(`document.getElementById('f-title').value === ''`, { label: 'an empty form' });
+  assert.equal(await value('status'), 'open', 'the default');
+  assert.equal(await value('venue'), '');
+  await setTitle('Winter concert');
+  await typeBody('Tickets at the door.');
+  const commits = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  await sleep(500);
+  assert.equal(gh.commits.length, commits, 'nothing is published without the required fields');
+  assert.match(await page.evaluate(`document.getElementById('toast').textContent`), /Venue and Starts/);
+  assert.equal(await page.evaluate(`document.querySelectorAll('.field.missing').length`), 2, 'and they are pointed out');
+
+  await save(); // a draft is fine half filled in
+  const id = await page.evaluate(`new URLSearchParams(location.search).get('id')`);
+  const draft = gh.files.get(`${EVENTS_DIR}/${id}.md`);
+  assert.match(draft, /^status: open$/m, 'the default is in the file');
+  assert.match(draft, /^draft: true$/m);
+  assert.doesNotMatch(draft, /^venue:/m, 'an empty field is left out');
+
+  await setField('venue', 'Concert hall');
+  await setField('starts', '2026-12-20');
+  await setField('seats', '250');
+  await page.evaluate(`(() => { const el = document.getElementById('f-field-online'); el.click(); })()`);
+  assert.equal(await page.evaluate(`document.querySelectorAll('.field.missing').length`), 0, 'filling them in clears the marks');
+  const n = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && gh.commits.length === n; i++) await sleep(100);
+  const published = gh.files.get(`${EVENTS_DIR}/${id}.md`);
+  assert.doesNotMatch(published, /^draft: true$/m);
+  assert.match(published, /\ntags: \[\]\nstatus: open\nvenue: Concert hall\nseats: 250\nonline: true\nstarts: 2026-12-20\n---/, 'numbers and ticks as what they are, new ones in the order config.json lists them');
 });
 
 test('nothing went wrong in the browser', async () => {

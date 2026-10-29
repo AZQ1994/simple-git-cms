@@ -116,6 +116,12 @@
             </div>
           </div>
 
+          <!-- The collection's own fields (collections[].fields), filled in by field-form.js -->
+          <details class="fields" id="fields" open hidden>
+            <summary data-i18n="fields.heading"></summary>
+            <div class="fields-grid" id="fields-grid"></div>
+          </details>
+
           <details class="seo" id="seo">
             <summary><span data-i18n="doc.seo"></span> <span class="muted" id="desc-hint"></span></summary>
             <textarea id="f-desc" rows="3" data-i18n-placeholder="doc.descPlaceholder"></textarea>

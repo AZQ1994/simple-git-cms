@@ -185,3 +185,56 @@ test('a collection is named by its name, or by the last part of its directory', 
   assert.equal(collectionName({ dir: 'src/content/notices/' }), 'notices');
   assert.equal(collectionName({ dir: 'content' }), 'content');
 });
+
+test('a collection can have fields of its own, of every type', () => {
+  const fields = [
+    { name: 'venue', label: 'Venue', required: true, placeholder: 'Where' },
+    { name: 'seats', type: 'number', min: 0, max: 500, step: 10, unit: 'people', default: 30 },
+    { name: 'status', type: 'select', list: true, default: 'open', options: ['open', { value: 'full', label: 'Full' }, 3] },
+    { name: 'online', type: 'boolean', default: false },
+    { name: 'starts', type: 'date', default: '2026-11-15' },
+    { name: 'access', type: 'text', multiline: true },
+  ];
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'events', fields }] }), []);
+});
+
+test('a field is told what is wrong with it, setting by setting', () => {
+  const with_ = (...fields) => keys({ ...good(), collections: [{ dir: 'events', imageField: 'image', fields }] });
+  assert.deepEqual(with_({ label: 'No name' }), ['collections[0].fields[0].name']);
+  assert.deepEqual(with_({ name: '2nd' }), ['collections[0].fields[0].name'], 'a key YAML would read as something else');
+  assert.deepEqual(with_({ name: 'a', type: 'money' }), ['collections[0].fields[0].type']);
+  assert.deepEqual(with_({ name: 'a', colour: 'red' }), ['collections[0].fields[0].colour']);
+  assert.deepEqual(with_({ name: 'a' }, { name: 'a' }), ['collections[0].fields[1]'], 'the same key twice');
+  assert.deepEqual(with_({ name: 'tags' }, { name: 'image' }), ['collections[0].fields[0].name', 'collections[0].fields[1].name'], 'a key the editor already writes');
+  assert.deepEqual(with_({ name: 'a', type: 'select' }), ['collections[0].fields[0].options']);
+  assert.deepEqual(with_({ name: 'a', type: 'select', options: [] }), ['collections[0].fields[0].options']);
+  assert.deepEqual(with_({ name: 'a', type: 'select', options: ['x', { label: 'no value' }, { value: 'y', colour: 1 }, null] }), [
+    'collections[0].fields[0].options[1]',
+    'collections[0].fields[0].options[2]',
+    'collections[0].fields[0].options[3]',
+  ]);
+  assert.deepEqual(with_({ name: 'a', options: ['x'], unit: 'km', multiline: true }), ['collections[0].fields[0].options', 'collections[0].fields[0].unit'], 'settings that belong to another type');
+  assert.deepEqual(with_({ name: 'a', type: 'number', step: '10' }), ['collections[0].fields[0].step']);
+});
+
+test('a default has to be something the field could hold', () => {
+  const one = (field) => keys({ ...good(), collections: [{ dir: 'events', fields: [{ name: 'a', ...field }] }] });
+  assert.deepEqual(one({ type: 'number', default: '30' }), ['collections[0].fields[0].default']);
+  assert.deepEqual(one({ type: 'boolean', default: 'yes' }), ['collections[0].fields[0].default']);
+  assert.deepEqual(one({ type: 'date', default: '15/11/2026' }), ['collections[0].fields[0].default']);
+  assert.deepEqual(one({ type: 'select', options: ['open', 'full'], default: 'closed' }), ['collections[0].fields[0].default']);
+  assert.deepEqual(one({ default: 3 }), ['collections[0].fields[0].default'], 'a text field holds text');
+  assert.deepEqual(one({ type: 'select', options: [{ value: 1, label: 'One' }], default: 1 }), []);
+});
+
+test('every setting a field can have is in the JSON schema too', () => {
+  const schema = JSON.parse(readFileSync(new URL('../public/config.schema.json', import.meta.url), 'utf8'));
+  const inSchema = Object.keys(schema.properties.collections.items.properties.fields.items.properties).sort();
+  const field = { name: 'a', label: 'A', type: 'text', required: true, default: 'x', placeholder: 'p', list: true, multiline: true };
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'e', fields: [field] }] }), []);
+  assert.deepEqual(inSchema, ['default', 'label', 'list', 'max', 'min', 'multiline', 'name', 'options', 'placeholder', 'required', 'step', 'type', 'unit']);
+  for (const key of inSchema) {
+    const unknown = keys({ ...good(), collections: [{ dir: 'e', fields: [{ name: 'a', [key + 'x']: 1 }] }] });
+    assert.ok(unknown.includes(`collections[0].fields[0].${key}x`), `${key}x is not a setting`);
+  }
+});

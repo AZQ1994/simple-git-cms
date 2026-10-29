@@ -67,6 +67,10 @@ export default {
   'doc.descPlaceholder': 'The blurb shown in search results (roughly 60–160 characters). Left empty, it is taken from the start of the article.',
   'doc.descAuto': 'automatic',
   'doc.descCount': '{n} characters',
+  'fields.heading': 'Details',
+  'fields.none': '—',
+  'fields.kept': 'The file says {value} here, which this field can’t show. It stays as it is unless you change it.',
+  'fields.notInList': '{value} (not in the list)',
 
   // Toolbar
   'toolbar.h2': 'Heading',
@@ -153,6 +157,7 @@ export default {
   'validate.title': 'Please fill in the title.',
   'validate.body': 'Please write the article.',
   'validate.externalImage': 'The article links to an image hosted elsewhere (probably pasted from another page). Download it and upload it again with the Image button.',
+  'validate.required': 'Fill in {fields} before publishing. A draft can be saved without them.',
 
   // Saving
   'save.saving': 'Saving…',
@@ -272,6 +277,13 @@ export default {
   'config.missing': 'config.json not found',
   'config.defaultTitle': 'Content',
   'config.defaultCollection': 'articles',
+  'config.fieldName': '{key} has to start with a letter or _, then letters, digits, - and _: it is a frontmatter key.',
+  'config.fieldDuplicate': '{key}: this collection already has a field called {name}.',
+  'config.fieldTaken': '{key}: the editor already has a control for {name}. Give this field another name.',
+  'config.fieldOnlyFor': '{key} only applies to a field of type {type}.',
+  'config.fieldOptions': '{key} is needed: a select is a list of options to choose from.',
+  'config.fieldOption': '{key} has to be text, a number, or { "value": …, "label": "…" }.',
+  'config.fieldDefault': '{key} isn’t something this field could hold (for a select, it has to be one of the options’ values).',
   'github.error': 'GitHub: {message}',
   'github.requestFailed': 'The GitHub request failed ({status}).',
 };
