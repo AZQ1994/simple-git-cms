@@ -3,6 +3,13 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## Unreleased
+
+- **Deployment progress for sites built by a host's GitHub App.** After a save, the editor now also
+  follows the check run that Cloudflare Pages, Vercel or Netlify posts on the commit, when no GitHub
+  Actions workflow builds the site. Before, the indicator spun until it gave up. The GitHub App
+  needs **Checks: Read-only** for this ([auth/README.md](auth/README.md)).
+
 ## 1.0.0 — 2026-10-27
 
 More than one kind of article: news, notices, events, each in its own directory, in one editor.

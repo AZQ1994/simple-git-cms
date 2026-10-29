@@ -220,6 +220,26 @@ test('without a run id, the run is the newest dispatched one since it was starte
   assert.equal(await status(), 'failure');
 });
 
+test('a deployment is followed through a workflow run, or else the check run a host posts on the commit', async () => {
+  let runs = null; // null: the sign-in may not read Actions
+  let checks = [];
+  globalThis.fetch = (url) => {
+    const p = new URL(url).pathname;
+    const json = (data, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status }));
+    if (p === '/repos/o/r/actions/runs') return runs ? json({ workflow_runs: runs }) : json({ message: 'Resource not accessible by integration' }, 403);
+    if (p === '/repos/o/r/commits/abc/check-runs') return json({ check_runs: checks });
+    return json({}, 404);
+  };
+  const s = new GitHubStore({ token: 't', repo: 'o/r', contentDir: 'site/news' });
+  assert.equal(await s.deployStatus('abc'), 'pending', 'nothing has started yet');
+  checks = [{ name: 'Cloudflare Pages', status: 'in_progress', conclusion: null }];
+  assert.equal(await s.deployStatus('abc'), 'pending');
+  checks = [{ name: 'Cloudflare Pages', status: 'completed', conclusion: 'success' }];
+  assert.equal(await s.deployStatus('abc'), 'success', 'Actions not readable: the check run decides');
+  runs = [{ status: 'completed', conclusion: 'failure' }];
+  assert.equal(await s.deployStatus('abc'), 'failure', 'a workflow run comes first');
+});
+
 test('the history is the commits that changed the article, and a version is read at its commit', async () => {
   const asked = [];
   globalThis.fetch = (url) => {

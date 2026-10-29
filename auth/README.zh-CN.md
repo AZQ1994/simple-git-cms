@@ -34,13 +34,14 @@ GitHub → Settings → Developer settings → GitHub Apps → New。
 - **Homepage URL**：你的网站。**Callback URL**：`https://<中转的域名>/callback`
 - **Expire user authorization tokens**：保持勾选——编辑器会自动续期
 - **Webhook**：把 Active 取消勾选
-- **Repository permissions**：**Contents: Read and write**，以及 **Actions: Read-only**（让编辑器
-  能显示部署进度）。其他一个都不要。config.json 里有 `actions` 时例外：执行按钮要运行 workflow，
-  Actions 要选 **Read and write**。
+- **Repository permissions**：**Contents: Read and write**。要让编辑器显示部署进度，再加一项：
+  网站由 GitHub Actions 的 workflow 构建时选 **Actions: Read-only**；由托管服务自己的 GitHub App
+  构建时（Cloudflare Pages、Vercel、Netlify）选 **Checks: Read-only**。其他一个都不要。config.json
+  里有 `actions` 时例外：执行按钮要运行 workflow，Actions 要选 **Read and write**。
 - **Where can this GitHub App be installed**：如果仓库属于某个组织，选 Any account
 - 生成一个 client secret，然后 **Install App**，只挑放内容的那个仓库
 
-这样签出来的 token **只能碰到 App 被安装到的那些仓库**，而且只有上面那两项权限。用 OAuth App 也
+这样签出来的 token **只能碰到 App 被安装到的那些仓库**，而且只有上面选的权限。用 OAuth App 也
 能跑，但它只能要 `repo` 这个很宽的 scope，那会覆盖这个人能 push 的*每一个*仓库——不推荐。
 
 ## 2. 部署
