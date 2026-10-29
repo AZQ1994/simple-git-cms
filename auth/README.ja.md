@@ -37,13 +37,15 @@ GitHub → Settings → Developer settings → GitHub Apps → New。
 - **Homepage URL**：あなたのサイト。**Callback URL**：`https://<中継のドメイン>/callback`
 - **Expire user authorization tokens**：チェックしたまま —— エディターが自動で更新します
 - **Webhook**：Active のチェックを外す
-- **Repository permissions**：**Contents: Read and write** と **Actions: Read-only**（デプロイの
-  進み具合を表示するため）。ほかは何も要りません。ただし config.json に `actions` があるときは、
+- **Repository permissions**：**Contents: Read and write**。エディターにデプロイの進み具合を表示
+  させるには、サイトを GitHub Actions の workflow でビルドするなら **Actions: Read-only**、
+  ホスティングの GitHub App がビルドするなら（Cloudflare Pages、Vercel、Netlify）**Checks:
+  Read-only** を加えます。ほかは何も要りません。ただし config.json に `actions` があるときは、
   実行ボタンが workflow を実行するので Actions を **Read and write** にします。
 - **Where can this GitHub App be installed**：リポジトリが組織のものなら Any account を選ぶ
 - client secret を生成し、**Install App** でコンテンツの入ったリポジトリだけを選ぶ
 
-こうして発行されるトークンは、**App がインストールされたリポジトリにしか届かず**、権限も上の 2 つ
+こうして発行されるトークンは、**App がインストールされたリポジトリにしか届かず**、権限も上で選んだもの
 だけです。OAuth App でも動きますが、要求できるのは広い `repo` スコープだけで、その人が push
 できる*すべての*リポジトリに届いてしまいます。おすすめしません。
 

@@ -37,15 +37,17 @@ GitHub → Settings → Developer settings → GitHub Apps → New.
 - **Homepage URL**: your site. **Callback URL**: `https://<your-relay-domain>/callback`
 - **Expire user authorization tokens**: leave checked — the editor refreshes tokens automatically
 - **Webhook**: uncheck Active
-- **Repository permissions**: **Contents: Read and write**, and **Actions: Read-only** (so the
-  editor can show deployment progress). Nothing else — unless config.json has `actions`: its
-  buttons start workflows, which takes **Actions: Read and write**.
+- **Repository permissions**: **Contents: Read and write**, and for the editor to show deployment
+  progress, **Actions: Read-only** if a GitHub Actions workflow builds the site, or **Checks:
+  Read-only** if a host's own GitHub App does (Cloudflare Pages, Vercel, Netlify). Nothing else —
+  unless config.json has `actions`: its buttons start workflows, which takes **Actions: Read and
+  write**.
 - **Where can this GitHub App be installed**: choose Any account if the repository belongs to an
   organization
 - Generate a client secret, then **Install App** and pick only the repository holding your content
 
 A token minted this way **can only reach the repositories the App is installed on**, and only with
-those two permissions. An OAuth App works too, but it can only ask for the broad `repo` scope,
+the permissions above. An OAuth App works too, but it can only ask for the broad `repo` scope,
 which reaches *every* repository the person can push to — not recommended.
 
 ## 2. Deploy

@@ -219,10 +219,21 @@ export class GitHubStore {
     return String(id);
   }
 
-  /** Deployment status for a commit: pending / success / failure / superseded. */
+  /**
+   * Deployment status for a commit: pending / success / failure / superseded. A site built by a
+   * workflow shows as a workflow run; one built by a host's own GitHub App (Cloudflare Pages,
+   * Vercel, Netlify) shows only as a check run on the commit. Either can be missing from what the
+   * sign-in may read (Actions / Checks permission), so each one that fails counts as not there.
+   */
   async deployStatus(commitSha) {
-    const runs = await this.req(`/repos/${this.repo}/actions/runs?head_sha=${commitSha}&per_page=5`);
-    return runState(runs.workflow_runs?.[0]);
+    const get = (path) => this.req(`/repos/${this.repo}${path}`).catch((e) => {
+      if (e instanceof AuthError) throw e;
+      return null;
+    });
+    const runs = await get(`/actions/runs?head_sha=${commitSha}&per_page=5`);
+    if (runs?.workflow_runs?.length) return runState(runs.workflow_runs[0]);
+    const checks = await get(`/commits/${commitSha}/check-runs?per_page=10`);
+    return runState(checks?.check_runs?.[0]);
   }
 
   /**
@@ -262,7 +273,7 @@ export const cleanMessage = (message) => message.split('\n')[0].replace(/^\[skip
 /** A workflow run as pending / success / failure / superseded (cancelled: a later run took over). */
 function runState(run) {
   if (!run || run.status !== 'completed') return 'pending';
-  if (run.conclusion === 'success') return 'success';
-  if (run.conclusion === 'cancelled') return 'superseded';
+  if (run.conclusion === 'success' || run.conclusion === 'neutral') return 'success';
+  if (run.conclusion === 'cancelled' || run.conclusion === 'skipped') return 'superseded';
   return 'failure';
 }
