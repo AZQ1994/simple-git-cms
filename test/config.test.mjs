@@ -146,6 +146,13 @@ test('something that is not an object at all is rejected plainly', () => {
   for (const value of [null, [], 'config', 7]) assert.deepEqual(keys(value), ['config.json']);
 });
 
+test('toc takes rehype-toc\'s options, and nothing else', () => {
+  assert.deepEqual(keys({ ...good(), toc: {} }), []);
+  assert.deepEqual(keys({ ...good(), toc: { minHeadings: 2, title: '目录', insert: false } }), []);
+  assert.deepEqual(keys({ ...good(), toc: { minHeadings: 0 } }), ['toc.minHeadings']);
+  assert.deepEqual(keys({ ...good(), toc: true }), ['toc']);
+});
+
 test('$schema is allowed, since it is what gives an editor autocomplete', () => {
   assert.deepEqual(keys({ ...good(), $schema: './config.schema.json' }), []);
 });

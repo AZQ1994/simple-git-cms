@@ -67,6 +67,14 @@ const SPEC = {
     },
   },
   deploy: { fields: { skipCiForDrafts: { type: 'boolean' } } },
+  // The site runs rehype-toc with these options, so the preview should too
+  toc: {
+    fields: {
+      minHeadings: { type: 'number', min: 1, max: 100 },
+      title: str,
+      insert: { type: 'boolean' },
+    },
+  },
   actions: {
     each: {
       label: { ...str, required: true },

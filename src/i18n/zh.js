@@ -62,6 +62,8 @@ export default {
   'media.upload': '上传文件',
   'media.close': '取消',
   'doc.tags': '标签',
+  'doc.toc': '显示目录',
+  'doc.tocHint': '标题有 {n} 个以上时，网站在正文开头显示目录。不勾选就是这篇文章不要目录（frontmatter 的 toc: false）',
   'doc.addTag': '添加标签',
   'doc.removeTag': '删除标签 {tag}',
   'doc.seo': '搜索摘要',
