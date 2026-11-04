@@ -24,9 +24,9 @@ function loadRenderer() {
 }
 
 /** Markdown to HTML the way the site does it, loading the renderer first if it isn't yet. */
-export async function renderBody(markdown) {
+export async function renderBody(markdown, frontmatter) {
   await loadRenderer();
-  return renderMarkdown(markdown);
+  return renderMarkdown(markdown, frontmatter, CONFIG.toc);
 }
 
 const previewFrame = $('#preview-frame');
@@ -60,7 +60,7 @@ function sendPreview() {
     fields: a.extra,
   };
   previewFrame.contentWindow.postMessage(
-    { type: 'simple-git-cms-preview', article, html: renderMarkdown(a.body), images },
+    { type: 'simple-git-cms-preview', article, html: renderMarkdown(a.body, a.extra, CONFIG.toc), images },
     new URL(previewFrame.src).origin,
   );
 }
