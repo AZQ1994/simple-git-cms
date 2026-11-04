@@ -61,6 +61,8 @@ export default {
   'media.upload': 'Upload a file',
   'media.close': 'Cancel',
   'doc.tags': 'Tags',
+  'doc.toc': 'Table of contents',
+  'doc.tocHint': 'With {n} or more headings, the site puts a table of contents at the top of the article. Unticked, this article has none (toc: false in its frontmatter)',
   'doc.addTag': 'Add a tag',
   'doc.removeTag': 'Remove tag {tag}',
   'doc.seo': 'Search summary',

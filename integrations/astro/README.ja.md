@@ -76,7 +76,7 @@ export default defineConfig({
 - こうした見出しが 3 つ以上ある記事には、本文の先頭に `<nav class="toc">` が入り、見出しをリンクとして
   並べます。`###` はその前の `##` の下に入れ子になります
 
-目次の要らない記事は frontmatter に `toc: false` と書きます。つなぎ方は `rehypeFigures` の隣に
+目次の要らない記事は frontmatter に `toc: false` と書きます（config.json に下記の `toc` があれば、エディターにそのためのチェックボックスが出ます）。つなぎ方は `rehypeFigures` の隣に
 加えるだけで、オプションは任意です。
 
 ```js

@@ -8,7 +8,8 @@ behind it are in the repository history.
 - **A table of contents for long articles.** A new rehype plugin, `simple-git-cms/rehype-toc`,
   gives every `##` and `###` heading an id to link to, and puts a list of them at the top of any
   article with three or more. `toc: false` in an article's frontmatter leaves it out. With the
-  same options as `toc` in config.json, the editor's preview and history show it too. See
+  same options as `toc` in config.json, the editor's preview and history show it too, and the
+  article form gets a Table of contents checkbox that writes that `toc: false`. See
   [integrations/astro](integrations/astro/README.md#table-of-contents).
 
 ## 1.0.0 — 2026-10-27

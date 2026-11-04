@@ -73,7 +73,7 @@ export default defineConfig({
 - 有 3 个及以上这种标题的文章，会在正文开头加一个 `<nav class="toc">`，把标题列成链接，`###`
   缩进在它前面的 `##` 下面
 
-某篇文章不想要目录的话，在 frontmatter 里写 `toc: false`。接法是加在 `rehypeFigures` 旁边，选项可选：
+某篇文章不想要目录的话，在 frontmatter 里写 `toc: false`（config.json 里写了下面的 `toc` 时，编辑器里有对应的勾选框）。接法是加在 `rehypeFigures` 旁边，选项可选：
 
 ```js
 import rehypeToc from 'simple-git-cms/rehype-toc';

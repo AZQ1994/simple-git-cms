@@ -75,7 +75,8 @@ Add these wherever your article body is styled:
 - an article with three or more such headings gets a `<nav class="toc">` at the top of its body,
   listing them as links, with `###` nested under the `##` before it
 
-An article that should not have one says so in its frontmatter: `toc: false`. Add it next to
+An article that should not have one says so in its frontmatter: `toc: false` (with `toc` in
+config.json, below, the editor has a checkbox for it). Add it next to
 `rehypeFigures`, with any of its options:
 
 ```js

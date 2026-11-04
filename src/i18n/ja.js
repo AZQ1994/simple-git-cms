@@ -62,6 +62,8 @@ export default {
   'media.upload': 'ファイルをアップロード',
   'media.close': 'キャンセル',
   'doc.tags': 'タグ',
+  'doc.toc': '目次を表示',
+  'doc.tocHint': '見出しが {n} 個以上あると、サイトは本文の先頭に目次を出します。チェックを外すとこの記事には目次を出しません（frontmatter の toc: false）',
   'doc.addTag': 'タグを追加',
   'doc.removeTag': 'タグ {tag} を削除',
   'doc.seo': '検索用の説明',
