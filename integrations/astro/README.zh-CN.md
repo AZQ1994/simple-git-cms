@@ -97,4 +97,26 @@ html { scroll-behavior: smooth; }
 .prose .toc ol { margin: 0; padding-left: 1.2em; }
 .prose .toc ol ol { margin-top: 2px; }
 .prose .toc a { text-decoration: none; }
+## 多语言文章
+
+config.json 里写了 `languages` 时，一篇文章的各语言是并排的文件：`202608101200.md`（第一个语言）和 `202608101200.zh.md`，见[主 README](../../README.zh-CN.md#多语言文章)。网站需要的都在 `simple-git-cms/languages` 里：
+
+```js
+// src/content.config.ts —— 保持文件名原样：Astro 默认的 id 会把 202608101200.zh 变成 202608101200zh
+import { fileId } from 'simple-git-cms/languages';
+const news = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/news', generateId: fileId }),
+  schema: /* … */,
+});
+```
+
+```js
+import { inLanguage, translationsOf } from 'simple-git-cms/languages';
+const LANGUAGES = ['ja', 'zh']; // 和 config.json 的一样
+
+// 一种语言的文章；articleId 是去掉语言的 id，用在网址里
+const zh = inLanguage(await getCollection('news'), 'zh', LANGUAGES);
+
+// 一篇文章的所有语言，用于语言切换和 hreflang
+const all = translationsOf(await getCollection('news'), entry.id, LANGUAGES); // { ja: entry, zh: entry }
 ```

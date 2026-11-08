@@ -53,6 +53,13 @@
       "default": "Asia/Tokyo",
       "description": "An IANA zone, e.g. Asia/Tokyo. Used for dates shown, image folders and new article ids."
     },
+    "languages": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$" },
+      "description": "The languages articles are written in, e.g. [\"ja\", \"zh\"]. The first is the default: its files are <id>.md, every other language’s <id>.<lang>.md."
+    },
     "auth": {
       "type": "object",
       "additionalProperties": false,
@@ -217,6 +224,13 @@
                 }
               }
             }
+          },
+          "languages": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$" },
+            "description": "This collection’s own languages, instead of the site’s. One language means this collection has no other languages."
           }
         }
       }

@@ -29,6 +29,16 @@ behind it are in the repository history.
   same options as `toc` in config.json, the editor's preview and history show it too, and the
   article form gets a Table of contents checkbox that writes that `toc: false`. See
   [integrations/astro](integrations/astro/README.md#table-of-contents).
+- **`languages` in config.json**, for articles in more than one language. Each language of an
+  article is a file of its own next to the others — `<id>.md` for the first language,
+  `<id>.<lang>.md` for the rest — so a site in one language adds a second without moving a file.
+  A collection can have its own `languages`.
+- **`simple-git-cms/languages`** for the site: keep file names whole as ids, list one language's
+  articles, and find every language of one article for a language switcher and hreflang.
+- **In the editor an article is one row**, whichever languages it has, tagged with each — faded
+  where a translation is missing. Above the title, a click opens another language, or starts a
+  translation with the date and cover already filled in. "View on site" is for the first language
+  only, for now; `npm run dev` accepts ids with a language suffix.
 
 ## 1.0.0 — 2026-10-27
 

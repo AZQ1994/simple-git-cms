@@ -7,13 +7,15 @@ import { rememberBody } from './articles.js';
 import { editor, setBody, toMarkdown } from './editor.js';
 import { compressImage, newImagePath, openCropper } from './images.js';
 import { htmlProblems } from './html-scan.js';
-import { renderList, setSidebar } from './list.js';
+import { languageName, renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
 import { serializeArticle } from './article.js';
 import { icons } from './icons.js';
 import { defaults, fieldLabel, missingFields, outOfRange } from './fields.js';
 import { collectFields, formFields, markMissing, onFieldChange, relabelFields, showFields } from './field-form.js';
 import { getLocale, t } from './i18n/index.js';
+import { fileName, languagesOf, splitName } from '../integrations/languages.js';
+import { newTranslation, whereIs } from './translations.js';
 
 // ---------- Tags ----------
 
@@ -544,10 +546,13 @@ async function save({ draft, force = false, label = t('save.saving') }) {
   return (
     (await busy(label, async () => {
       try {
-        const r = await store.saveArticle(article, { baseSha: state.current.sha, images, message, force });
+        // A new translation has its file name already: the article's id and its language
+        const toSave = { ...article, id: article.id ?? article.target ?? null };
+        delete toSave.target;
+        const r = await store.saveArticle(toSave, { baseSha: state.current.sha, images, message, force });
         rememberBody(store, r.sha, r.text);
         for (const img of images) pending.get(img.url).uploaded = true;
-        const saved = { ...article, id: r.id, sha: r.sha };
+        const saved = { ...toSave, id: r.id, sha: r.sha };
         const i = state.articles.findIndex((a) => a.id === r.id);
         if (i >= 0) state.articles[i] = saved;
         else state.articles.unshift(saved);
@@ -619,6 +624,56 @@ function resolveConflict(theirs, draft) {
 
 // ---------- Status bar ----------
 
+// ---------- Languages ----------
+//
+// Above the title, every language the collection has: the one open, the others this article has —
+// a click opens them — and the ones it doesn't, which start a translation. A new translation is
+// an article like any other until it is saved; then it is <id>.<lang>.md next to the others.
+
+function renderLangs(langs) {
+  const box = $('#langs');
+  const here = whereIs(state.current, langs);
+  box.hidden = !langs.length || !here;
+  $('#tags-source').hidden = true;
+  if (box.hidden) return;
+  const versions = Object.fromEntries(state.articles.map((a) => [a.id, a]));
+  // Tags are each language's own words; a translation is shown the original's, to tag it alike
+  const original = langs.filter((l) => l !== here.lang).map((l) => [l, versions[fileName(here.id, l, langs).replace(/\.md$/, '')]]).find(([, v]) => v?.tags.length);
+  if (original && here.lang !== langs[0]) {
+    $('#tags-source').textContent = t('lang.sourceTags', { name: languageName(original[0]), tags: original[1].tags.join(t('lang.tagSep')) });
+    $('#tags-source').hidden = false;
+  }
+  box.replaceChildren(
+    ...langs.map((l) => {
+      const id = fileName(here.id, l, langs).replace(/\.md$/, '');
+      const v = versions[id];
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.lang = l;
+      const on = l === here.lang;
+      b.className = `lang${on ? ' on' : ''}${v || on ? '' : ' missing'}${v?.draft ? ' draft' : ''}`;
+      b.textContent = v || on ? languageName(l) : t('lang.add', { name: languageName(l) });
+      b.title = t(v ? (v.draft ? 'lang.hasDraft' : 'lang.has') : on ? 'lang.new' : 'lang.addHint', { name: languageName(l) });
+      if (on) b.setAttribute('aria-current', 'true');
+      return b;
+    }),
+  );
+}
+
+$('#langs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lang]');
+  if (!b || b.classList.contains('on')) return;
+  const langs = languagesOf(CONFIG, COLLECTION);
+  const here = whereIs(state.current, langs);
+  const id = fileName(here.id, b.dataset.lang, langs).replace(/\.md$/, '');
+  if (state.articles.some((a) => a.id === id)) return openArticle(id);
+  if (!confirmDiscard()) return;
+  // Started from the version that was open, or, from a new translation, from the saved one it is of
+  const source = state.articles.find((a) => a.id === state.current.id) ?? state.articles.find((a) => splitName(a.id, langs).id === here.id);
+  load(newTranslation(source, id, coverField()));
+  $('#f-title').focus();
+});
+
 export function updateBar() {
   const a = state.current;
   const has = Boolean(a);
@@ -628,7 +683,11 @@ export function updateBar() {
   $('#btn-history').hidden = !has || !a.id;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
-  $('#view-live').hidden = !has || !a.id || a.draft;
+  // Until the editor knows each language's address, only the first language links to the site
+  const langs = has ? languagesOf(CONFIG, COLLECTION) : [];
+  renderLangs(langs);
+  const where = a?.id ? splitName(a.id, langs) : null;
+  $('#view-live').hidden = !has || !a.id || a.draft || (where.lang !== null && where.lang !== langs[0]);
   if (!has) {
     $('#status').textContent = '';
     return;
@@ -636,10 +695,11 @@ export function updateBar() {
   const live = a.id && !a.draft;
   $('#btn-publish').textContent = live ? t('bar.update') : t('bar.publish');
   $('#btn-publish').disabled = live && !state.dirty;
-  $('#view-live').href = CONFIG.siteUrl + COLLECTION.url.replace('{id}', a.id);
+  $('#view-live').href = CONFIG.siteUrl + COLLECTION.url.replace('{id}', where?.id ?? a.id);
   const s = $('#status');
   s.className = `status ${live ? 'live' : 'draft'}`;
-  s.textContent = !a.id ? t('status.new') : live ? t('status.live') : t('status.draft');
+  const target = a.target ? splitName(a.target, langs).lang : null;
+  s.textContent = !a.id ? (target ? t('status.newTranslation', { name: languageName(target) }) : t('status.new')) : live ? t('status.live') : t('status.draft');
   if (state.dirty) s.textContent += ` · ${t('status.unsaved')}`;
 }
 

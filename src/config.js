@@ -5,6 +5,7 @@
 // JSON — no DOM, no network — so test/config.test.mjs can check the awkward cases.
 import { locales } from './i18n/index.js';
 import { BUILT_IN, FIELD_NAME, FIELD_TYPES, MODULE_PATH, ONLY_FOR, defaultFits, fieldType } from './fields.js';
+import { LANG_CODE } from '../integrations/languages.js';
 
 /** Thrown when config.json can't be used. `problems` is every reason at once, not just the first. */
 export class ConfigError extends Error {
@@ -16,6 +17,8 @@ export class ConfigError extends Error {
 }
 
 const str = { type: 'string' };
+// A list of language codes; the first is the default, the one whose files have no suffix
+const languageList = { items: { ...str, pattern: LANG_CODE, hint: 'config.langCode' }, nonEmpty: true, distinct: true };
 
 // Each entry is a field; `fields` makes it a group. Anything not listed here is a mistake.
 const SPEC = {
@@ -28,6 +31,8 @@ const SPEC = {
   branch: str,
   siteUrl: { ...str, absolute: true },
   timeZone: { ...str, timeZone: true },
+  // The languages articles are written in, when more than one
+  languages: languageList,
   auth: { fields: { base: { ...str, required: true, url: true } } },
   // Each kind of article the site has, in its own directory; the sidebar switches between them
   collections: {
@@ -62,6 +67,7 @@ const SPEC = {
           module: str,
         },
       },
+      languages: languageList,
     },
   },
   // Before 1.0 there was one collection, and the preview page was set apart from it
@@ -208,6 +214,15 @@ export function checkConfig(raw, t) {
         continue;
       }
       if (rule.any) continue; // whatever it is, checkFields has the say
+      if (rule.items) {
+        if (!Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.list') });
+        else if (rule.nonEmpty && !value.length) add(problems, prefix + key, 'config.emptyList');
+        else {
+          value.forEach((item, i) => checkField(`${prefix}${key}[${i}]`, item, rule.items));
+          if (rule.distinct && new Set(value).size !== value.length) add(problems, prefix + key, 'config.repeated');
+        }
+        continue;
+      }
       if (rule.free) {
         if (value === null || typeof value !== 'object' || Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.group') });
         continue;

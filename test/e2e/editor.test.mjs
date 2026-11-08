@@ -56,7 +56,8 @@ before(async () => {
       collections: [
         { name: 'news', label: 'News', dir: CONTENT_DIR, url: '/news/{id}/', imageField: 'image', preview: '/preview/' },
         // No cover and no preview: what the editor offers follows the collection
-        { name: 'notices', label: 'Notices', dir: NOTICES_DIR, url: '/notices/{id}/' },
+        // And written in two languages: the notice's English is its file, its Japanese <id>.ja.md
+        { name: 'notices', label: 'Notices', dir: NOTICES_DIR, url: '/notices/{id}/', languages: ['en', 'ja'] },
         {
           name: 'events',
           label: 'Events',
@@ -964,6 +965,53 @@ test('a plugin field draws its own input, reads the other fields, and what it ha
   await page.until(`document.getElementById('tally-out')?.textContent === '250 seats'`, { label: 'the saved value, handed back' });
   await sleep(300);
   assert.doesNotMatch(await page.evaluate(`document.getElementById('status').textContent`), /unsaved/, 'handing the same value back while mounting is not an edit');
+});
+
+test('an article in two languages is one row, and a translation starts from the article', async () => {
+  const pick = (name) => page.evaluate(`(() => { const s = document.getElementById('collection-select'); s.value = ${JSON.stringify(name)}; s.dispatchEvent(new Event('change')); })()`);
+  const langs = () => page.evaluate(`JSON.stringify([...document.querySelectorAll('#langs .lang')].map((b) => b.className.replace('lang', '').trim() + ':' + b.textContent))`);
+  const chips = () => page.evaluate(`JSON.stringify([...document.querySelectorAll('#list .item .item-lang')].map((c) => c.className.replace('item-lang', '').trim() + ':' + c.textContent))`);
+  await page.navigate(`${site.origin}/?c=notices&id=202610120800`);
+  await page.until(`!document.getElementById('doc').hidden && document.querySelector('#langs .lang')`, { label: 'the notice, with its languages' });
+  assert.deepEqual(JSON.parse(await langs()), ['on:English', 'missing:+ Japanese'], 'the one it is in, and one it could be in');
+  assert.deepEqual(JSON.parse(await chips()), [':en', 'missing:ja'], 'the list says the same');
+
+  // Starting the Japanese: an article of its own until it is saved, with the notice's date
+  await page.evaluate(`document.querySelector('#langs [data-lang="ja"]').click()`);
+  await page.until(`document.getElementById('f-title').value === ''`, { label: 'an empty translation' });
+  assert.match(await page.evaluate(`document.getElementById('status').textContent`), /New Japanese version/);
+  assert.equal(await page.evaluate(`document.getElementById('tags-source').hidden`), true, 'the English has no tags to go by');
+  assert.deepEqual(JSON.parse(await langs()), [':English', 'on:Japanese']);
+  assert.equal(await page.evaluate(`document.querySelectorAll('#list .item.active').length`), 1, 'the notice stays the one marked in the list');
+  // Going back to the English to tag it, then to the Japanese: the English tags are shown there
+  await page.evaluate(`document.querySelector('#langs [data-lang="en"]').click()`);
+  await page.until(`document.getElementById('f-title').value === 'Library closed on Monday'`, { label: 'the English' });
+  await page.evaluate(`(() => { const el = document.getElementById('tag-input'); el.value = 'closure'; el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); })()`);
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && !/closure/.test(gh.files.get(`${NOTICES_DIR}/202610120800.md`)); i++) await sleep(100);
+  await page.evaluate(`document.querySelector('#langs [data-lang="ja"]').click()`);
+  await page.until(`document.getElementById('status').textContent.includes('New Japanese version')`, { label: 'the translation again' });
+  assert.equal(await page.evaluate(`document.getElementById('tags-source').textContent`), 'The English version is tagged closure');
+  assert.equal(await page.evaluate(`document.querySelectorAll('#tags .chip').length`), 0, 'shown, not copied: they are English words');
+  await setTitle('月曜日は休館します');
+  await typeBody('棚卸しのため。');
+  await save();
+  const file = `${NOTICES_DIR}/202610120800.ja.md`;
+  assert.ok(gh.files.has(file), 'it is saved next to the English, as <id>.ja.md');
+  assert.match(gh.files.get(file), /^date: 2026-10-12T08:00:00.000Z$/m, 'with the same date');
+  assert.match(gh.files.get(file), /^draft: true$/m);
+  assert.equal(await page.evaluate(`new URLSearchParams(location.search).get('id')`), '202610120800.ja');
+
+  // Still one notice in the list, now with both languages; the other one is a click away
+  assert.equal(await page.evaluate(`document.querySelectorAll('#list .item').length`), 1);
+  assert.deepEqual(JSON.parse(await chips()), [':en', 'draft:ja']);
+  assert.equal(await page.evaluate(`document.getElementById('view-live').hidden`), true, 'only the first language links to the site for now');
+  await page.evaluate(`document.querySelector('#langs [data-lang="en"]').click()`);
+  await page.until(`document.getElementById('f-title').value === 'Library closed on Monday'`, { label: 'the English again' });
+  assert.deepEqual(JSON.parse(await langs()), ['on:English', 'draft:Japanese']);
+  await pick('news');
+  await page.until(`document.querySelectorAll('#list .item').length >= 3`, { label: 'the news' });
+  assert.equal(await page.evaluate(`document.querySelectorAll('#list .item-lang').length`), 0, 'a collection in one language shows none of this');
 });
 
 test('nothing went wrong in the browser', async () => {
