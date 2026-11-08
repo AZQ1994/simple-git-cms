@@ -4,6 +4,7 @@
 // produced the same sentence whichever it was. Everything here is a plain function over the parsed
 // JSON — no DOM, no network — so test/config.test.mjs can check the awkward cases.
 import { locales } from './i18n/index.js';
+import { LANG_CODE, OWN_FIELDS } from '../integrations/languages.js';
 
 /** Thrown when config.json can't be used. `problems` is every reason at once, not just the first. */
 export class ConfigError extends Error {
@@ -15,6 +16,8 @@ export class ConfigError extends Error {
 }
 
 const str = { type: 'string' };
+// A list of language codes; the first is the default, the one whose files have no suffix
+const languageList = { items: { ...str, pattern: LANG_CODE, hint: 'config.langCode' }, nonEmpty: true, distinct: true };
 
 // Each entry is a field; `fields` makes it a group. Anything not listed here is a mistake.
 const SPEC = {
@@ -27,6 +30,8 @@ const SPEC = {
   branch: str,
   siteUrl: { ...str, absolute: true },
   timeZone: { ...str, timeZone: true },
+  // The languages articles are written in, when more than one
+  languages: languageList,
   auth: { fields: { base: { ...str, required: true, url: true } } },
   // Each kind of article the site has, in its own directory; the sidebar switches between them
   collections: {
@@ -40,6 +45,9 @@ const SPEC = {
       url: { ...str, slash: true, wants: '{id}', hint: 'config.noId' },
       imageField: str,
       preview: { ...str, slash: true },
+      languages: languageList,
+      // Frontmatter fields every language of an article has in common
+      shared: { items: { ...str, notOneOf: OWN_FIELDS, hint: 'config.sharedOwn' }, distinct: true },
     },
   },
   // Before 1.0 there was one collection, and the preview page was set apart from it
@@ -133,6 +141,7 @@ export function checkConfig(raw, t) {
     if (typeof value !== rule.type) return add(problems, path, 'config.mustBe', { type: t(`config.type.${rule.type}`) });
     if (rule.type === 'string' && !value.trim()) return add(problems, path, 'config.empty');
     if (rule.oneOf && !rule.oneOf.includes(value)) return add(problems, path, 'config.oneOf', { list: rule.oneOf.join(', ') });
+    if (rule.notOneOf?.includes(value)) return add(problems, path, rule.hint ?? 'config.invalid', { value });
     if (rule.pattern && !rule.pattern.test(value)) return add(problems, path, rule.hint ?? 'config.invalid');
     if (rule.absolute && !/^https?:\/\//.test(value)) return add(problems, path, 'config.absolute');
     if (rule.url && !/^(https?:\/\/|\/)/.test(value)) return add(problems, path, 'config.url');
@@ -174,6 +183,15 @@ export function checkConfig(raw, t) {
             if (seen.has(name)) add(problems, `${prefix}${key}[${i}]`, 'config.duplicateName', { name });
             seen.add(name);
           });
+        }
+        continue;
+      }
+      if (rule.items) {
+        if (!Array.isArray(value)) add(problems, prefix + key, 'config.mustBe', { type: t('config.type.list') });
+        else if (rule.nonEmpty && !value.length) add(problems, prefix + key, 'config.emptyList');
+        else {
+          value.forEach((item, i) => checkField(`${prefix}${key}[${i}]`, item, rule.items));
+          if (rule.distinct && new Set(value).size !== value.length) add(problems, prefix + key, 'config.repeated');
         }
         continue;
       }

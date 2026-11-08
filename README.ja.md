@@ -69,6 +69,8 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
+| `integrations/languages.js` | 多言語の記事：どのファイルがどの言語か、翻訳が最新か。エディター、MCP サーバー、サイト（`simple-git-cms/languages`）で共通 |
+| `scripts/mcp.mjs` | AI ツール向けの MCP サーバー。読み書きは `scripts/site-content.mjs`（[説明](#ai-ツールで書く)） |
 | `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません。`npm run test:e2e` はビルド済みのエディターを実際のブラウザーで動かします（[詳細](test/e2e/README.md)） |
 | `www/` | このプロジェクト自身のサイト [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[詳細](www/README.md)） |
 
@@ -103,6 +105,7 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `siteUrl` | サイトのアドレス。「サイトで見る」に使うほか、エディターがサイトと別ドメインにあるときは画像の読み込みにも使います |
 | `timeZone` | 日付の表示、画像フォルダー、新しい記事の番号に使うタイムゾーン |
 | `auth.base` | ログイン中継のアドレス |
+| `languages` | 記事を書く言語（2 つ以上のとき）。例：`["ja", "zh"]`。最初のものが既定の言語です。[多言語の記事](#多言語の記事)を参照 |
 | `collections` | サイトにある記事の種類のリスト（1 つ以上）。2 つ以上あるとサイドバーに切り替えのメニューが出ます。各項目： |
 | `collections[].dir` | 記事のディレクトリ（リポジトリ内のパス）。記事 1 本につき `<id>.md` が 1 つ（必須） |
 | `collections[].name` | アドレスバーでの名前（`?c=news`）。英数字と `-`・`_` だけ。省くと `dir` の最後の部分になります。重複はできません |
@@ -110,6 +113,8 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `collections[].url` | 記事の URL。`{id}` が置き換わります |
 | `collections[].imageField` | アイキャッチ画像を書き込む frontmatter の項目名（例：`image`）。省くとアイキャッチ画像の欄は出ません |
 | `collections[].preview` | この種類の記事のサイト側プレビューページ（下の手順 4）。空なら「プレビュー」ボタンは出ません |
+| `collections[].languages` | この種類の記事だけの言語。`languages` の代わりに使われます。`["ja"]` なら 1 言語だけ |
+| `collections[].shared` | 全言語で共通の frontmatter の項目。`date` と `imageField` は常に共通で、それ以外を書きます（例：`["tags"]`） |
 | `media.dir` / `media.url` | 画像のリポジトリ内ディレクトリ / サイト上のパス。新しい画像は `<日付>/` の下に入ります |
 | `media.maxWidth` / `media.quality` | アップロード時に圧縮する最大幅と webp の品質 |
 | `media.maxFileMB` | 添付ファイルの上限サイズ（MB、既定は 20。理由は下記） |
@@ -237,6 +242,58 @@ HTML だからです。閉じられないまま開いたものはその場に印
 表はソースの箱——エディターが知らされていない他のタグと同じ扱いです。どちらでも失われるものは
 ありません。なお、エディターがそのまま書き戻せないもの（独自の class など）が入っている HTML の
 表は、このブロックを定義してもソースの箱のままです。
+
+## 多言語の記事
+
+config.json に `"languages": ["ja", "zh"]` と書くと、記事の各言語がそれぞれ 1 つのファイルになり、並んで置かれます：
+
+```
+src/content/news/202608101200.md      ja（最初の言語）：接尾辞なし
+src/content/news/202608101200.zh.md   zh：<id>.<lang>.md
+src/content/news/202105061030.zh.md   中国語だけの記事
+```
+
+最初の言語には接尾辞が付かないので、1 言語で運用してきたサイトに 2 つ目の言語を足しても、ファイルは 1 つも動きません。記事がすべての言語を持っている必要はなく、1 言語だけの記事も普通の記事です。
+
+タイトル、要約、本文、タグ、下書きかどうかは言語ごとです。`date` とアイキャッチ画像（`imageField`）は記事そのものに属し、ある言語で変えると同じ保存でほかの言語も変わります。`collections[].shared` でほかの項目（例：`tags`）も共通にできます。
+
+**翻訳は自分が古くなったことを知っています。** 翻訳の frontmatter には何から訳したかが記録されます：
+
+```yaml
+translatedFrom:
+  lang: ja
+  sha: 3f9c2e1d…   # 訳したときの ja ファイルの git ハッシュ
+```
+
+原文が変わるとハッシュが合わなくなり、翻訳は「古い」状態になります。git はすべての版を残しているので、このハッシュで当時の原文を取り出して今の原文と行ごとに比べられ、翻訳を直す人はどこを直せばいいかがそのまま分かります。共通の項目（日付、アイキャッチ画像）だけの変更ではハッシュも一緒に更新され、翻訳は最新のままです。サーバーもデータベースも要りません。git 自身のハッシュだけです。
+
+いまのところエディターは各言語を別々の記事として開きます。エディターでの翻訳の状態表示や、同じ記事の言語の切り替えは次の段階です。[MCP サーバー](#ai-ツールで書く)は上のことをすでに全部できます。
+
+サイト側で必要なものは `simple-git-cms/languages` にあります。[integrations/astro/README.ja.md](integrations/astro/README.ja.md#多言語の記事) を参照してください。
+
+## AI ツールで書く
+
+`npx simple-git-cms mcp` は [MCP](https://modelcontextprotocol.io) サーバーです。Claude Code、Claude デスクトップ版、Gemini CLI などの AI ツールが、サイトのローカルのリポジトリで記事を書けるようになります。同じ config.json を読み、エディターと同じファイルを書きます。「先週のオープンキャンパスの記事を日本語と中国語で、写真はこれで」と頼めば、画像も入った 2 言語の下書きができます。
+
+Claude Code なら、サイトのリポジトリ直下の `.mcp.json` に：
+
+```json
+{ "mcpServers": { "cms": { "command": "npx", "args": ["simple-git-cms", "mcp", "public/editor/config.json"] } } }
+```
+
+| ツール | すること |
+|---|---|
+| `list_articles` | 記事の一覧と各言語の状態。`status: "missing"` か `"outdated"` で翻訳・更新が必要なものを出します |
+| `get_article` | 記事のある言語の全文 |
+| `write_article` | 1 つの言語を作成・更新。新しい記事は下書き。翻訳は `from`（原文の言語）を付けると、今の原文と一致していることが記録されます |
+| `source_changes` | 古くなった翻訳について、原文がその後どう変わったか（差分） |
+| `mark_translation_current` | 原文の変更が翻訳に影響しない（誤字の修正など） |
+| `add_image` | URL、ファイル、データから画像を保存。サイトに `sharp` があれば（Astro のサイトにはあります）webp にし、`media.maxWidth` 以下に縮めます |
+| `commit` | 記事と画像のディレクトリだけをコミットします。push はしません |
+
+これらのツールがしたことが、それだけで公開されることはありません。コンテンツを git に置いているのは、公開の前に人が見られるようにするためです。ブランチに push してプルリクエストを作るか、サイトの公開手順に従って、AI が書いたもの（特に人名、数字、日付）を確認してください。
+
+このサーバーに独自の依存パッケージはなく、パッケージを入れればそのまま動きます。
 
 ## 開発
 

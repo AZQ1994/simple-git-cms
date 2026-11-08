@@ -3,6 +3,27 @@
 Dates are the release date. Each entry is what changed for someone using the editor; the commits
 behind it are in the repository history.
 
+## Unreleased
+
+Articles in more than one language, and an MCP server so an AI tool can write them.
+
+- **`languages` in config.json.** Each language of an article is a file of its own next to the
+  others — `<id>.md` for the first language, `<id>.<lang>.md` for the rest — so a site in one
+  language adds a second without moving a file. A collection can have its own `languages`, and
+  `shared` lists the frontmatter fields every language has in common (the date and the cover image
+  always are).
+- **A translation knows when it is out of date.** It records the git hash of the source it was
+  translated from (`translatedFrom`); when the source's words change it is *outdated*, and what
+  changed can be shown line by line. A change to shared fields only keeps it current.
+- **`npx simple-git-cms mcp`**, an MCP server for Claude Code, Claude Desktop, Gemini CLI and the
+  like: list articles and what each language needs, write and translate them, add images, and
+  commit — only the content and media, never pushed. It has no dependencies of its own.
+- **`simple-git-cms/languages`** for the site: keep file names whole as ids, list one language's
+  articles, and find every language of one article for a language switcher and hreflang.
+- The editor opens each language as an article of its own for now, links only the first language
+  to the site, and `npm run dev` accepts ids with a language suffix. Switching between an article's
+  languages and showing translation status in the editor come next.
+
 ## 1.0.0 — 2026-10-27
 
 More than one kind of article: news, notices, events, each in its own directory, in one editor.

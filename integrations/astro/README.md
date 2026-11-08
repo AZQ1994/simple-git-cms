@@ -64,3 +64,35 @@ Add these wherever your article body is styled:
 .prose .gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 @media (max-width: 560px) { .prose .gallery.cols-3 { grid-template-columns: 1fr 1fr; } }
 ```
+
+## Articles in more than one language
+
+With `languages` in config.json, an article's languages are files side by side —
+`202608101200.md` (the first language) and `202608101200.zh.md` — see
+[the main README](../../README.md#articles-in-more-than-one-language). Three things from
+`simple-git-cms/languages` cover what a site needs:
+
+```js
+// src/content.config.ts — keep the file name whole: Astro's default id would turn
+// 202608101200.zh into 202608101200zh
+import { fileId } from 'simple-git-cms/languages';
+const news = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/news', generateId: fileId }),
+  schema: /* … */,
+});
+```
+
+```js
+import { inLanguage, translationsOf } from 'simple-git-cms/languages';
+const LANGUAGES = ['ja', 'zh']; // the same list as config.json
+
+// One language's articles; articleId is the id without the language, for the URL
+const zh = inLanguage(await getCollection('news'), 'zh', LANGUAGES);
+
+// Every language of one article, for a language switcher and hreflang
+const all = translationsOf(await getCollection('news'), entry.id, LANGUAGES); // { ja: entry, zh: entry }
+```
+
+`translatedFrom` in a translation's frontmatter is for the editor; add it to the schema as an
+optional field (`z.object({ lang: z.string(), sha: z.string() }).optional()`) or let the schema
+pass unknown keys.

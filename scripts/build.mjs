@@ -55,6 +55,22 @@ await build({
   legalComments: 'eof', // keep the dependencies' license notices in the bundle, as MIT and friends require
   banner: { js: `/* Simple Git CMS ${version} */` },
 });
+// The MCP server runs under Node in the site's checkout. Bundled with what it imports (the article
+// format, YAML) so the package keeps having no dependencies to install
+await build({
+  entryPoints: [path.join(root, 'scripts/mcp.mjs')],
+  define: { __VERSION__: JSON.stringify(version) },
+  bundle: true,
+  minify: true,
+  platform: 'node',
+  format: 'esm',
+  target: 'node22',
+  outfile: path.join(out, 'mcp.mjs'),
+  legalComments: 'eof',
+  // A CommonJS dependency's require() of a Node built-in needs a real require in an ES module
+  banner: { js: `/* Simple Git CMS ${version} MCP server */\nimport { createRequire as __sgcRequire } from 'node:module'; const require = __sgcRequire(import.meta.url);` },
+});
+
 fs.copyFileSync(path.join(root, 'public/app.css'), path.join(out, 'app.css'));
 fs.copyFileSync(path.join(root, 'public/config.example.json'), path.join(out, 'config.example.json'));
 fs.copyFileSync(path.join(root, 'public/favicon.svg'), path.join(out, 'favicon.svg'));
@@ -67,4 +83,4 @@ const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8')
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, 'VERSION'), `${version}\n`);
 const kb = (f) => `${f} ${(fs.statSync(path.join(out, f)).size / 1024).toFixed(0)}KB`;
-console.log(`Simple Git CMS ${version} → dist/ (${kb('app.js')}, ${kb('preview.js')}, ${kb('cropper.js')})`);
+console.log(`Simple Git CMS ${version} → dist/ (${kb('app.js')}, ${kb('preview.js')}, ${kb('cropper.js')}, ${kb('mcp.mjs')})`);

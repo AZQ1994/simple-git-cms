@@ -79,6 +79,8 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
+| `integrations/languages.js` | Articles in more than one language: which file is which language, whether a translation is up to date. Used by the editor, the MCP server and your site (`simple-git-cms/languages`) |
+| `scripts/mcp.mjs` | The MCP server for AI tools, with `scripts/site-content.mjs` doing the reading and writing ([details](#writing-with-an-ai-tool)) |
 | `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. `npm run test:e2e` drives the built editor in a real browser ([details](test/e2e/README.md)) |
 | `www/` | The project's own site, [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com) ([details](www/README.md)) |
 
@@ -112,6 +114,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `siteUrl` | Your site's address, used for "View on site" — and to load images when the editor is not on the same domain |
 | `timeZone` | Used for dates shown, for image folders, and for new article IDs |
 | `auth.base` | The URL of the sign-in relay |
+| `languages` | The languages articles are written in, when more than one, e.g. `["ja", "zh"]`; the first is the default. See [Articles in more than one language](#articles-in-more-than-one-language) |
 | `collections` | The kinds of article the site has, as a list (at least one). With more than one, the sidebar has a menu to switch between them. Each entry: |
 | `collections[].dir` | The article directory inside the repository; one `<id>.md` per article (required) |
 | `collections[].name` | What the address bar calls it (`?c=news`): letters, digits, `-` and `_`. Defaults to the last part of `dir`; no two may be the same |
@@ -119,6 +122,8 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `collections[].url` | The article's URL on the site; `{id}` is substituted |
 | `collections[].imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `collections[].preview` | This collection's preview page on your site (step 4). Leave it out and there is no Preview button |
+| `collections[].languages` | This collection's own languages, instead of `languages`. `["ja"]` keeps it to one |
+| `collections[].shared` | Frontmatter fields every language of an article has in common, besides `date` and the `imageField`, which always are; e.g. `["tags"]` |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
 | `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default; see below) |
@@ -278,6 +283,76 @@ merging and splitting cells. Without it an HTML table is a box of source, like a
 the editor was not told about. Either way nothing is lost — and an HTML table with anything the
 editor could not write back exactly, such as a class of its own, stays a box of source even with
 the block defined.
+
+## Articles in more than one language
+
+With `"languages": ["ja", "zh"]` in config.json, each language of an article is a file of its own,
+next to the others:
+
+```
+src/content/news/202608101200.md      ja, the first language: no suffix
+src/content/news/202608101200.zh.md   zh: <id>.<lang>.md
+src/content/news/202105061030.zh.md   an article that only exists in zh
+```
+
+The first language has no suffix, so a site that has been running in one language adds a second
+without moving a file. An article doesn't need every language: one in only one of them is as
+normal as one in all.
+
+Every language has its own title, summary, body, tags and draft state. The `date` and the cover
+image (`imageField`) are the article's, not the language's: change them in one language and the
+others follow in the same save. `collections[].shared` adds other fields to those, `tags` say.
+
+**A translation knows when it is out of date.** Its frontmatter says what it was translated from:
+
+```yaml
+translatedFrom:
+  lang: ja
+  sha: 3f9c2e1d…   # the git hash of the ja file when this was translated
+```
+
+When the source changes, its hash no longer matches, and the translation is *outdated*; since git
+keeps every version, the source as it was then can be fetched by that hash and compared with the
+source now, line by line, so whoever updates the translation sees exactly what to change. A change
+that only touches shared fields — the date, the cover image — moves the hash along with it and
+leaves the translation current. Nothing here needs a server or a database: it is git's own hashes.
+
+For now the editor opens each language as an article of its own. Translation status and switching
+between the languages of one article in the editor come next; the [MCP server](#writing-with-an-ai-tool)
+already does all of the above.
+
+On the site, `simple-git-cms/languages` has what a page needs — see
+[integrations/astro/README.md](integrations/astro/README.md#articles-in-more-than-one-language).
+
+## Writing with an AI tool
+
+`npx simple-git-cms mcp` is an [MCP](https://modelcontextprotocol.io) server that lets an AI tool
+— Claude Code, Claude Desktop, Gemini CLI and others — write articles in a checkout of the site,
+following the same config.json and writing the same files the editor would. "Write a post about
+last week's open day in Japanese and Chinese, with these photos" becomes a draft in both languages,
+images included.
+
+In `.mcp.json` at the root of the site’s repository, for Claude Code:
+
+```json
+{ "mcpServers": { "cms": { "command": "npx", "args": ["simple-git-cms", "mcp", "public/editor/config.json"] } } }
+```
+
+| Tool | What it does |
+|---|---|
+| `list_articles` | Articles with every language's state; `status: "missing"` or `"outdated"` lists the translation work |
+| `get_article` | One language of an article in full |
+| `write_article` | Create or update one language. A new article is a draft. A translation passes `from` (the source language), which records it as up to date with the source as it is now |
+| `source_changes` | For an outdated translation: what changed in the source since, as a diff |
+| `mark_translation_current` | The source's change needs nothing in the translation (a typo, say) |
+| `add_image` | Save an image from a URL, a file, or data; made webp and no wider than `media.maxWidth` when the site has `sharp` installed (Astro sites do) |
+| `commit` | Commit the content and media directories, and only those. It does not push |
+
+Nothing these tools do goes live by itself. The point of keeping the content in git is that a
+person can look before it does: push the branch and open a pull request, or use the site's own
+publishing step, and read what the AI wrote — names, numbers and dates especially.
+
+The server has no dependencies of its own; it runs from the package as installed.
 
 ## Developing
 

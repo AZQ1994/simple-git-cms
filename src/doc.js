@@ -12,6 +12,7 @@ import { ConflictError } from './github.js';
 import { serializeArticle } from './article.js';
 import { icons } from './icons.js';
 import { t } from './i18n/index.js';
+import { languagesOf, splitName } from '../integrations/languages.js';
 
 // ---------- Tags ----------
 
@@ -605,7 +606,10 @@ export function updateBar() {
   $('#btn-history').hidden = !has || !a.id;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
-  $('#view-live').hidden = !has || !a.id || a.draft;
+  // Until the editor knows each language's address, only the first language links to the site
+  const langs = has ? languagesOf(CONFIG, COLLECTION) : [];
+  const where = a?.id ? splitName(a.id, langs) : null;
+  $('#view-live').hidden = !has || !a.id || a.draft || (where.lang !== null && where.lang !== langs[0]);
   if (!has) {
     $('#status').textContent = '';
     return;
@@ -613,7 +617,7 @@ export function updateBar() {
   const live = a.id && !a.draft;
   $('#btn-publish').textContent = live ? t('bar.update') : t('bar.publish');
   $('#btn-publish').disabled = live && !state.dirty;
-  $('#view-live').href = CONFIG.siteUrl + COLLECTION.url.replace('{id}', a.id);
+  $('#view-live').href = CONFIG.siteUrl + COLLECTION.url.replace('{id}', where?.id ?? a.id);
   const s = $('#status');
   s.className = `status ${live ? 'live' : 'draft'}`;
   s.textContent = !a.id ? t('status.new') : live ? t('status.live') : t('status.draft');

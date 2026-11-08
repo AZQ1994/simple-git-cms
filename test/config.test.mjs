@@ -185,3 +185,26 @@ test('a collection is named by its name, or by the last part of its directory', 
   assert.equal(collectionName({ dir: 'src/content/notices/' }), 'notices');
   assert.equal(collectionName({ dir: 'content' }), 'content');
 });
+
+test('languages are a list of codes, the site’s or a collection’s own', () => {
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'zh', 'zh-Hant'] }), []);
+  const own = good();
+  own.collections[0].languages = ['ja', 'zh'];
+  own.collections[0].shared = ['tags'];
+  assert.deepEqual(keys(own), []);
+  assert.deepEqual(keys({ ...good(), languages: 'ja' }), ['languages']);
+  assert.deepEqual(keys({ ...good(), languages: [] }), ['languages']);
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'Japanese'] }), ['languages[1]']);
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'ja'] }), ['languages']);
+});
+
+test('the words of an article can’t be shared between languages', () => {
+  const config = good();
+  config.collections[0].shared = ['tags', 'title'];
+  const { problems } = checkConfig(config, t);
+  assert.deepEqual(
+    problems.map((p) => p.key),
+    ['collections[0].shared[1]'],
+  );
+  assert.match(problems[0].text, /title/);
+});

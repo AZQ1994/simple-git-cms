@@ -61,5 +61,21 @@ function install(args) {
   console.warn(`See ${UPGRADING} (Upgrading from 0.x).`);
 }
 
+/** `simple-git-cms mcp [config.json]`: the MCP server for AI tools, from the built bundle. */
+async function mcp(args) {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const bundle = path.join(root, 'dist', 'mcp.mjs');
+  if (!fs.existsSync(bundle)) {
+    console.error('Run npm run build first.');
+    process.exit(1);
+  }
+  const { serve } = await import(bundle);
+  serve(args);
+}
+
 // Run as a command, not when a test imports it. npx runs it through a link, hence realpath.
-if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) install(process.argv.slice(2));
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const args = process.argv.slice(2);
+  if (args[0] === 'mcp') await mcp(args.slice(1));
+  else install(args);
+}

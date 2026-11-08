@@ -65,3 +65,29 @@ export default defineConfig({
 .prose .gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 @media (max-width: 560px) { .prose .gallery.cols-3 { grid-template-columns: 1fr 1fr; } }
 ```
+
+## 多言語の記事
+
+config.json に `languages` を書くと、記事の各言語は並んだファイルになります：`202608101200.md`（最初の言語）と `202608101200.zh.md`。[メインの README](../../README.ja.md#多言語の記事) を参照してください。サイトに必要なものは `simple-git-cms/languages` にあります：
+
+```js
+// src/content.config.ts —— ファイル名をそのまま使う。Astro の既定の id では 202608101200.zh が 202608101200zh になります
+import { fileId } from 'simple-git-cms/languages';
+const news = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/news', generateId: fileId }),
+  schema: /* … */,
+});
+```
+
+```js
+import { inLanguage, translationsOf } from 'simple-git-cms/languages';
+const LANGUAGES = ['ja', 'zh']; // config.json と同じリスト
+
+// 1 つの言語の記事。articleId は言語を除いた id で、URL に使います
+const zh = inLanguage(await getCollection('news'), 'zh', LANGUAGES);
+
+// 1 つの記事の全言語。言語の切り替えと hreflang に
+const all = translationsOf(await getCollection('news'), entry.id, LANGUAGES); // { ja: entry, zh: entry }
+```
+
+翻訳の frontmatter にある `translatedFrom` はエディター用です。schema に任意の項目として足すか（`z.object({ lang: z.string(), sha: z.string() }).optional()`）、知らない項目を通すようにしてください。
