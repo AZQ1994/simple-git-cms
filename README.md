@@ -404,6 +404,12 @@ export function mount(el, { value, get, set, onFieldChange, field, lang }) {
 - Whatever `set()` is given goes into the frontmatter as it is, so the site reads a finished value
   rather than working it out again. Until `set()` is called the field is untouched, and the file
   keeps what it had.
+- A value given to `set()` while `mount` runs is where the field starts: it is saved with the next
+  save, but opening an article doesn't make it unsaved. Giving back the value the field already
+  has changes nothing.
+- **The script runs inside the editor, as the person signed in**: it can do anything they can do
+  in the repository. Treat it like the editor's own code — only your site's own scripts, reviewed
+  like any other change.
 - `required` counts it as filled in once it holds anything. `list` shows it only when it is text or
   a number.
 - A script that doesn't load, or exports no `mount`, is named under the field, and the file keeps
