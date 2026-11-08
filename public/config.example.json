@@ -29,6 +29,24 @@
       "label": "Notices",
       "dir": "src/content/notices",
       "url": "/notices/{id}/"
+    },
+    {
+      "name": "events",
+      "label": "Events",
+      "dir": "src/content/events",
+      "url": "/events/{id}/",
+      "imageField": "image",
+      "fields": [
+        { "name": "starts", "label": "Starts", "type": "date", "required": true },
+        { "name": "venue", "label": "Venue", "required": true },
+        { "name": "seats", "label": "Seats", "type": "number", "min": 0, "unit": "people" },
+        {
+          "name": "status", "label": "Status", "type": "select", "list": true, "default": "open",
+          "options": [{ "value": "open", "label": "Open" }, { "value": "full", "label": "Full" }, { "value": "cancelled", "label": "Cancelled" }]
+        },
+        { "name": "online", "label": "Online", "type": "boolean" },
+        { "name": "access", "label": "Getting there", "multiline": true }
+      ]
     }
   ],
 

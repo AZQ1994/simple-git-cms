@@ -5,6 +5,13 @@ behind it are in the repository history.
 
 ## Unreleased
 
+- **Fields of your own** (`collections[].fields` in config.json). A collection can add frontmatter
+  fields — text, a number, a choice from a list, a checkbox or a date — and the article form gets an
+  input for each, under the date and tags. They are written as the type they are; an empty one is
+  left out. Before publishing, `required` ones have to be filled in and a number has to be within
+  its `min` and `max`, though a draft can be saved either way; `list` ones show in the sidebar and
+  are found by the search. A field nobody changed is never rewritten, so a value the input can't
+  show stays in the file as it was, and the form says what it is. See [Fields of your own](README.md#fields-of-your-own).
 - **Deployment progress for sites built by a host's GitHub App.** After a save, the editor now also
   follows the check run that Cloudflare Pages, Vercel or Netlify posts on the commit, when no GitHub
   Actions workflow builds the site. Before, the indicator spun until it gave up. The GitHub App

@@ -105,6 +105,112 @@
             "type": "string",
             "pattern": "^/",
             "description": "This collection's preview page on the site. Leave it out and there is no Preview button."
+          },
+          "fields": {
+            "type": "array",
+            "description": "Frontmatter fields of this collection's own, each with an input in the article form. A field nobody changes is left in the file exactly as it was.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][\\w-]*$",
+                  "description": "The frontmatter key. Not title, description, date, tags, draft or this collection's imageField."
+                },
+                "label": {
+                  "type": "string",
+                  "description": "What the form calls it. Defaults to name."
+                },
+                "type": {
+                  "enum": [
+                    "text",
+                    "number",
+                    "select",
+                    "boolean",
+                    "date"
+                  ],
+                  "default": "text",
+                  "description": "text, number, select (one of options), boolean (a checkbox) or date (YYYY-MM-DD)."
+                },
+                "required": {
+                  "type": "boolean",
+                  "description": "Publishing needs it filled in; a draft can be saved without it. No effect on a checkbox."
+                },
+                "default": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ],
+                  "description": "What a new article starts with. For a select, one of the options' values."
+                },
+                "placeholder": {
+                  "type": "string",
+                  "description": "A hint shown in the empty input."
+                },
+                "list": {
+                  "type": "boolean",
+                  "description": "Show the value in the sidebar's article list, and let the search find it."
+                },
+                "multiline": {
+                  "type": "boolean",
+                  "description": "text only: a box with room for several lines."
+                },
+                "min": {
+                  "type": "number",
+                  "description": "number only."
+                },
+                "max": {
+                  "type": "number",
+                  "description": "number only."
+                },
+                "step": {
+                  "type": "number",
+                  "description": "number only: what the arrows add or take away."
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "number only: shown next to the input, e.g. km. Not written to the file."
+                },
+                "options": {
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "select only: the choices, as values, or as { value, label } to show something other than what the file holds.",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": [
+                          "string",
+                          "number"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "value"
+                        ],
+                        "properties": {
+                          "value": {
+                            "type": [
+                              "string",
+                              "number"
+                            ]
+                          },
+                          "label": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
