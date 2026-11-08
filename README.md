@@ -523,6 +523,23 @@ languages: a click opens another, and one it lacks starts a translation, with th
 cover image already filled in. Saving it makes `<id>.<lang>.md`. "View on site" is shown for the
 first language only, for now.
 
+**A translation knows when it is out of date.** A translation started in the editor says in its
+frontmatter what it was translated from:
+
+```yaml
+translatedFrom:
+  lang: ja
+  sha: 3f9c2e1d…       # the git hash of the ja file when the translation was started
+  words: 0a1b2c3d4e5f6a  # a short hash of its title, summary, tags and body
+```
+
+When the source's words change, the translation's tag turns red, in the list and above the title.
+A save that leaves the words alone — published, a new date, a new cover — doesn't count. Opening
+the translation says so, and **What changed in it** shows the source's lines as they were and as
+they are: since git keeps every version, the one it was translated from is read back by its hash.
+Once the translation says the same, **Up to date** records the source as it is now with the next
+save. No server, no database: only git's hashes.
+
 On the site, `simple-git-cms/languages` has what a page needs — see
 [integrations/astro/README.md](integrations/astro/README.md#articles-in-more-than-one-language).
 

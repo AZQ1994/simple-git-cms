@@ -5,7 +5,7 @@
 // JSON — no DOM, no network — so test/config.test.mjs can check the awkward cases.
 import { locales } from './i18n/index.js';
 import { BUILT_IN, FIELD_NAME, FIELD_TYPES, MODULE_PATH, ONLY_FOR, defaultFits, fieldType } from './fields.js';
-import { LANG_CODE } from '../integrations/languages.js';
+import { LANG_CODE, languagesOf } from '../integrations/languages.js';
 
 /** Thrown when config.json can't be used. `problems` is every reason at once, not just the first. */
 export class ConfigError extends Error {
@@ -264,8 +264,10 @@ function checkFields(collection, raw, prefix, add) {
     if (seen.has(f.name)) add(path, 'config.fieldDuplicate', { name: f.name });
     seen.add(f.name);
     // The editor writes these itself; a second input for the same key would fight it
-    // (with toc in config.json, the form's Table of contents box writes `toc`)
-    if (BUILT_IN.includes(f.name) || f.name === collection.imageField || (f.name === 'toc' && raw.toc)) add(`${path}.name`, 'config.fieldTaken', { name: f.name });
+    // (with toc in config.json, the form's Table of contents box writes `toc`; in more than one
+    // language, a translation keeps `translatedFrom`)
+    const taken = (f.name === 'toc' && raw.toc) || (f.name === 'translatedFrom' && languagesOf(raw, collection).length);
+    if (BUILT_IN.includes(f.name) || f.name === collection.imageField || taken) add(`${path}.name`, 'config.fieldTaken', { name: f.name });
     if (!type) return;
     for (const [setting, only] of Object.entries(ONLY_FOR)) {
       if (f[setting] !== undefined && type !== only) add(`${path}.${setting}`, 'config.fieldOnlyFor', { type: only });

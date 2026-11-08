@@ -4,7 +4,7 @@ import { COLLECTION, CONFIG, emit, fmtDate, on, state } from './store.js';
 import { getLocale, t } from './i18n/index.js';
 import { display } from './fields.js';
 import { languagesOf } from '../integrations/languages.js';
-import { groupArticles, whereIs } from './translations.js';
+import { groupArticles, outdatedOf, whereIs } from './translations.js';
 
 /** A language's name in the interface language: ja is 日语 in Chinese, Japanese in English. */
 export const languageName = (code) => {
@@ -61,10 +61,12 @@ export function renderList() {
       // Which languages it has; one it lacks is there too, faded, so a missing translation shows
       if (langs.length) {
         const box = Object.assign(document.createElement('span'), { className: 'item-langs' });
+        const outdated = outdatedOf(row.versions);
         for (const l of langs) {
           const v = row.versions[l];
-          const chip = Object.assign(document.createElement('span'), { className: `item-lang${v ? (v.draft ? ' draft' : '') : ' missing'}`, textContent: l });
-          chip.title = t(v ? (v.draft ? 'lang.hasDraft' : 'lang.has') : 'lang.missing', { name: languageName(l) });
+          const old = outdated.includes(l);
+          const chip = Object.assign(document.createElement('span'), { className: `item-lang${v ? (v.draft ? ' draft' : '') : ' missing'}${old ? ' outdated' : ''}`, textContent: l });
+          chip.title = t(old ? 'lang.hasOutdated' : v ? (v.draft ? 'lang.hasDraft' : 'lang.has') : 'lang.missing', { name: languageName(l) });
           box.append(chip);
         }
         btn.querySelector('.item-meta').append(box);

@@ -130,6 +130,19 @@ export class GitHubStore {
     }
   }
 
+  /** One version of an article's file by its git hash, as text; null if GitHub doesn't have it.
+   * The id is not needed here, a hash being enough; the local store uses it. */
+  async readBlob(id, sha) {
+    if (!/^[0-9a-f]{40}$/.test(sha)) return null;
+    try {
+      const b = await this.req(`/repos/${this.repo}/git/blobs/${sha}`);
+      return new TextDecoder().decode(Uint8Array.from(atob(b.content.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
+    } catch (e) {
+      if (e.status === 404 || e.status === 422) return null;
+      throw e;
+    }
+  }
+
   /** The commits that changed one article, newest first — the first is the version there now.
    * Each is { sha, message, author, date }; getArticle(id, sha) is the article as that commit left
    * it, or null where that commit deleted it. */

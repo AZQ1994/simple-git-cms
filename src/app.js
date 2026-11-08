@@ -14,6 +14,7 @@
 //   doc.js         the article form, saving, publishing, the status bar
 //   field-form.js  the inputs for a collection's own fields (fields.js: what they read and write)
 //   translations.js an article's languages as the list and the language bar show them
+//                  (diff.js: what changed in a translation's source, line by line)
 //   preview-ui.js  the preview pane
 //   actions.js     the buttons that start config.actions' workflows, and how each run is doing
 //   theme.js       light or dark

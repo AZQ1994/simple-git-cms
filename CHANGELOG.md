@@ -39,6 +39,11 @@ behind it are in the repository history.
   where a translation is missing. Above the title, a click opens another language, or starts a
   translation with the date and cover already filled in. "View on site" is for the first language
   only, for now; `npm run dev` accepts ids with a language suffix.
+- **A translation knows when it is out of date.** One started in the editor keeps what it was
+  translated from (`translatedFrom` in its frontmatter: the source's git hash, and a hash of its
+  words). When the source's words change its tag turns red — publishing it or a new date doesn't
+  count — and opening it shows which lines of the source changed since, read back from git, with a
+  button to mark it up to date.
 
 ## 1.0.0 — 2026-10-27
 

@@ -83,6 +83,12 @@ export class LocalStore {
     return text === null ? null : parseArticle(id, text);
   }
 
+  /** The same as GitHubStore.readBlob(): one version of an article's file by its git hash. */
+  async readBlob(id, sha) {
+    const { text } = await this.req('blob', { id, sha });
+    return text;
+  }
+
   async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false } = {}) {
     const text = deleteArticle ? null : serializeArticle(article);
     const r = await this.req('save', {

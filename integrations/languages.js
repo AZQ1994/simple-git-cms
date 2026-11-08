@@ -9,6 +9,13 @@
 // without moving a file, and so that listing a directory — one request, names and hashes only —
 // already says which languages each article has.
 //
+// A translation remembers what it was translated from: the source language and the git hash of the
+// source file at the time, and a short hash of its words (`translatedFrom: { lang, sha, words }` in
+// its frontmatter). When the source's words change, the translation is out of date — known without
+// a server or a database. A save that leaves the words alone (a new date, published, a new cover)
+// changes the file's hash but not the words', and the translation stays current. Since git keeps
+// every version, the source as it was can be read back by its hash, to show what changed.
+//
 // Plain functions over plain data — no DOM, no network, no fs — so the editor, the tests and the
 // site itself (`import … from 'simple-git-cms/languages'`) all use the same rules.
 // The last part of this file is what a site needs; see integrations/astro/README.md.
@@ -54,6 +61,64 @@ export function splitName(name, languages) {
     if (suffix !== languages[0] && languages.includes(suffix)) return { id: base.slice(0, dot), lang: suffix };
   }
   return { id: base, lang: languages[0] };
+}
+
+/**
+ * The part of an article that is translated, as lines of text: title, summary, tags and body.
+ * What a translation is compared with, and what is shown when the source changed.
+ * @param {{ title?: string, description?: string, tags?: string[], body?: string }} a
+ */
+export function wordsOf(a) {
+  return [a.title ?? '', a.description ?? '', (a.tags ?? []).join(', '), '', String(a.body ?? '').trim()].join('\n');
+}
+
+/** A short hash of wordsOf(a): enough to tell that the words changed, not to keep them. */
+export function wordsHash(a) {
+  const text = wordsOf(a);
+  // cyrb53: 53 bits, synchronous, and the same in every JavaScript engine
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');
+}
+
+/**
+ * Where a translation came from, as its frontmatter says; null for an article that isn't one.
+ * @param {{ extra?: Record<string, unknown> }} article As parseArticle gives it.
+ * @returns {{ lang: string, sha: string, words: string | null } | null}
+ */
+export function translatedFrom(article) {
+  const t = article?.extra?.translatedFrom;
+  if (!t || typeof t !== 'object' || typeof t.lang !== 'string' || typeof t.sha !== 'string') return null;
+  return { lang: t.lang, sha: t.sha, words: typeof t.words === 'string' ? t.words : null };
+}
+
+/** What a translation of `source`, in language `lang`, keeps in its frontmatter. */
+export const translationOf = (lang, source) => ({ lang, sha: source.sha, words: wordsHash(source) });
+
+/**
+ * Where one language of an article stands against the one it was translated from.
+ * - `original`: not a translation, or one from before translations were tracked
+ * - `current`: translated from the source's words as they are now
+ * - `outdated`: the source's words changed since
+ * - `orphan`: translated from a language the article no longer has
+ * @param {{ extra?: Record<string, unknown> }} article
+ * @param {Record<string, object | undefined>} versions The article's languages, by language code,
+ *   as parseArticle gives them, each with `sha`, the git hash of its file.
+ */
+export function translationState(article, versions) {
+  const from = translatedFrom(article);
+  if (!from) return 'original';
+  const source = versions[from.lang];
+  if (!source) return 'orphan';
+  if (source.sha === from.sha) return 'current';
+  return from.words && from.words === wordsHash(source) ? 'current' : 'outdated';
 }
 
 // ---------------------------------------------------------------------------------------------

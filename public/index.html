@@ -90,6 +90,10 @@
         <article class="doc" id="doc" hidden>
           <!-- The article's languages (config.json's languages), filled in by doc.js -->
           <div class="langs" id="langs" role="group" data-i18n-aria-label="lang.bar" hidden></div>
+          <div class="translation-note" id="translation-note" hidden>
+            <p><span id="translation-note-text"></span> <button type="button" class="link-btn" id="mark-current" data-i18n="lang.markCurrent"></button></p>
+            <details id="translation-diff"><summary data-i18n="lang.showChanges"></summary><div class="diff" id="translation-diff-body"></div></details>
+          </div>
           <textarea class="title" id="f-title" rows="1" data-i18n-placeholder="doc.titlePlaceholder"></textarea>
 
           <div class="cover" id="cover" hidden>

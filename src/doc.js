@@ -9,13 +9,14 @@ import { compressImage, newImagePath, openCropper } from './images.js';
 import { htmlProblems } from './html-scan.js';
 import { languageName, renderList, setSidebar } from './list.js';
 import { ConflictError } from './github.js';
-import { serializeArticle } from './article.js';
+import { parseArticle, serializeArticle } from './article.js';
 import { icons } from './icons.js';
 import { defaults, fieldLabel, missingFields, outOfRange } from './fields.js';
 import { collectFields, formFields, markMissing, onFieldChange, relabelFields, showFields } from './field-form.js';
 import { getLocale, t } from './i18n/index.js';
-import { fileName, languagesOf, splitName } from '../integrations/languages.js';
-import { newTranslation, whereIs } from './translations.js';
+import { fileName, languagesOf, splitName, translatedFrom, translationOf, wordsOf } from '../integrations/languages.js';
+import { changesOnly, lineDiff } from './diff.js';
+import { newTranslation, outdatedOf, whereIs } from './translations.js';
 
 // ---------- Tags ----------
 
@@ -629,14 +630,36 @@ function resolveConflict(theirs, draft) {
 // Above the title, every language the collection has: the one open, the others this article has —
 // a click opens them — and the ones it doesn't, which start a translation. A new translation is
 // an article like any other until it is saved; then it is <id>.<lang>.md next to the others.
+//
+// A translation keeps which version of its source it was made from (translatedFrom). When the
+// source's words change it says so, and shows what changed, until whoever updates it says it is up
+// to date again.
+
+const idOf = (id, lang, langs) => fileName(id, lang, langs).replace(/\.md$/, '');
 
 function renderLangs(langs) {
   const box = $('#langs');
   const here = whereIs(state.current, langs);
   box.hidden = !langs.length || !here;
   $('#tags-source').hidden = true;
+  $('#translation-note').hidden = true;
   if (box.hidden) return;
   const versions = Object.fromEntries(state.articles.map((a) => [a.id, a]));
+  // The open one as it is on screen, so marking it up to date shows before it is saved
+  const byLang = Object.fromEntries(langs.map((l) => [l, l === here.lang ? state.current : versions[idOf(here.id, l, langs)]]).filter(([, v]) => v));
+  const outdated = outdatedOf(byLang);
+  if (outdated.includes(here.lang)) {
+    const from = translatedFrom(state.current);
+    $('#translation-note-text').textContent = t('lang.outdated', { name: languageName(from.lang) });
+    $('#translation-note').hidden = false;
+    // What changed is read when asked for, once for each pair of versions
+    const key = `${here.id}:${from.sha}:${byLang[from.lang].sha}`;
+    if ($('#translation-diff').dataset.key !== key) {
+      $('#translation-diff').dataset.key = key;
+      $('#translation-diff').open = false;
+      $('#translation-diff-body').replaceChildren();
+    }
+  }
   // Tags are each language's own words; a translation is shown the original's, to tag it alike
   const original = langs.filter((l) => l !== here.lang).map((l) => [l, versions[fileName(here.id, l, langs).replace(/\.md$/, '')]]).find(([, v]) => v?.tags.length);
   if (original && here.lang !== langs[0]) {
@@ -645,15 +668,15 @@ function renderLangs(langs) {
   }
   box.replaceChildren(
     ...langs.map((l) => {
-      const id = fileName(here.id, l, langs).replace(/\.md$/, '');
-      const v = versions[id];
+      const v = versions[idOf(here.id, l, langs)];
       const b = document.createElement('button');
       b.type = 'button';
       b.dataset.lang = l;
       const on = l === here.lang;
-      b.className = `lang${on ? ' on' : ''}${v || on ? '' : ' missing'}${v?.draft ? ' draft' : ''}`;
+      const old = outdated.includes(l);
+      b.className = `lang${on ? ' on' : ''}${v || on ? '' : ' missing'}${v?.draft ? ' draft' : ''}${old ? ' outdated' : ''}`;
       b.textContent = v || on ? languageName(l) : t('lang.add', { name: languageName(l) });
-      b.title = t(v ? (v.draft ? 'lang.hasDraft' : 'lang.has') : on ? 'lang.new' : 'lang.addHint', { name: languageName(l) });
+      b.title = t(old ? 'lang.hasOutdated' : v ? (v.draft ? 'lang.hasDraft' : 'lang.has') : on ? 'lang.new' : 'lang.addHint', { name: languageName(l) });
       if (on) b.setAttribute('aria-current', 'true');
       return b;
     }),
@@ -665,13 +688,50 @@ $('#langs').addEventListener('click', (e) => {
   if (!b || b.classList.contains('on')) return;
   const langs = languagesOf(CONFIG, COLLECTION);
   const here = whereIs(state.current, langs);
-  const id = fileName(here.id, b.dataset.lang, langs).replace(/\.md$/, '');
+  const id = idOf(here.id, b.dataset.lang, langs);
   if (state.articles.some((a) => a.id === id)) return openArticle(id);
   if (!confirmDiscard()) return;
   // Started from the version that was open, or, from a new translation, from the saved one it is of
   const source = state.articles.find((a) => a.id === state.current.id) ?? state.articles.find((a) => splitName(a.id, langs).id === here.id);
-  load(newTranslation(source, id, coverField()));
+  load(newTranslation(source, id, coverField(), langs));
   $('#f-title').focus();
+});
+
+/** The source of the open translation, as it is now, and its id. */
+function sourceOf() {
+  const langs = languagesOf(CONFIG, COLLECTION);
+  const from = translatedFrom(state.current);
+  const id = idOf(whereIs(state.current, langs).id, from.lang, langs);
+  return { from, id, source: state.articles.find((a) => a.id === id) };
+}
+
+// Up to date with the source as it is now; saved with the rest
+$('#mark-current').addEventListener('click', () => {
+  const { from, source } = sourceOf();
+  state.current.extra = { ...state.current.extra, translatedFrom: translationOf(from.lang, source) };
+  markDirty();
+});
+
+// The source as it was translated, from git, against the source now: only the lines that changed
+$('#translation-diff').addEventListener('toggle', async () => {
+  const box = $('#translation-diff');
+  const out = $('#translation-diff-body');
+  if (!box.open || out.childNodes.length) return;
+  const key = box.dataset.key;
+  const { from, id, source } = sourceOf();
+  out.textContent = t('lang.diffLoading');
+  const then = await store.readBlob(id, from.sha).catch(() => null);
+  if (box.dataset.key !== key) return; // another article or version by now
+  if (then === null) {
+    out.textContent = t('lang.diffMissing');
+    return;
+  }
+  const kind = { '-': 'del', '+': 'add', ' ': 'same', '…': 'gap' };
+  out.replaceChildren(
+    ...changesOnly(lineDiff(wordsOf(parseArticle(id, then)), wordsOf(source))).map((d) =>
+      Object.assign(document.createElement('div'), { className: `diff-line ${kind[d.op]}`, textContent: d.op === '…' ? '…' : `${d.op} ${d.text}` }),
+    ),
+  );
 });
 
 export function updateBar() {

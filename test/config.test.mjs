@@ -215,6 +215,8 @@ test('a field is told what is wrong with it, setting by setting', () => {
   assert.deepEqual(with_({ name: 'tags' }, { name: 'image' }), ['collections[0].fields[0].name', 'collections[0].fields[1].name'], 'a key the editor already writes');
   assert.deepEqual(keys({ ...good(), collections: [{ dir: 'events', fields: [{ name: 'toc' }] }] }), [], 'toc is free while the editor has no Table of contents box');
   assert.deepEqual(keys({ ...good(), toc: {}, collections: [{ dir: 'events', fields: [{ name: 'toc' }] }] }), ['collections[0].fields[0].name'], 'and taken once it has');
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'events', fields: [{ name: 'translatedFrom' }] }] }), [], 'translatedFrom is free on a site in one language');
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'zh'], collections: [{ dir: 'events', fields: [{ name: 'translatedFrom' }] }] }), ['collections[0].fields[0].name'], 'and taken in more than one, where translations keep it');
   assert.deepEqual(with_({ name: 'a', type: 'select' }), ['collections[0].fields[0].options']);
   assert.deepEqual(with_({ name: 'a', type: 'select', options: [] }), ['collections[0].fields[0].options']);
   assert.deepEqual(with_({ name: 'a', type: 'select', options: ['x', { label: 'no value' }, { value: 'y', colour: 1 }, null] }), [
