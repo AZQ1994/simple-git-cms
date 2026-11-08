@@ -962,6 +962,8 @@ test('a plugin field draws its own input, reads the other fields, and what it ha
   // Opened again, the plugin is handed what was saved
   await page.navigate(`${site.origin}/?c=events&id=202610200000`);
   await page.until(`document.getElementById('tally-out')?.textContent === '250 seats'`, { label: 'the saved value, handed back' });
+  await sleep(300);
+  assert.doesNotMatch(await page.evaluate(`document.getElementById('status').textContent`), /unsaved/, 'handing the same value back while mounting is not an edit');
 });
 
 test('nothing went wrong in the browser', async () => {

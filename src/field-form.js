@@ -32,6 +32,9 @@ const shown = (raw) => {
   return s.length > 60 ? `${s.slice(0, 57)}…` : s;
 };
 
+/** Whether two frontmatter values are the same: plain data, so their JSON says. */
+const sameValue = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
 // Each script is loaded once and shared by every article that uses it
 const modules = new Map();
 const loadModule = (path) => {
@@ -102,17 +105,26 @@ function mountPlugin(row, form) {
     .then((mod) => {
       if (rows !== form) return; // another article is open by now
       if (typeof mod.mount !== 'function') throw new Error('it has no mount() to export');
+      // A value handed back while mounting is where the field starts, not someone's edit: it is
+      // saved with the next save, but opening an article doesn't make it unsaved
+      let mounting = true;
       mod.mount(row.body, {
         value: structuredClone(row.raw),
         field: f,
         lang: getLocale(),
         get: current,
         set: (value) => {
-          row.value = structuredClone(value);
-          touch(row);
+          if (rows !== form) return; // another article is open by now
+          const next = structuredClone(value);
+          // The value it already has is no change, however often a plugin works it out again
+          if (sameValue(fromInput(f, next), current(f.name))) return;
+          row.value = next;
+          if (mounting) row.touched = true;
+          else touch(row);
         },
         onFieldChange: (fn) => watchers.push({ row, fn }),
       });
+      mounting = false;
     })
     .catch((e) => {
       if (rows !== form) return;
