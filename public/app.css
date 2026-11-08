@@ -179,6 +179,10 @@ svg { flex: none; }
 .dot { width: 6px; height: 6px; border-radius: 50%; }
 .dot.live { background: var(--green); }
 .dot.draft { background: var(--amber); }
+.item-langs { display: inline-flex; gap: 3px; margin-left: auto; }
+.item-lang { padding: 0 5px; border-radius: 4px; background: var(--hover); color: var(--muted); font-size: 11px; font-weight: 600; line-height: 17px; }
+.item-lang.draft { color: var(--amber); }
+.item-lang.missing { background: none; color: var(--faint); opacity: .55; text-decoration: line-through; }
 .list-empty { padding: 32px 12px; text-align: center; color: var(--faint); font-size: 13px; }
 .list-more { padding: 12px; text-align: center; color: var(--faint); font-size: 12.5px; }
 .side-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); }
@@ -223,6 +227,14 @@ svg { flex: none; }
 
 /* ---------- The document ---------- */
 .doc { max-width: 760px; margin: 0 auto; padding: 44px 32px 120px; }
+/* The article's languages, above the title */
+.langs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.lang { height: 28px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
+.lang:hover { background: var(--hover); color: var(--ink); }
+.lang.on { border-color: var(--ink); background: var(--ink); color: var(--surface); font-weight: 600; cursor: default; }
+.lang.draft:not(.on)::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--amber); vertical-align: middle; }
+.lang.missing { border-style: dashed; color: var(--faint); }
+.lang.missing:hover { color: var(--ink); border-color: var(--line-strong); }
 .title {
   display: block; width: 100%; resize: none; overflow: hidden; border: 0; outline: 0; padding: 0;
   font-size: 30px; line-height: 1.35; font-weight: 700; color: var(--ink); letter-spacing: .01em; background: none;
@@ -250,6 +262,7 @@ svg { flex: none; }
 #toc-item input { margin: 0; accent-color: var(--navy); cursor: pointer; }
 .meta input[type=date] { height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: none; color: var(--ink); cursor: pointer; }
 .meta input[type=date]:hover, .meta input[type=date]:focus { border-color: var(--line-strong); outline: 0; }
+.tags-source { flex-basis: 100%; margin: -4px 0 0; font-size: 12.5px; color: var(--faint); }
 .tags { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 30px; cursor: text; }
 .tags input { flex: 1; min-width: 100px; height: 28px; border: 0; outline: 0; background: none; color: var(--ink); }
 .tags input::placeholder { color: var(--placeholder); }

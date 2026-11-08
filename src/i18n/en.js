@@ -22,6 +22,15 @@ export default {
   'list.empty': 'No articles match.',
   'list.untitled': '(untitled)',
   'list.more': 'reading {n} more…',
+  'lang.bar': 'This article’s languages',
+  'lang.add': '+ {name}',
+  'lang.addHint': 'No {name} version yet: start one. The date and the cover come along.',
+  'lang.has': '{name}: published',
+  'lang.hasDraft': '{name}: a draft',
+  'lang.missing': 'No {name} version yet',
+  'lang.new': '{name}: not saved yet',
+  'lang.sourceTags': 'The {name} version is tagged {tags}',
+  'lang.tagSep': ', ',
   'local.badge': 'local',
   'filter.all': 'All',
   'filter.live': 'Published',
@@ -41,6 +50,7 @@ export default {
 
   // Status
   'status.new': 'New article',
+  'status.newTranslation': 'New {name} version',
   'status.live': 'Published',
   'status.draft': 'Draft',
   'status.unsaved': 'unsaved',

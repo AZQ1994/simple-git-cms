@@ -23,6 +23,15 @@ export default {
   'list.empty': '条件に合う記事がありません',
   'list.untitled': '（無題）',
   'list.more': '残り {n} 件を読み込み中…',
+  'lang.bar': 'この記事の言語',
+  'lang.add': '+ {name}',
+  'lang.addHint': '{name}版はまだありません。クリックで書き始めます。日付とアイキャッチ画像は元の記事から引き継ぎます。',
+  'lang.has': '{name}：公開中',
+  'lang.hasDraft': '{name}：下書き',
+  'lang.missing': '{name}版はまだありません',
+  'lang.new': '{name}：未保存',
+  'lang.sourceTags': '{name}版のタグ：{tags}',
+  'lang.tagSep': '、',
   'local.badge': 'ローカル',
   'filter.all': 'すべて',
   'filter.live': '公開済み',
@@ -42,6 +51,7 @@ export default {
 
   // 状態
   'status.new': '新しい記事',
+  'status.newTranslation': '新しい{name}版',
   'status.live': '公開済み',
   'status.draft': '下書き',
   'status.unsaved': '未保存',

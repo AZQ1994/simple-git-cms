@@ -88,6 +88,8 @@
         </div>
 
         <article class="doc" id="doc" hidden>
+          <!-- The article's languages (config.json's languages), filled in by doc.js -->
+          <div class="langs" id="langs" role="group" data-i18n-aria-label="lang.bar" hidden></div>
           <textarea class="title" id="f-title" rows="1" data-i18n-placeholder="doc.titlePlaceholder"></textarea>
 
           <div class="cover" id="cover" hidden>
@@ -119,6 +121,8 @@
               </div>
               <datalist id="tag-options"></datalist>
             </div>
+            <!-- In a translation, the tags the other language has, to go by: each language's own words -->
+            <p class="tags-source" id="tags-source" hidden></p>
           </div>
 
           <!-- The collection's own fields (collections[].fields), filled in by field-form.js -->

@@ -35,8 +35,10 @@ behind it are in the repository history.
   A collection can have its own `languages`.
 - **`simple-git-cms/languages`** for the site: keep file names whole as ids, list one language's
   articles, and find every language of one article for a language switcher and hreflang.
-- The editor opens each language as an article of its own for now and links only the first
-  language to the site; `npm run dev` accepts ids with a language suffix.
+- **In the editor an article is one row**, whichever languages it has, tagged with each — faded
+  where a translation is missing. Above the title, a click opens another language, or starts a
+  translation with the date and cover already filled in. "View on site" is for the first language
+  only, for now; `npm run dev` accepts ids with a language suffix.
 
 ## 1.0.0 — 2026-10-27
 

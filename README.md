@@ -517,8 +517,11 @@ The first language has no suffix, so a site that has been running in one languag
 without moving a file. An article doesn't need every language: one in only one of them is as
 normal as one in all.
 
-For now the editor opens each language as an article of its own, and links only the first
-language to the site.
+In the editor an article is one row in the list, whichever languages it has, with a tag for each:
+faded for a language it doesn't have yet, amber for one that is a draft. Above the title are its
+languages: a click opens another, and one it lacks starts a translation, with the date and the
+cover image already filled in. Saving it makes `<id>.<lang>.md`. "View on site" is shown for the
+first language only, for now.
 
 On the site, `simple-git-cms/languages` has what a page needs — see
 [integrations/astro/README.md](integrations/astro/README.md#articles-in-more-than-one-language).

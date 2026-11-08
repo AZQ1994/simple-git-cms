@@ -23,6 +23,15 @@ export default {
   'list.empty': '没有符合条件的文章',
   'list.untitled': '（无标题）',
   'list.more': '还在读取其余 {n} 篇…',
+  'lang.bar': '这篇文章的语言',
+  'lang.add': '+ {name}',
+  'lang.addHint': '还没有{name}版：点一下开始写。日期和封面图会从原文带过来。',
+  'lang.has': '{name}：已发布',
+  'lang.hasDraft': '{name}：草稿',
+  'lang.missing': '还没有{name}版',
+  'lang.new': '{name}：还没保存',
+  'lang.sourceTags': '{name}版的标签：{tags}',
+  'lang.tagSep': '、',
   'local.badge': '本地',
   'filter.all': '全部',
   'filter.live': '已发布',
@@ -42,6 +51,7 @@ export default {
 
   // 状态
   'status.new': '新文章',
+  'status.newTranslation': '新的{name}版',
   'status.live': '已发布',
   'status.draft': '草稿',
   'status.unsaved': '未保存',
