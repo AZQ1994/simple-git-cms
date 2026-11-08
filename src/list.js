@@ -1,7 +1,15 @@
 // The sidebar: the article list, its search box and filters.
 import { $ } from './dom.js';
-import { emit, fmtDate, on, state } from './store.js';
+import { COLLECTION, emit, fmtDate, on, state } from './store.js';
 import { t } from './i18n/index.js';
+import { display } from './fields.js';
+
+/** The values of the fields config.json asks to see in the list (`list: true`), as they are shown. */
+const listed = (a) =>
+  (COLLECTION?.fields ?? [])
+    .filter((f) => f.list)
+    .map((f) => display(f, a.extra?.[f.name]))
+    .filter(Boolean);
 
 export function renderList() {
   const q = $('#search').value.trim().toLowerCase();
@@ -12,7 +20,7 @@ export function renderList() {
   const items = state.articles.filter(
     (a) =>
       (state.filter === 'all' || (state.filter === 'draft') === a.draft) &&
-      (!q || a.title.toLowerCase().includes(q) || a.tags.some((tag) => tag.toLowerCase().includes(q))),
+      (!q || [a.title, ...a.tags, ...listed(a)].some((text) => text.toLowerCase().includes(q))),
   );
   const ul = $('#list');
   ul.replaceChildren(
@@ -24,6 +32,7 @@ export function renderList() {
       btn.innerHTML = `<span class="item-title"></span><span class="item-meta"><span class="dot ${a.draft ? 'draft' : 'live'}"></span><span class="item-state"></span><span>${fmtDate(a.date)}</span></span>`;
       btn.querySelector('.item-title').textContent = a.title || t('list.untitled');
       btn.querySelector('.item-state').textContent = a.draft ? t('status.draft') : t('status.live');
+      for (const text of listed(a)) btn.querySelector('.item-meta').append(Object.assign(document.createElement('span'), { className: 'item-field', textContent: text }));
       btn.addEventListener('click', () => emit('article:open', a.id));
       li.append(btn);
       return li;

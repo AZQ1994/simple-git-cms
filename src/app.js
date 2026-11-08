@@ -12,6 +12,7 @@
 //   local.js       the same store, backed by the files on this machine while developing
 //   editor.js      the editing surface: TipTap, the toolbar and the image tools
 //   doc.js         the article form, saving, publishing, the status bar
+//   field-form.js  the inputs for a collection's own fields (fields.js: what they read and write)
 //   preview-ui.js  the preview pane
 //   actions.js     the buttons that start config.actions' workflows, and how each run is doing
 //   theme.js       light or dark

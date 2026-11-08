@@ -5,7 +5,7 @@ Thanks for wanting to help. Issues and pull requests are welcome in English, Chi
 ## Before you start
 
 For anything bigger than a fix, open an issue first and say what you have in mind. The editor is
-deliberately small — the same fields for every collection, no server, the file written back exactly as it was read — and
+deliberately small — no server, no database, the file written back exactly as it was read — and
 it is easier to agree on the shape of a change before the code exists.
 
 A security problem goes through [SECURITY.md](SECURITY.md), not an issue.
