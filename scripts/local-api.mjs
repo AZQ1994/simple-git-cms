@@ -56,7 +56,8 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
   };
   const read = (file) => (existsSync(file) ? readFileSync(file, 'utf8') : null);
   // An article id is a file name in the collection's directory, never a path out of it
-  const isId = (id) => /^[\w-]+$/.test(String(id));
+  // (with a language suffix, `<id>.zh`, on a site in several languages)
+  const isId = (id) => /^[\w-]+(\.[a-z]{2,3}(-[A-Za-z0-9]{2,8})*)?$/.test(String(id));
 
   /** One collection's files: the article directory a request named, and what is in it. */
   const collection = (content) => {

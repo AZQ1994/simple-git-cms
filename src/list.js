@@ -1,8 +1,19 @@
 // The sidebar: the article list, its search box and filters.
 import { $ } from './dom.js';
-import { COLLECTION, emit, fmtDate, on, state } from './store.js';
-import { t } from './i18n/index.js';
+import { COLLECTION, CONFIG, emit, fmtDate, on, state } from './store.js';
+import { getLocale, t } from './i18n/index.js';
 import { display } from './fields.js';
+import { languagesOf } from '../integrations/languages.js';
+import { groupArticles, whereIs } from './translations.js';
+
+/** A language's name in the interface language: ja is 日语 in Chinese, Japanese in English. */
+export const languageName = (code) => {
+  try {
+    return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+};
 
 /** The values of the fields config.json asks to see in the list (`list: true`), as they are shown. */
 const listed = (a) =>
@@ -13,27 +24,54 @@ const listed = (a) =>
 
 export function renderList() {
   const q = $('#search').value.trim().toLowerCase();
-  const counts = { all: state.articles.length, live: 0, draft: 0 };
-  for (const a of state.articles) counts[a.draft ? 'draft' : 'live']++;
+  const langs = languagesOf(CONFIG, COLLECTION);
+  // One row an article, whichever languages it has; a row counts as live or draft when any of its
+  // languages is, so a translation still being written shows under Drafts
+  const rows = groupArticles(state.articles, langs);
+  const versionsOf = (row) => (langs.length ? langs.map((l) => row.versions[l]).filter(Boolean) : [row.primary]);
+  const counts = { all: rows.length, live: 0, draft: 0 };
+  for (const row of rows) {
+    const vs = versionsOf(row);
+    if (vs.some((a) => !a.draft)) counts.live++;
+    if (vs.some((a) => a.draft)) counts.draft++;
+  }
   for (const k of Object.keys(counts)) $(`#count-${k}`).textContent = counts[k];
 
-  const items = state.articles.filter(
-    (a) =>
-      (state.filter === 'all' || (state.filter === 'draft') === a.draft) &&
-      (!q || [a.title, ...a.tags, ...listed(a)].some((text) => text.toLowerCase().includes(q))),
-  );
+  const open = whereIs(state.current, langs);
+  const items = rows.filter((row) => {
+    const vs = versionsOf(row);
+    return (
+      (state.filter === 'all' || vs.some((a) => (state.filter === 'draft') === a.draft)) &&
+      (!q || vs.some((a) => [a.title, ...a.tags, ...listed(a)].some((text) => text.toLowerCase().includes(q))))
+    );
+  });
   const ul = $('#list');
   ul.replaceChildren(
-    ...items.map((a) => {
+    ...items.map((row) => {
+      const a = row.primary;
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'item' + (state.current?.id === a.id ? ' active' : '');
+      const active = langs.length ? open?.id === row.id : state.current?.id === a.id;
+      btn.className = 'item' + (active ? ' active' : '');
       btn.innerHTML = `<span class="item-title"></span><span class="item-meta"><span class="dot ${a.draft ? 'draft' : 'live'}"></span><span class="item-state"></span><span>${fmtDate(a.date)}</span></span>`;
       btn.querySelector('.item-title').textContent = a.title || t('list.untitled');
       btn.querySelector('.item-state').textContent = a.draft ? t('status.draft') : t('status.live');
       for (const text of listed(a)) btn.querySelector('.item-meta').append(Object.assign(document.createElement('span'), { className: 'item-field', textContent: text }));
-      btn.addEventListener('click', () => emit('article:open', a.id));
+      // Which languages it has; one it lacks is there too, faded, so a missing translation shows
+      if (langs.length) {
+        const box = Object.assign(document.createElement('span'), { className: 'item-langs' });
+        for (const l of langs) {
+          const v = row.versions[l];
+          const chip = Object.assign(document.createElement('span'), { className: `item-lang${v ? (v.draft ? ' draft' : '') : ' missing'}`, textContent: l });
+          chip.title = t(v ? (v.draft ? 'lang.hasDraft' : 'lang.has') : 'lang.missing', { name: languageName(l) });
+          box.append(chip);
+        }
+        btn.querySelector('.item-meta').append(box);
+      }
+      // The language that is open stays open when moving to another article, where it has one
+      const target = (open && row.versions[open.lang]) || a;
+      btn.addEventListener('click', () => emit('article:open', target.id));
       li.append(btn);
       return li;
     }),
