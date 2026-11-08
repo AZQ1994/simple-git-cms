@@ -270,6 +270,8 @@ export default {
   'config.collectionName': '{key} can only use letters, digits, - and _: it goes in the address bar.',
   'config.collectionNameNeeded': '{key} is needed: the last part of dir ({name}) can’t go in the address bar. Use letters, digits, - and _.',
   'config.duplicateName': '{key}: another collection is already called {name}. Give one of them a different name.',
+  'config.langCode': '{key} has to be a language code, like ja, zh or zh-Hant.',
+  'config.repeated': '{key} lists the same thing twice.',
   'config.movedCollection': 'Since 1.0, collection is collections, a list: write "collections": [{ … }] with the same settings inside.',
   'config.movedPreview': 'Since 1.0, preview.url is each collection’s preview: move it into collections, as "preview": "/news/preview/".',
   'config.type.string': 'text',

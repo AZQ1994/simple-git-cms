@@ -271,6 +271,8 @@ export default {
   'config.collectionName': '{key} に使えるのは英数字と - と _ だけです（アドレスバーに入るため）。',
   'config.collectionNameNeeded': '{key} が必要です：dir の最後の部分（{name}）はアドレスバーに入れられません。英数字と - と _ を使ってください。',
   'config.duplicateName': '{key}：{name} という名前の collection がすでにあります。どちらかを別の名前にしてください。',
+  'config.langCode': '{key} は ja、zh、zh-Hant のような言語コードにしてください。',
+  'config.repeated': '{key} に同じものが二度書かれています。',
   'config.movedCollection': '1.0 から collection はリストの collections になりました。"collections": [{ … }] と書き、中の設定はそのままです。',
   'config.movedPreview': '1.0 から preview.url は collection ごとの preview になりました。collections の中に "preview": "/news/preview/" として移してください。',
   'config.type.string': 'テキスト',

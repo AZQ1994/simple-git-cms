@@ -54,6 +54,7 @@
 | `public/` | 页面、样式、`config.example.json` |
 | `auth/` | 「用 GitHub 登录」的中转。一个没有依赖的文件，可以跑在 Cloudflare Workers、Deno Deploy、Vercel、Netlify、Bun 或自己的 Node 服务器上（见[说明](auth/README.zh-CN.md)） |
 | `integrations/astro/` | 网站端显示图片说明、并排和文章目录的 rehype 插件（见[说明](integrations/astro/README.zh-CN.md)） |
+| `integrations/languages.js` | 多语言文章：哪个文件是哪种语言。编辑器和网站（`simple-git-cms/languages`）共用 |
 | `test/` | `npm test`，用假的 GitHub API 测试保存 / 冲突 / 重试，并检查翻译是否齐全，不访问网络。`npm run test:e2e` 则在真实浏览器里驱动构建出来的编辑器（[详情](test/e2e/README.md)） |
 | `www/` | 项目自己的站点 [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[详情](www/README.md)） |
 
@@ -86,6 +87,7 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 | `siteUrl` | 网站地址，用于「在网站查看」；编辑器不在网站同域名下时也用来加载图片 |
 | `timeZone` | 日期显示、图片目录和新文章编号用的时区 |
 | `auth.base` | 登录中转的地址 |
+| `languages` | 文章用哪几种语言写，多于一种时填，比如 `["ja", "zh"]`；第一个是默认语言。见[多语言文章](#多语言文章) |
 | `collections` | 网站有哪几种文章，是一个列表（至少一项）。多于一项时，侧栏会出现切换用的菜单。每一项： |
 | `collections[].dir` | 文章目录（仓库内路径），每篇文章一个 `<id>.md`（必填） |
 | `collections[].name` | 地址栏里的名字（`?c=news`），只能用字母、数字、`-` 和 `_`。不填就是 `dir` 的最后一段；不能重复 |
@@ -94,6 +96,7 @@ npx simple-git-cms install public/editor   # 复制到网站的静态目录，�
 | `collections[].imageField` | 封面图写在 frontmatter 的哪个字段，比如 `image`。不填就没有封面图这个控件 |
 | `collections[].preview` | 这种文章在网站上的预览页（见下面第 4 步），不填则没有「预览」按钮 |
 | `collections[].fields` | 这种文章自己的 frontmatter 字段，表单里各有一个输入框，见[自己定义字段](#自己定义字段) |
+| `collections[].languages` | 这种文章自己的语言，代替 `languages`。写 `["ja"]` 就只有一种 |
 | `media.dir` / `media.url` | 图片在仓库里的目录 / 在网站上的路径前缀，新图片放在 `<日期>/` 子目录 |
 | `media.maxWidth` / `media.quality` | 上传时压缩的最大宽度和 webp 质量 |
 | `media.maxFileMB` | 附件大小上限，单位 MB（默认 20，理由见下） |
@@ -407,6 +410,22 @@ HTML：
 
 在网站上怎么显示，仍然是网站自己的事。编辑器的预览是在浏览器里转换 Markdown 的，所以由网站展开的
 标签不会出现在预览里。
+
+## 多语言文章
+
+config.json 里写了 `"languages": ["ja", "zh"]` 时，一篇文章的每种语言各是一个文件，放在一起：
+
+```
+src/content/news/202608101200.md      ja，第一个语言：没有后缀
+src/content/news/202608101200.zh.md   zh：<id>.<lang>.md
+src/content/news/202105061030.zh.md   只有中文的文章
+```
+
+第一个语言不加后缀，所以一直用一种语言的网站加第二种语言时，一个文件都不用动。文章不必每种语言都有：只有一种语言的文章和全都有的一样正常。
+
+目前编辑器还是把每种语言当成一篇单独的文章打开，「在网站查看」只给第一个语言显示。
+
+网站端需要的东西在 `simple-git-cms/languages` 里，见 [integrations/astro/README.zh-CN.md](integrations/astro/README.zh-CN.md#多语言文章)。
 
 ## 把编辑器锁紧一点
 

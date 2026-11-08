@@ -265,3 +265,14 @@ test('every setting a field can have is in the JSON schema too', () => {
     assert.ok(unknown.includes(`collections[0].fields[0].${key}x`), `${key}x is not a setting`);
   }
 });
+
+test('languages are a list of codes, the site’s or a collection’s own', () => {
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'zh', 'zh-Hant'] }), []);
+  const own = good();
+  own.collections[0].languages = ['ja', 'zh'];
+  assert.deepEqual(keys(own), []);
+  assert.deepEqual(keys({ ...good(), languages: 'ja' }), ['languages']);
+  assert.deepEqual(keys({ ...good(), languages: [] }), ['languages']);
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'Japanese'] }), ['languages[1]']);
+  assert.deepEqual(keys({ ...good(), languages: ['ja', 'ja'] }), ['languages']);
+});

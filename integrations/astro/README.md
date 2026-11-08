@@ -101,4 +101,30 @@ html { scroll-behavior: smooth; }
 .prose .toc ol { margin: 0; padding-left: 1.2em; }
 .prose .toc ol ol { margin-top: 2px; }
 .prose .toc a { text-decoration: none; }
+## Articles in more than one language
+
+With `languages` in config.json, an article's languages are files side by side —
+`202608101200.md` (the first language) and `202608101200.zh.md` — see
+[the main README](../../README.md#articles-in-more-than-one-language). Three things from
+`simple-git-cms/languages` cover what a site needs:
+
+```js
+// src/content.config.ts — keep the file name whole: Astro's default id would turn
+// 202608101200.zh into 202608101200zh
+import { fileId } from 'simple-git-cms/languages';
+const news = defineCollection({
+  loader: glob({ pattern: '*.md', base: './src/content/news', generateId: fileId }),
+  schema: /* … */,
+});
+```
+
+```js
+import { inLanguage, translationsOf } from 'simple-git-cms/languages';
+const LANGUAGES = ['ja', 'zh']; // the same list as config.json
+
+// One language's articles; articleId is the id without the language, for the URL
+const zh = inLanguage(await getCollection('news'), 'zh', LANGUAGES);
+
+// Every language of one article, for a language switcher and hreflang
+const all = translationsOf(await getCollection('news'), entry.id, LANGUAGES); // { ja: entry, zh: entry }
 ```

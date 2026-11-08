@@ -82,6 +82,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
 | `integrations/astro/` | rehype plugins so your site renders captions, side-by-side images and a table of contents ([details](integrations/astro/README.md)) |
+| `integrations/languages.js` | Articles in more than one language: which file is which language. Used by the editor and your site (`simple-git-cms/languages`) |
 | `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. `npm run test:e2e` drives the built editor in a real browser ([details](test/e2e/README.md)) |
 | `www/` | The project's own site, [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com) ([details](www/README.md)) |
 
@@ -115,6 +116,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `siteUrl` | Your site's address, used for "View on site" — and to load images when the editor is not on the same domain |
 | `timeZone` | Used for dates shown, for image folders, and for new article IDs |
 | `auth.base` | The URL of the sign-in relay |
+| `languages` | The languages articles are written in, when more than one, e.g. `["ja", "zh"]`; the first is the default. See [Articles in more than one language](#articles-in-more-than-one-language) |
 | `collections` | The kinds of article the site has, as a list (at least one). With more than one, the sidebar has a menu to switch between them. Each entry: |
 | `collections[].dir` | The article directory inside the repository; one `<id>.md` per article (required) |
 | `collections[].name` | What the address bar calls it (`?c=news`): letters, digits, `-` and `_`. Defaults to the last part of `dir`; no two may be the same |
@@ -123,6 +125,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `collections[].imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `collections[].preview` | This collection's preview page on your site (step 4). Leave it out and there is no Preview button |
 | `collections[].fields` | Frontmatter fields of this collection's own, each with an input in the form; see [Fields of your own](#fields-of-your-own) |
+| `collections[].languages` | This collection's own languages, instead of `languages`. `["ja"]` keeps it to one |
 | `media.dir` / `media.url` | Where images live in the repository / their path prefix on the site. New images go in a `<date>/` subdirectory. |
 | `media.maxWidth` / `media.quality` | Maximum width and webp quality when compressing on upload |
 | `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default; see below) |
@@ -498,6 +501,27 @@ box, with your label on it and the element already written out when you insert o
 
 Showing it on the site is your site's business, as it already was. The editor's preview renders
 Markdown in the browser, so a tag your site expands itself will not appear there.
+
+## Articles in more than one language
+
+With `"languages": ["ja", "zh"]` in config.json, each language of an article is a file of its own,
+next to the others:
+
+```
+src/content/news/202608101200.md      ja, the first language: no suffix
+src/content/news/202608101200.zh.md   zh: <id>.<lang>.md
+src/content/news/202105061030.zh.md   an article that only exists in zh
+```
+
+The first language has no suffix, so a site that has been running in one language adds a second
+without moving a file. An article doesn't need every language: one in only one of them is as
+normal as one in all.
+
+For now the editor opens each language as an article of its own, and links only the first
+language to the site.
+
+On the site, `simple-git-cms/languages` has what a page needs — see
+[integrations/astro/README.md](integrations/astro/README.md#articles-in-more-than-one-language).
 
 ## Locking the editor down
 

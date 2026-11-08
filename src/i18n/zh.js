@@ -271,6 +271,8 @@ export default {
   'config.collectionName': '{key} 只能用字母、数字、- 和 _：它会出现在地址栏里。',
   'config.collectionNameNeeded': '{key} 需要填写：dir 的最后一段（{name}）不能放进地址栏。请用字母、数字、- 和 _。',
   'config.duplicateName': '{key}：已经有另一个 collection 叫 {name} 了，请给其中一个换个名字。',
+  'config.langCode': '{key} 必须是语言代码，比如 ja、zh、zh-Hant。',
+  'config.repeated': '{key} 里有重复的项。',
   'config.movedCollection': '从 1.0 起，collection 改成了列表 collections：写成 "collections": [{ … }]，里面的设置不变。',
   'config.movedPreview': '从 1.0 起，preview.url 改为每个 collection 各自的 preview：把它移到 collections 里，写成 "preview": "/news/preview/"。',
   'config.type.string': '文本',

@@ -72,6 +72,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
 | `integrations/astro/` | サイト側で画像の説明・横並び・記事の目次を表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
+| `integrations/languages.js` | 多言語の記事：どのファイルがどの言語か。エディターとサイト（`simple-git-cms/languages`）で共通 |
 | `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません。`npm run test:e2e` はビルド済みのエディターを実際のブラウザーで動かします（[詳細](test/e2e/README.md)） |
 | `www/` | このプロジェクト自身のサイト [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[詳細](www/README.md)） |
 
@@ -106,6 +107,7 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `siteUrl` | サイトのアドレス。「サイトで見る」に使うほか、エディターがサイトと別ドメインにあるときは画像の読み込みにも使います |
 | `timeZone` | 日付の表示、画像フォルダー、新しい記事の番号に使うタイムゾーン |
 | `auth.base` | ログイン中継のアドレス |
+| `languages` | 記事を書く言語（2 つ以上のとき）。例：`["ja", "zh"]`。最初のものが既定の言語です。[多言語の記事](#多言語の記事)を参照 |
 | `collections` | サイトにある記事の種類のリスト（1 つ以上）。2 つ以上あるとサイドバーに切り替えのメニューが出ます。各項目： |
 | `collections[].dir` | 記事のディレクトリ（リポジトリ内のパス）。記事 1 本につき `<id>.md` が 1 つ（必須） |
 | `collections[].name` | アドレスバーでの名前（`?c=news`）。英数字と `-`・`_` だけ。省くと `dir` の最後の部分になります。重複はできません |
@@ -114,6 +116,7 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `collections[].imageField` | アイキャッチ画像を書き込む frontmatter の項目名（例：`image`）。省くとアイキャッチ画像の欄は出ません |
 | `collections[].preview` | この種類の記事のサイト側プレビューページ（下の手順 4）。空なら「プレビュー」ボタンは出ません |
 | `collections[].fields` | この種類の記事独自の frontmatter のフィールド。フォームにそれぞれ入力欄が出ます。[自分でフィールドを定義する](#自分でフィールドを定義する)を参照 |
+| `collections[].languages` | この種類の記事だけの言語。`languages` の代わりに使われます。`["ja"]` なら 1 言語だけ |
 | `media.dir` / `media.url` | 画像のリポジトリ内ディレクトリ / サイト上のパス。新しい画像は `<日付>/` の下に入ります |
 | `media.maxWidth` / `media.quality` | アップロード時に圧縮する最大幅と webp の品質 |
 | `media.maxFileMB` | 添付ファイルの上限サイズ（MB、既定は 20。理由は下記） |
@@ -446,6 +449,22 @@ HTML のかたまりは最初の空行で終わるので、段落が 2 つ入っ
 
 サイト側での表示は、これまでどおりサイトの仕事です。エディターのプレビューはブラウザーで Markdown
 を変換しているので、サイトが展開するタグはそこには出ません。
+
+## 多言語の記事
+
+config.json に `"languages": ["ja", "zh"]` と書くと、記事の各言語がそれぞれ 1 つのファイルになり、並んで置かれます：
+
+```
+src/content/news/202608101200.md      ja（最初の言語）：接尾辞なし
+src/content/news/202608101200.zh.md   zh：<id>.<lang>.md
+src/content/news/202105061030.zh.md   中国語だけの記事
+```
+
+最初の言語には接尾辞が付かないので、1 言語で運用してきたサイトに 2 つ目の言語を足しても、ファイルは 1 つも動きません。記事がすべての言語を持っている必要はなく、1 言語だけの記事も普通の記事です。
+
+いまのところエディターは各言語を別々の記事として開き、「サイトで見る」は最初の言語にだけ表示されます。
+
+サイト側で必要なものは `simple-git-cms/languages` にあります。[integrations/astro/README.ja.md](integrations/astro/README.ja.md#多言語の記事) を参照してください。
 
 ## エディターを締めておく
 
