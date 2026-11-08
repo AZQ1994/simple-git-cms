@@ -146,6 +146,13 @@ test('something that is not an object at all is rejected plainly', () => {
   for (const value of [null, [], 'config', 7]) assert.deepEqual(keys(value), ['config.json']);
 });
 
+test('toc takes rehype-toc\'s options, and nothing else', () => {
+  assert.deepEqual(keys({ ...good(), toc: {} }), []);
+  assert.deepEqual(keys({ ...good(), toc: { minHeadings: 2, title: '目录', insert: false } }), []);
+  assert.deepEqual(keys({ ...good(), toc: { minHeadings: 0 } }), ['toc.minHeadings']);
+  assert.deepEqual(keys({ ...good(), toc: true }), ['toc']);
+});
+
 test('$schema is allowed, since it is what gives an editor autocomplete', () => {
   assert.deepEqual(keys({ ...good(), $schema: './config.schema.json' }), []);
 });
@@ -206,6 +213,8 @@ test('a field is told what is wrong with it, setting by setting', () => {
   assert.deepEqual(with_({ name: 'a', colour: 'red' }), ['collections[0].fields[0].colour']);
   assert.deepEqual(with_({ name: 'a' }, { name: 'a' }), ['collections[0].fields[1]'], 'the same key twice');
   assert.deepEqual(with_({ name: 'tags' }, { name: 'image' }), ['collections[0].fields[0].name', 'collections[0].fields[1].name'], 'a key the editor already writes');
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'events', fields: [{ name: 'toc' }] }] }), [], 'toc is free while the editor has no Table of contents box');
+  assert.deepEqual(keys({ ...good(), toc: {}, collections: [{ dir: 'events', fields: [{ name: 'toc' }] }] }), ['collections[0].fields[0].name'], 'and taken once it has');
   assert.deepEqual(with_({ name: 'a', type: 'select' }), ['collections[0].fields[0].options']);
   assert.deepEqual(with_({ name: 'a', type: 'select', options: [] }), ['collections[0].fields[0].options']);
   assert.deepEqual(with_({ name: 'a', type: 'select', options: ['x', { label: 'no value' }, { value: 'y', colour: 1 }, null] }), [

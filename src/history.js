@@ -14,6 +14,17 @@ import { t } from './i18n/index.js';
 const modal = $('#history-modal');
 const list = $('#history-list');
 const frame = $('#history-frame');
+// A link to a heading of the version (its table of contents) scrolls the frame. Followed, it would
+// load the editor's own address there: the base address of a srcdoc frame is its parent's
+frame.addEventListener('load', () => {
+  const doc = frame.contentDocument;
+  doc?.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a[href^="#"]');
+    if (!a) return;
+    e.preventDefault();
+    doc.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)))?.scrollIntoView();
+  });
+});
 const previewBtn = modal.querySelector('[data-history="preview"]');
 const restoreBtn = modal.querySelector('[data-history="restore"]');
 
@@ -73,7 +84,7 @@ async function show(c) {
   if (!article) return showText(t('history.deleted'));
   let html;
   try {
-    html = await renderBody(article.body);
+    html = await renderBody(article.body, article.extra);
   } catch (e) {
     return toast(e.message, 'error');
   }
@@ -104,7 +115,7 @@ function page(article, html) {
   // Parsing builds an inert document: nothing in it runs or loads until it is in the frame
   const doc = new DOMParser().parseFromString(`<body>${head}${html}</body>`, 'text/html');
   for (const el of doc.querySelectorAll('[src]')) el.setAttribute('src', displaySrc(el.getAttribute('src')));
-  for (const a of doc.querySelectorAll('a[href]')) a.target = '_blank';
+  for (const a of doc.querySelectorAll('a[href]:not([href^="#"])')) a.target = '_blank';
   return `<!doctype html><html><head><meta charset="utf-8">
 <style>
   body { margin: 0; padding: 28px 32px 60px; font: 16px/1.8 ${v('--font')}; color: ${v('--text')}; background: ${v('--bg')}; overflow-wrap: anywhere; }

@@ -74,6 +74,8 @@ before(async () => {
         },
       ],
       media: { dir: MEDIA_DIR, url: '/uploads' },
+      // The site runs rehype-toc, so each article gets a switch for its table of contents
+      toc: {},
       actions: [
         { label: 'Publish to the live site', workflow: 'release.yml', inputs: { tag: '' }, url: 'http://live.invalid' },
         { label: 'Rebuild', workflow: 'rebuild.yml', ref: 'other' },
@@ -282,6 +284,19 @@ test('saving a draft leaves the site alone', async () => {
 
   assert.match(gh.files.get(`${CONTENT_DIR}/202610010000.md`), /Rooms to be confirmed\./);
   assert.match(gh.commits.at(-1).message, /^\[skip ci\] /, 'a draft save should not trigger a build');
+});
+
+test('unticking the table of contents writes toc: false, and ticking it again takes the line out', async () => {
+  const file = () => gh.files.get(`${CONTENT_DIR}/202610010000.md`);
+  const toc = `document.getElementById('f-toc')`;
+  assert.equal(await page.evaluate(`!document.getElementById('toc-item').hidden && ${toc}.checked`), true, 'on, unless the article says otherwise');
+  await page.evaluate(`${toc}.click()`);
+  await save();
+  assert.match(file(), /^toc: false$/m);
+
+  await page.evaluate(`${toc}.click()`);
+  await save();
+  assert.doesNotMatch(file(), /^toc:/m);
 });
 
 test('a table, an HTML embed and a block the site defined come back out byte for byte', async () => {

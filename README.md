@@ -81,7 +81,7 @@ the scenes that is one git commit, and your existing CI builds and deploys the s
 | `src/` | The editor. `github.js` (reading and writing GitHub, usable on its own from Node), `article.js` (the file format), `fields.js` (what a collection's own fields read and write), `images.js` (compression and cropping), `i18n/` (interface languages), and the interface split across `store.js`, `dom.js`, `lang.js`, `auth.js`, `list.js`, `editor.js`, `doc.js`, `field-form.js`, `preview-ui.js` and `history.js`; `schema.js` says what a document may contain and how it is written back as Markdown, `html-scan.js` whether its HTML closes what it opens — `app.js` reads the config and starts them up |
 | `public/` | The page, its styles, and `config.example.json` |
 | `auth/` | The "Sign in with GitHub" relay — one dependency-free file that runs on Cloudflare Workers, Deno Deploy, Vercel, Netlify, Bun or your own Node server ([details](auth/README.md)) |
-| `integrations/astro/` | A rehype plugin so your site renders captions and side-by-side images ([details](integrations/astro/README.md)) |
+| `integrations/astro/` | rehype plugins so your site renders captions, side-by-side images and a table of contents ([details](integrations/astro/README.md)) |
 | `test/` | `npm test` — saving, conflicts and retries against a fake GitHub API, plus translation coverage. No network. `npm run test:e2e` drives the built editor in a real browser ([details](test/e2e/README.md)) |
 | `www/` | The project's own site, [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com) ([details](www/README.md)) |
 
@@ -128,6 +128,7 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `media.maxFileMB` | The largest attachment that may be uploaded, in MB (20 by default; see below) |
 | `blocks` | Blocks this site defines for itself; see [Blocks of your own](#blocks-of-your-own) |
 | `deploy.skipCiForDrafts` | Add `[skip ci]` when saving drafts (default true) |
+| `toc` | Your site runs rehype-toc, a table of contents for long articles: the same options it is given (`{}` for its defaults), so the preview shows it too. See [integrations/astro](integrations/astro/README.md#table-of-contents) |
 | `actions` | Buttons in the sidebar, each starting a workflow that has a `workflow_dispatch` trigger, then following the run; see [Action buttons](#action-buttons). The GitHub App needs **Actions: Read and write** for them ([auth/README.md](auth/README.md)) |
 
 ```json
@@ -205,14 +206,14 @@ a single standard-web-API file — Deno Deploy, Vercel, Netlify, Bun and plain N
 
 ### 4. Set up the site side
 
-See [integrations/astro/README.md](integrations/astro/README.md) for captions and side-by-side
-images.
+See [integrations/astro/README.md](integrations/astro/README.md) for captions, side-by-side
+images and a table of contents for long articles.
 
 For the preview, add a page to your site that uses your normal article layout, import
 `connectPreview` from `simple-git-cms/preview-client` ([source](integrations/preview-client.js)),
 and fill in the title, date,
 tags and `article.html` inside `connectPreview(article => …)`. The editor converts the body through
-the same pipeline your site uses (remark-gfm, smartypants, rehype-figures) and posts the HTML over;
+the same pipeline your site uses (remark-gfm, smartypants, rehype-figures, rehype-toc) and posts the HTML over;
 the preview page only has to display it.
 
 If your article page shows more than that, the preview has it too: `article.image` is the cover
@@ -345,7 +346,7 @@ the date and tags:
 
 | Setting | Meaning |
 |---|---|
-| `name` | The frontmatter key (required). Not `title`, `description`, `date`, `tags`, `draft` or the collection's `imageField`, which the editor already writes |
+| `name` | The frontmatter key (required). Not `title`, `description`, `date`, `tags`, `draft`, the collection's `imageField`, or `toc` when config.json has `toc`, which the editor already writes |
 | `label` | What the form calls it; `name` when left out |
 | `type` | `text` (the default), `number`, `select`, `boolean` (a checkbox), `date`, or `plugin` (an input the site provides; [below](#an-input-of-your-own)) |
 | `required` | Publishing needs it filled in. A draft can be saved without it |

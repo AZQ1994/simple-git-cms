@@ -71,7 +71,7 @@ git のコミット 1 回で、あとは GitHub Actions などの CI がビル�
 | `src/` | エディター本体。`github.js`（GitHub の読み書き。Node から単独でも使えます）、`article.js`（記事の形式）、`fields.js`（独自フィールドの読み書き）、`images.js`（圧縮・切り抜き）、`i18n/`（画面の言語）。画面は `store.js`・`dom.js`・`lang.js`・`auth.js`・`list.js`・`editor.js`・`doc.js`・`field-form.js`・`preview-ui.js`・`history.js` に分かれ、`schema.js` が本文に置けるものと Markdown への書き戻し方を決め、`html-scan.js` が本文の HTML が開いたものを閉じているかを調べます。`app.js` は設定の読み込みと起動だけを担当します |
 | `public/` | ページ、スタイル、`config.example.json` |
 | `auth/` | 「GitHub でログイン」の中継。依存のない 1 ファイルで、Cloudflare Workers・Deno Deploy・Vercel・Netlify・Bun・自前の Node サーバーのどれでも動きます（[説明](auth/README.ja.md)） |
-| `integrations/astro/` | サイト側で画像の説明と横並びを表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
+| `integrations/astro/` | サイト側で画像の説明・横並び・記事の目次を表示するための rehype プラグイン（[説明](integrations/astro/README.ja.md)） |
 | `test/` | `npm test`。偽の GitHub API で保存・競合・再試行を確認し、翻訳の過不足も検査します。ネットワークにはつなぎません。`npm run test:e2e` はビルド済みのエディターを実際のブラウザーで動かします（[詳細](test/e2e/README.md)） |
 | `www/` | このプロジェクト自身のサイト [simple-git-cms.azq1994.com](https://simple-git-cms.azq1994.com)（[詳細](www/README.md)） |
 
@@ -119,6 +119,7 @@ npx simple-git-cms install public/editor   # サイトの静的ディレクト�
 | `media.maxFileMB` | 添付ファイルの上限サイズ（MB、既定は 20。理由は下記） |
 | `blocks` | このサイトが自分で定義するブロック。[自分でブロックを定義する](#自分でブロックを定義する)を参照 |
 | `deploy.skipCiForDrafts` | 下書きの保存に `[skip ci]` を付ける（既定は true） |
+| `toc` | サイトで rehype-toc（長い記事の目次）を使っているときに書きます。中身はプラグインに渡すオプションと同じで（既定のままなら `{}`）、プレビューにも目次が出ます。[integrations/astro](integrations/astro/README.ja.md#記事の目次) を参照 |
 | `actions` | サイドバーの実行ボタン。それぞれ `workflow_dispatch` トリガーのある workflow を実行し、進行状況を表示します。各項目：`label`（ボタンの文字、必須）、`workflow`（ファイル名。例：`release.yml`、必須）、`ref`（ブランチ、既定は `branch`）、`inputs`（workflow に毎回渡す値）、`confirm`（確認ダイアログの文言）、`url`（成功後に表示するリンク）。GitHub App に **Actions: Read and write** が必要です（[auth/README.ja.md](auth/README.ja.md)） |
 
 ```json
@@ -169,12 +170,12 @@ GitHub へ直接送ります——ので、効いてくるのはサイトをど�
 
 ### 4. サイト側
 
-画像の説明と横並びの表示は [integrations/astro/README.ja.md](integrations/astro/README.ja.md) を参照。
+画像の説明・横並び、長い記事の目次の表示は [integrations/astro/README.ja.md](integrations/astro/README.ja.md) を参照。
 
 プレビューを使うには、記事ページと同じレイアウトのページをサイトに 1 枚足して、
 `simple-git-cms/preview-client` の `connectPreview`（[ソース](integrations/preview-client.js)）を読み込み、
 `connectPreview(article => …)` の中でタイトル・日付・タグ・`article.html` をページに入れてください。
-エディターは本文をサイトと同じ流れ（remark-gfm、smartypants、rehype-figures）で HTML に変換して送るので、
+エディターは本文をサイトと同じ流れ（remark-gfm、smartypants、rehype-figures、rehype-toc）で HTML に変換して送るので、
 プレビューページは表示するだけで済みます。
 
 記事ページにそれ以外のものを出している場合も、プレビューに届きます。`article.image` はカバー画像
@@ -302,7 +303,7 @@ localhost で `localStorage['simple-git-cms-api']` を設定すると、GitHub A
 
 | 設定 | 意味 |
 |---|---|
-| `name` | frontmatter のキー（必須）。`title`、`description`、`date`、`tags`、`draft` と、その種類の `imageField` はエディターがすでに書くので使えません |
+| `name` | frontmatter のキー（必須）。`title`、`description`、`date`、`tags`、`draft` 、その種類の `imageField`、config.json に `toc` があるときの `toc` はエディターがすでに書くので使えません |
 | `label` | フォームに出る名前。省くと `name` |
 | `type` | `text`（既定）、`number`、`select`、`boolean`（チェックボックス）、`date`、`plugin`（サイトが用意する入力欄。[下記](#入力欄を自分で作る)） |
 | `required` | 公開には入力が必要です。下書きは空のままでも保存できます |
