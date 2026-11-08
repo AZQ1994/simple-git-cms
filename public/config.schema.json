@@ -270,6 +270,29 @@
         }
       }
     },
+    "toc": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The site runs rehype-toc (a table of contents for long articles), with these same options; the preview then shows it too. Leave it out for a site without it.",
+      "properties": {
+        "minHeadings": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 3,
+          "description": "How many headings an article needs before it gets a table of contents."
+        },
+        "title": {
+          "type": "string",
+          "description": "A heading above the list, e.g. Contents."
+        },
+        "insert": {
+          "type": "boolean",
+          "default": true,
+          "description": "false only adds ids to headings, for a site that lays out its own contents."
+        }
+      }
+    },
     "actions": {
       "type": "array",
       "description": "Buttons in the sidebar that start GitHub Actions workflows, e.g. publishing the test site the editor is on to the live site. The GitHub App needs Actions: Read and write.",

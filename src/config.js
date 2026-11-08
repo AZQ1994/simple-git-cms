@@ -89,6 +89,14 @@ const SPEC = {
     },
   },
   deploy: { fields: { skipCiForDrafts: { type: 'boolean' } } },
+  // The site runs rehype-toc with these options, so the preview should too
+  toc: {
+    fields: {
+      minHeadings: { type: 'number', min: 1, max: 100 },
+      title: str,
+      insert: { type: 'boolean' },
+    },
+  },
   actions: {
     each: {
       label: { ...str, required: true },
@@ -224,7 +232,7 @@ export function checkConfig(raw, t) {
   walk(raw, SPEC, '');
   if (Array.isArray(raw.collections)) {
     raw.collections.forEach((c, i) => {
-      if (c && typeof c === 'object' && Array.isArray(c.fields)) checkFields(c, `collections[${i}].fields`, (key, msg, params) => add(problems, key, msg, params));
+      if (c && typeof c === 'object' && Array.isArray(c.fields)) checkFields(c, raw, `collections[${i}].fields`, (key, msg, params) => add(problems, key, msg, params));
     });
   }
   return { problems, warnings };
@@ -232,7 +240,7 @@ export function checkConfig(raw, t) {
 
 /** What only makes sense across a collection's fields, or between one field's settings: walk()
  * has already said whether each setting is the right kind of thing on its own. */
-function checkFields(collection, prefix, add) {
+function checkFields(collection, raw, prefix, add) {
   const seen = new Set();
   collection.fields.forEach((f, i) => {
     if (f === null || typeof f !== 'object' || Array.isArray(f) || typeof f.name !== 'string') return;
@@ -241,7 +249,8 @@ function checkFields(collection, prefix, add) {
     if (seen.has(f.name)) add(path, 'config.fieldDuplicate', { name: f.name });
     seen.add(f.name);
     // The editor writes these itself; a second input for the same key would fight it
-    if (BUILT_IN.includes(f.name) || f.name === collection.imageField) add(`${path}.name`, 'config.fieldTaken', { name: f.name });
+    // (with toc in config.json, the form's Table of contents box writes `toc`)
+    if (BUILT_IN.includes(f.name) || f.name === collection.imageField || (f.name === 'toc' && raw.toc)) add(`${path}.name`, 'config.fieldTaken', { name: f.name });
     if (!type) return;
     for (const [setting, only] of Object.entries(ONLY_FOR)) {
       if (f[setting] !== undefined && type !== only) add(`${path}.${setting}`, 'config.fieldOnlyFor', { type: only });

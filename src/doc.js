@@ -304,6 +304,7 @@ function load(a) {
   $('#f-title').value = a.title;
   $('#f-date').value = fmtDateInput(a.date);
   $('#f-desc').value = a.description;
+  $('#f-toc').checked = a.extra?.toc !== false;
   tags = [...a.tags];
   renderTags();
   cover = coverField() ? (typeof a.extra?.[coverField()] === 'string' ? a.extra[coverField()] : null) : null;
@@ -468,6 +469,11 @@ export function collect() {
   if (coverField()) {
     if (cover) extra[coverField()] = cover;
     else delete extra[coverField()];
+  }
+  // Only a table of contents turned off is written down; on is what every article is by default
+  if (CONFIG.toc) {
+    if ($('#f-toc').checked) delete extra.toc;
+    else extra.toc = false;
   }
   return {
     ...state.current,
@@ -683,7 +689,7 @@ function watchDeploy(commit) {
 
 // ---------- Form fields ----------
 
-for (const id of ['#f-title', '#f-date', '#f-desc']) $(id).addEventListener('input', markDirty);
+for (const id of ['#f-title', '#f-date', '#f-desc', '#f-toc']) $(id).addEventListener('input', markDirty);
 $('#f-title').addEventListener('input', autosizeTitle);
 $('#f-title').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
@@ -711,4 +717,6 @@ on('relabel', () => {
   updateBar();
   updateDescHint();
   relabelFields();
+  $('#toc-item').hidden = !CONFIG?.toc;
+  $('#toc-item').title = t('doc.tocHint', { n: CONFIG?.toc?.minHeadings ?? 3 });
 });
