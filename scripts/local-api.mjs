@@ -11,7 +11,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, relative, resolve } from 'node:path';
-import { cleanMessage } from '../src/github.js';
+import { cleanMessage, freeId } from '../src/github.js';
+import { idIn, newArticleLang } from '../integrations/languages.js';
 
 /** git's own name for a blob's contents, so the editor's cache can key on it exactly as it keys
  * on the oid GitHub reports. */
@@ -67,18 +68,8 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
         .filter((name) => name.endsWith('.md'))
         .map((name) => name.replace(/\.md$/, ''));
 
-    /** The same rule as a new article gets on GitHub: the minute it was made, in the site's time
-     * zone, plus one where that is taken. */
-    const newId = () => {
-      const parts = Object.fromEntries(
-        new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-          .formatToParts(new Date())
-          .map((p) => [p.type, p.value]),
-      );
-      let id = Number(`${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}`);
-      while (existsSync(articlePath(String(id)))) id++;
-      return String(id);
-    };
+    /** The same rule as a new article gets on GitHub (freeId). */
+    const newId = () => freeId(timeZone, ids());
     return { content, articlePath, ids, newId };
   };
 
@@ -178,9 +169,14 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
     }
 
     if (what === 'save') {
-      const { id: given, text, images = [], message, baseSha = null, force = false, remove = false } = await body(req);
+      const { id: given, text, images = [], message, baseSha = null, force = false, remove = false, lang = null, languages = [] } = await body(req);
       if (given && !isId(given)) return (send(400, { error: 'not an article id' }), true);
-      const id = given || newId();
+      try {
+        newArticleLang(lang, languages);
+      } catch {
+        return (send(400, { error: 'not one of the languages' }), true);
+      }
+      const id = given || idIn(newId(), lang, languages);
       const file = articlePath(id);
       const now = read(file);
       // The same check the API makes: has this file changed since it was opened? Here that means

@@ -4,7 +4,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { GitHubStore, ConflictError, AuthError } from '../src/github.js';
+import { GitHubStore, ConflictError, AuthError, freeId } from '../src/github.js';
 
 let files; // path -> text
 let head;
@@ -126,6 +126,40 @@ test('a new article: the article and its images land in one commit', async () =>
   assert.ok(files.has('site/public/u/x.webp'));
   assert.equal(commits.length, 1);
   assert.equal(r.text, files.get(`site/news/${r.id}.md`), 'and it hands back what it wrote, which is what the article now is');
+});
+
+
+test('a new id is the minute in the site\'s time zone, past every id taken in any language', () => {
+  const now = new Date('2026-11-09T16:26:30Z'); // 01:26 on the 10th in Tokyo
+  assert.equal(freeId('Asia/Tokyo', [], now), '202611100126');
+  assert.equal(freeId('UTC', [], now), '202611091626');
+  assert.equal(freeId('Asia/Tokyo', ['202611100126.zh', '202611100127', '202611100128.zh-Hant', '202611100130'], now), '202611100129');
+});
+
+test('a new article takes no id an article in another language has', async () => {
+  const s = store();
+  // Articles this minute and the next that exist only in zh: a new one must not become their
+  // translation. Two, so that a save that crosses into the next minute still meets one
+  const now = freeId(s.timeZone, []);
+  const taken = [now, String(Number(now) + 1)];
+  for (const id of taken) files.set(`site/news/${id}.zh.md`, '---\ntitle: "只有中文"\n---\n');
+  const r = await s.saveArticle({ id: null, title: '新', description: '', date: '2026-02-01T00:00:00Z', tags: [], draft: true, extra: {}, body: 'x' }, { message: 'm' });
+  assert.match(r.id, /^\d{12}$/);
+  assert.ok(!taken.includes(r.id));
+});
+
+test('a new article in another language is <id>.<lang>.md; the first has no suffix, and nothing else is taken', async () => {
+  const s = store();
+  const blank = { id: null, title: '中文的新文章', description: '', date: '2026-02-01T00:00:00Z', tags: [], draft: true, extra: {}, body: '正文' };
+  const zh = await s.saveArticle(blank, { message: 'm', lang: 'zh', languages: ['ja', 'zh'] });
+  assert.match(zh.id, /^\d{12}\.zh$/);
+  assert.ok(files.has(`site/news/${zh.id}.md`));
+  const ja = await s.saveArticle(blank, { message: 'm', lang: 'ja', languages: ['ja', 'zh'] });
+  assert.match(ja.id, /^\d{12}$/, 'the first language has no suffix, whoever asks');
+  assert.notEqual(ja.id, zh.id.split('.')[0], 'and is an article of its own');
+  await assert.rejects(s.saveArticle(blank, { lang: 'fr', languages: ['ja', 'zh'] }), /not one of the languages/);
+  await assert.rejects(s.saveArticle(blank, { lang: 'zh' }), /not one of the languages/, 'a language without the list is refused too');
+  await assert.rejects(s.saveArticle(blank, { lang: '../x', languages: ['ja', '../x'] }), /not one of the languages/);
 });
 
 test('changed by someone else after opening gives ConflictError, and force overwrites', async () => {

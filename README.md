@@ -521,7 +521,9 @@ In the editor an article is one row in the list, whichever languages it has, wit
 faded for a language it doesn't have yet, amber for one that is a draft. Above the title are its
 languages: a click opens another, and one it lacks starts a translation, with the date and the
 cover image already filled in. Saving it makes `<id>.<lang>.md`. "View on site" is shown for the
-first language only, for now.
+first language only, for now. A new article has the languages above its title too, the first one
+picked: choose another before saving, and it is written in that language alone — `<id>.zh.md`, with
+no first-language file and nothing marking it as a translation.
 
 **A translation knows when it is out of date.** A translation started in the editor says in its
 frontmatter what it was translated from:

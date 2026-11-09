@@ -36,6 +36,7 @@ export default {
   'lang.diffMissing': '翻訳したときの元の記事を読み込めませんでした。両方を見比べてください。',
   'lang.missing': '{name}版はまだありません',
   'lang.new': '{name}：未保存',
+  'lang.writeIn': 'この新しい記事を{name}で書く',
   'lang.sourceTags': '{name}版のタグ：{tags}',
   'lang.tagSep': '、',
   'local.badge': 'ローカル',

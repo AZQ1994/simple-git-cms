@@ -44,6 +44,13 @@ behind it are in the repository history.
   words). When the source's words change its tag turns red — publishing it or a new date doesn't
   count — and opening it shows which lines of the source changed since, read back from git, with a
   button to mark it up to date.
+- **A new article can be in any of the languages.** Its languages are above the title, the first
+  one picked; choosing another before saving makes it `<id>.<lang>.md` on its own, with no
+  first-language file and no `translatedFrom`. Before, a new article could only be started in the
+  first language.
+- **A new article never takes an id another language already has.** The id used to be checked
+  against `<id>.md` only, so an article that existed only as `<id>.zh.md` could have a new article
+  saved over its missing first language as if it were its translation.
 
 ## 1.0.0 — 2026-10-27
 

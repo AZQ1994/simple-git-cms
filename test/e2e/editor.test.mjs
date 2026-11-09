@@ -1056,6 +1056,33 @@ test('an article in two languages is one row, and a translation starts from the 
   assert.equal(await page.evaluate(`document.querySelectorAll('#list .item-lang').length`), 0, 'a collection in one language shows none of this');
 });
 
+test('a new article can be written in a language other than the first, and is no translation', async () => {
+  const langs = () => page.evaluate(`JSON.stringify([...document.querySelectorAll('#langs .lang')].map((b) => b.className.replace('lang', '').trim() + ':' + b.textContent))`);
+  await page.navigate(`${site.origin}/?c=notices`);
+  await page.until(`document.querySelectorAll('#list .item').length === 1`, { label: 'the notices' });
+  await page.evaluate(`document.getElementById('new-article').click()`);
+  await page.until(`!document.getElementById('doc').hidden && document.querySelector('#langs .lang')`, { label: 'a new article, with its languages' });
+  assert.deepEqual(JSON.parse(await langs()), ['on:English', ':Japanese'], 'in the first language unless told otherwise; nothing to translate yet');
+  await setTitle('日本語だけのお知らせ');
+  await page.evaluate(`document.querySelector('#langs [data-lang="ja"]').click()`);
+  assert.deepEqual(JSON.parse(await langs()), [':English', 'on:Japanese']);
+  assert.equal(await page.evaluate(`document.getElementById('f-title').value`), '日本語だけのお知らせ', 'the same article, what was typed included');
+  await typeBody('英語版はありません。');
+  await save();
+
+  const id = await page.evaluate(`new URLSearchParams(location.search).get('id')`);
+  assert.match(id, /^\d{12}\.ja$/, 'a new id, with the language after it');
+  const file = `${NOTICES_DIR}/${id}.md`;
+  assert.ok(gh.files.has(file));
+  assert.ok(!gh.files.has(`${NOTICES_DIR}/${id.split('.')[0]}.md`), 'and no English file');
+  assert.doesNotMatch(gh.files.get(file), /translatedFrom/, 'it is an original, not a translation');
+  assert.deepEqual(JSON.parse(await langs()), ['missing:+ English', 'on draft:Japanese']);
+  assert.deepEqual(
+    JSON.parse(await page.evaluate(`JSON.stringify([...document.querySelectorAll('#list .item.active .item-lang')].map((c) => c.className.replace('item-lang', '').trim() + ':' + c.textContent))`)),
+    ['missing:en', 'draft:ja'],
+  );
+});
+
 test('nothing went wrong in the browser', async () => {
   // One 404 is meant: newId() asks GitHub whether an id is taken, and "not found" is the yes it
   // wants. Everything else is a mistake.

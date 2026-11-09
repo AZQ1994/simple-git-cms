@@ -36,6 +36,7 @@ export default {
   'lang.diffMissing': '读不到翻译时的原文版本，只能自己对照两边了。',
   'lang.missing': '还没有{name}版',
   'lang.new': '{name}：还没保存',
+  'lang.writeIn': '改用{name}写这篇新文章',
   'lang.sourceTags': '{name}版的标签：{tags}',
   'lang.tagSep': '、',
   'local.badge': '本地',

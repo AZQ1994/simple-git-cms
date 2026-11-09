@@ -35,6 +35,7 @@ export default {
   'lang.diffMissing': 'The version this was translated from could not be read, so compare the two by hand.',
   'lang.missing': 'No {name} version yet',
   'lang.new': '{name}: not saved yet',
+  'lang.writeIn': 'Write this new article in {name} instead',
   'lang.sourceTags': 'The {name} version is tagged {tags}',
   'lang.tagSep': ', ',
   'local.badge': 'local',

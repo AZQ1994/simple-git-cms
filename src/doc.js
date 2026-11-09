@@ -14,7 +14,7 @@ import { icons } from './icons.js';
 import { defaults, fieldLabel, missingFields, outOfRange } from './fields.js';
 import { collectFields, formFields, markMissing, onFieldChange, relabelFields, showFields } from './field-form.js';
 import { getLocale, t } from './i18n/index.js';
-import { fileName, languagesOf, splitName, translatedFrom, translationOf, wordsOf } from '../integrations/languages.js';
+import { idIn, languagesOf, splitName, translatedFrom, translationOf, wordsOf } from '../integrations/languages.js';
 import { changesOnly, lineDiff } from './diff.js';
 import { newTranslation, outdatedOf, whereIs } from './translations.js';
 
@@ -342,7 +342,9 @@ on('article:open', openArticle);
 
 $('#new-article').addEventListener('click', () => {
   if (!confirmDiscard()) return;
-  load({ id: null, sha: null, title: '', description: '', date: new Date().toISOString(), tags: [], draft: true, extra: defaults(formFields()), body: '' });
+  // In the first language, unless another is picked above the title before it is saved
+  const lang = languagesOf(CONFIG, COLLECTION)[0];
+  load({ id: null, ...(lang && { lang }), sha: null, title: '', description: '', date: new Date().toISOString(), tags: [], draft: true, extra: defaults(formFields()), body: '' });
   setSidebar(false);
   $('#f-title').focus();
 });
@@ -547,10 +549,14 @@ async function save({ draft, force = false, label = t('save.saving') }) {
   return (
     (await busy(label, async () => {
       try {
-        // A new translation has its file name already: the article's id and its language
+        // A new translation has its file name already: the article's id and its language. A new
+        // article gets its id now, and the store names it for the language it was written in
         const toSave = { ...article, id: article.id ?? article.target ?? null };
+        const languages = languagesOf(CONFIG, COLLECTION);
+        const lang = !toSave.id && languages.includes(article.lang) ? article.lang : null;
         delete toSave.target;
-        const r = await store.saveArticle(toSave, { baseSha: state.current.sha, images, message, force });
+        delete toSave.lang;
+        const r = await store.saveArticle(toSave, { baseSha: state.current.sha, images, message, force, lang, languages });
         rememberBody(store, r.sha, r.text);
         for (const img of images) pending.get(img.url).uploaded = true;
         const saved = { ...toSave, id: r.id, sha: r.sha };
@@ -630,12 +636,13 @@ function resolveConflict(theirs, draft) {
 // Above the title, every language the collection has: the one open, the others this article has —
 // a click opens them — and the ones it doesn't, which start a translation. A new translation is
 // an article like any other until it is saved; then it is <id>.<lang>.md next to the others.
+// A new article has no other versions yet: there a click only says which language it is written
+// in, so an article in one language need not be in the first.
 //
 // A translation keeps which version of its source it was made from (translatedFrom). When the
 // source's words change it says so, and shows what changed, until whoever updates it says it is up
 // to date again.
 
-const idOf = (id, lang, langs) => fileName(id, lang, langs).replace(/\.md$/, '');
 
 function renderLangs(langs) {
   const box = $('#langs');
@@ -644,9 +651,22 @@ function renderLangs(langs) {
   $('#tags-source').hidden = true;
   $('#translation-note').hidden = true;
   if (box.hidden) return;
+  if (here.id === null) {
+    box.replaceChildren(
+      ...langs.map((l) => {
+        const on = l === here.lang;
+        const b = Object.assign(document.createElement('button'), { type: 'button', className: `lang${on ? ' on' : ''}`, textContent: languageName(l) });
+        b.dataset.lang = l;
+        b.title = t(on ? 'lang.new' : 'lang.writeIn', { name: languageName(l) });
+        if (on) b.setAttribute('aria-current', 'true');
+        return b;
+      }),
+    );
+    return;
+  }
   const versions = Object.fromEntries(state.articles.map((a) => [a.id, a]));
   // The open one as it is on screen, so marking it up to date shows before it is saved
-  const byLang = Object.fromEntries(langs.map((l) => [l, l === here.lang ? state.current : versions[idOf(here.id, l, langs)]]).filter(([, v]) => v));
+  const byLang = Object.fromEntries(langs.map((l) => [l, l === here.lang ? state.current : versions[idIn(here.id, l, langs)]]).filter(([, v]) => v));
   const outdated = outdatedOf(byLang);
   if (outdated.includes(here.lang)) {
     const from = translatedFrom(state.current);
@@ -661,14 +681,14 @@ function renderLangs(langs) {
     }
   }
   // Tags are each language's own words; a translation is shown the original's, to tag it alike
-  const original = langs.filter((l) => l !== here.lang).map((l) => [l, versions[fileName(here.id, l, langs).replace(/\.md$/, '')]]).find(([, v]) => v?.tags.length);
+  const original = langs.filter((l) => l !== here.lang).map((l) => [l, versions[idIn(here.id, l, langs)]]).find(([, v]) => v?.tags.length);
   if (original && here.lang !== langs[0]) {
     $('#tags-source').textContent = t('lang.sourceTags', { name: languageName(original[0]), tags: original[1].tags.join(t('lang.tagSep')) });
     $('#tags-source').hidden = false;
   }
   box.replaceChildren(
     ...langs.map((l) => {
-      const v = versions[idOf(here.id, l, langs)];
+      const v = versions[idIn(here.id, l, langs)];
       const b = document.createElement('button');
       b.type = 'button';
       b.dataset.lang = l;
@@ -688,7 +708,14 @@ $('#langs').addEventListener('click', (e) => {
   if (!b || b.classList.contains('on')) return;
   const langs = languagesOf(CONFIG, COLLECTION);
   const here = whereIs(state.current, langs);
-  const id = idOf(here.id, b.dataset.lang, langs);
+  if (here.id === null) {
+    // A new article: the same article, now in that language
+    state.current.lang = b.dataset.lang;
+    markDirty();
+    renderList();
+    return;
+  }
+  const id = idIn(here.id, b.dataset.lang, langs);
   if (state.articles.some((a) => a.id === id)) return openArticle(id);
   if (!confirmDiscard()) return;
   // Started from the version that was open, or, from a new translation, from the saved one it is of
@@ -701,7 +728,7 @@ $('#langs').addEventListener('click', (e) => {
 function sourceOf() {
   const langs = languagesOf(CONFIG, COLLECTION);
   const from = translatedFrom(state.current);
-  const id = idOf(whereIs(state.current, langs).id, from.lang, langs);
+  const id = idIn(whereIs(state.current, langs).id, from.lang, langs);
   return { from, id, source: state.articles.find((a) => a.id === id) };
 }
 
