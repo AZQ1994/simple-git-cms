@@ -98,6 +98,7 @@ test('a new article gets an id, and its images go in the same commit', async () 
   assert.deepEqual(git('show', '--name-only', '--format=', 'HEAD').split('\n').sort(), [`${CONTENT}/${r.id}.md`, `${MEDIA}/x.webp`]);
 });
 
+
 test('a new article takes no id an article in another language has', async () => {
   // This minute and the next, so that a save crossing into the next minute still meets one
   const now = freeId('UTC', []);
@@ -106,6 +107,18 @@ test('a new article takes no id an article in another language has', async () =>
   const r = await store.saveArticle({ id: null, title: '新', description: '', date: '2026-03-01T00:00:00.000Z', tags: [], draft: true, extra: {}, body: 'x' }, { message: 'Create' });
   assert.match(r.id, /^\d{12}$/);
   assert.ok(!taken.includes(r.id));
+});
+
+test('a new article in another language is <id>.<lang>.md; the first has no suffix, and nothing else is taken', async () => {
+  const blank = { id: null, title: '中文的新文章', description: '', date: '2026-03-01T00:00:00.000Z', tags: [], draft: true, extra: {}, body: '正文' };
+  const zh = await store.saveArticle(blank, { message: 'Create', lang: 'zh', languages: ['ja', 'zh'] });
+  assert.match(zh.id, /^\d{12}\.zh$/);
+  assert.ok(existsSync(file(zh.id)));
+  const ja = await store.saveArticle(blank, { message: 'Create', lang: 'ja', languages: ['ja', 'zh'] });
+  assert.match(ja.id, /^\d{12}$/, 'the first language has no suffix, whoever asks');
+  assert.notEqual(ja.id, zh.id.split('.')[0], 'and is an article of its own');
+  await assert.rejects(store.saveArticle(blank, { message: 'Create', lang: 'fr', languages: ['ja', 'zh'] }));
+  await assert.rejects(store.saveArticle(blank, { message: 'Create', lang: '../x', languages: ['ja', '../x'] }));
 });
 
 test('a file changed behind the editor is a conflict, and force wins', async () => {

@@ -45,6 +45,22 @@ export function fileName(id, lang, languages) {
   return `${id}.${lang}.md`;
 }
 
+/** The id of one language of an article: its file name without `.md`. */
+export const idIn = (id, lang, languages) => fileName(id, lang, languages).replace(/\.md$/, '');
+
+/**
+ * The language a new article is to be saved in, checked: none (null or undefined, which is null),
+ * or one from the list — the first included, which idIn names without a suffix. Throws for anything
+ * else, so nothing that isn't one of the languages ever becomes part of a file name.
+ * @param {string | null | undefined} lang
+ * @param {string[]} languages
+ */
+export function newArticleLang(lang, languages) {
+  if (lang === null || lang === undefined) return null;
+  if (!Array.isArray(languages) || !languages.includes(lang) || !LANG_CODE.test(lang)) throw new Error(`not one of the languages: ${lang}`);
+  return lang;
+}
+
 /**
  * Which article and which language a file is. A suffix that isn't one of the languages is part of
  * the id, so a site that never configured languages reads exactly as before.

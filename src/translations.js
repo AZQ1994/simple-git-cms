@@ -25,10 +25,13 @@ export function groupArticles(articles, languages) {
 }
 
 /** Which article and language the open one is: a saved file by its id, a new translation by the
- * file it will become. Null for a new article, which has no id until it is saved. */
+ * file it will become, a new article by the language it is being written in — with no id, which it
+ * gets when it is saved. Null when nothing is open, and for a new article on a site in one language.
+ * @returns {{ id: string | null, lang: string | null } | null} */
 export function whereIs(current, languages) {
   const name = current?.id ?? current?.target;
-  return name ? splitName(name, languages) : null;
+  if (name) return splitName(name, languages);
+  return current && languages.length ? { id: null, lang: languages.includes(current.lang) ? current.lang : languages[0] } : null;
 }
 
 /** What a new translation starts as: the article's date and cover, nothing to translate yet, and

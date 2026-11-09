@@ -2,6 +2,7 @@
 // A save puts the article and any new images into a single commit, and first checks whether
 // someone else changed the article since it was opened.
 import { parseArticle, serializeArticle } from './article.js';
+import { idIn, newArticleLang } from '../integrations/languages.js';
 import { t } from './i18n/index.js';
 
 /** An id for a new article: year, month, day, hour and minute in `timeZone`, plus 1 for as long as
@@ -173,13 +174,16 @@ export class GitHubStore {
   }
 
   /**
-   * Save an article. An empty article.id creates a new one. `images` is
+   * Save an article. An empty article.id creates a new one — in language `lang` of `languages`
+   * when those are given (config.json's list for the collection), named the way languages.js names
+   * that language: <id>.md for the first, <id>.<lang>.md for the others. `images` is
    * [{ path: path inside the repository, bytes: Uint8Array }].
    * `baseSha` is the version that was opened; if it no longer matches, this throws ConflictError —
    * unless force is true, which overwrites. Returns { id, sha, commit, text } — text being the
    * file exactly as it was written, which is what the article now is.
    */
-  async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false } = {}) {
+  async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false, lang = null, languages = [] } = {}) {
+    newArticleLang(lang, languages);
     // Image blobs don't depend on the branch, so upload them up front — a retry needn't repeat it
     const imageBlobs = [];
     for (const img of images) {
@@ -197,7 +201,7 @@ export class GitHubStore {
         const current = await this.getArticle(id, head);
         if (!force && (current?.sha ?? null) !== baseSha) throw new ConflictError(current);
       } else {
-        id = await this.newId(head);
+        id = idIn(await this.newId(head), lang, languages);
       }
       const path = `${this.contentDir}/${id}.md`;
 

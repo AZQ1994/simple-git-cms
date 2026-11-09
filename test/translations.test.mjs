@@ -30,7 +30,12 @@ test('on a site in one language every file is a row, as before', () => {
 test('the open article knows where it is, saved or not yet', () => {
   assert.deepEqual(whereIs({ id: '1.zh' }, LANGS), { id: '1', lang: 'zh' });
   assert.deepEqual(whereIs({ id: null, target: '1.zh' }, LANGS), { id: '1', lang: 'zh' });
-  assert.equal(whereIs({ id: null }, LANGS), null);
+  // A new article: no id yet, in the language picked for it, or the first
+  assert.deepEqual(whereIs({ id: null, lang: 'zh' }, LANGS), { id: null, lang: 'zh' });
+  assert.deepEqual(whereIs({ id: null }, LANGS), { id: null, lang: 'ja' });
+  assert.deepEqual(whereIs({ id: null, lang: 'fr' }, LANGS), { id: null, lang: 'ja' });
+  assert.equal(whereIs({ id: null }, []), null);
+  assert.equal(whereIs(null, LANGS), null);
 });
 
 test('a new translation starts with the date and the cover, and nothing else', () => {

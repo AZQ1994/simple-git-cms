@@ -2,7 +2,7 @@
 // line or two.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fileName, fileId, inLanguage, languagesOf, splitName, translatedFrom, translationOf, translationState, translationsOf, wordsOf } from '../integrations/languages.js';
+import { fileName, fileId, idIn, inLanguage, languagesOf, newArticleLang, splitName, translatedFrom, translationOf, translationState, translationsOf, wordsOf } from '../integrations/languages.js';
 
 const LANGS = ['ja', 'zh'];
 
@@ -12,6 +12,18 @@ test('the first language has no suffix, so a site that had one language keeps it
   assert.equal(fileName('202608101200', null, []), '202608101200.md');
   assert.deepEqual(splitName('202608101200.md', LANGS), { id: '202608101200', lang: 'ja' });
   assert.deepEqual(splitName('202608101200.zh', LANGS), { id: '202608101200', lang: 'zh' });
+});
+
+test('a new article is named for its language, and only a language from the list is taken', () => {
+  assert.equal(idIn('202608101200', 'ja', LANGS), '202608101200');
+  assert.equal(idIn('202608101200', 'zh', LANGS), '202608101200.zh');
+  assert.equal(idIn('202608101200', null, LANGS), '202608101200');
+  assert.equal(newArticleLang(null, LANGS), null);
+  assert.equal(newArticleLang(undefined, []), null);
+  assert.equal(newArticleLang('zh', LANGS), 'zh');
+  assert.throws(() => newArticleLang('fr', LANGS));
+  assert.throws(() => newArticleLang('zh', []), 'not without the list');
+  assert.throws(() => newArticleLang('../x', ['ja', '../x']), 'nor anything that is not a language code');
 });
 
 test('a suffix that is not a configured language is part of the id', () => {

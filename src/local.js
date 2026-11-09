@@ -89,7 +89,7 @@ export class LocalStore {
     return text;
   }
 
-  async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false } = {}) {
+  async saveArticle(article, { baseSha = null, images = [], message, force = false, deleteArticle = false, lang = null, languages = [] } = {}) {
     const text = deleteArticle ? null : serializeArticle(article);
     const r = await this.req('save', {
       id: article.id ?? '',
@@ -99,6 +99,8 @@ export class LocalStore {
       baseSha,
       force,
       remove: deleteArticle,
+      lang,
+      languages,
     });
     if (r?.conflict) throw new ConflictError(r.text === null ? null : parseArticle(r.id, r.text));
     return { id: r.id, sha: r.sha, commit: r.commit, text, why: r.why };
