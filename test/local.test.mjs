@@ -201,3 +201,14 @@ test('an article id is a file name, never a way out of the collection', async ()
   writeFileSync(outside, article('外', '2026-01-01T00:00:00.000Z'));
   assert.equal((await store.readFiles(['../../escaped', '202601010000'])).size, 1, 'and nothing outside it is read');
 });
+
+test('a version of an article is read back by its hash, and only an article’s', async () => {
+  const id = '202601010000';
+  const [before] = (await store.listFiles()).filter((f) => f.id === id);
+  await store.saveArticle({ id, title: '一・改', description: '', date: '2026-01-01T00:00:00.000Z', tags: [], draft: false, extra: {}, body: '改' }, { baseSha: before.oid, message: '改' });
+  assert.match(await store.readBlob(id, before.oid), /^title: "一"$/m, 'the version before the save, from git');
+  const other = (await store.listFiles()).find((f) => f.id === '202602020000');
+  assert.equal(await store.readBlob(id, other.oid), null, 'another file’s hash is not this article’s');
+  assert.equal(await store.readBlob(id, '0'.repeat(40)), null);
+  await assert.rejects(store.readBlob(id, 'HEAD'), 'only a hash');
+});

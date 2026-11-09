@@ -150,6 +150,12 @@ export async function startFakeGitHub() {
         : send(res, 200, { sha: sha(f), content: Buffer.from(f).toString('base64') });
     }
 
+    // One version of a file by its hash: any file, as it is or as any commit left it
+    const blob = p.match(/\/git\/blobs\/([0-9a-f]{40})$/);
+    if (blob) {
+      const text = [files, ...log.map((c) => c.files)].flatMap((m) => [...m.values()]).find((t) => sha(t) === blob[1]);
+      return text === undefined ? send(res, 404, { message: 'Not Found' }) : send(res, 200, { sha: blob[1], content: Buffer.from(text).toString('base64'), encoding: 'base64' });
+    }
     if (p.endsWith('/git/blobs')) {
       const content = body.encoding === 'base64' ? Buffer.from(body.content, 'base64') : body.content;
       const s = sha(body.encoding === 'base64' ? `bin:${content.length}:${sha(content.toString('latin1'))}` : content);

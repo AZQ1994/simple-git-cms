@@ -164,6 +164,19 @@ export function localApi({ root, contentDirs, mediaDir, timeZone = 'UTC' }) {
       return (send(200, { text: shown.status === 0 ? shown.stdout : null }), true);
     }
 
+    // One version of an article by its git hash: what a translation was translated from. Only a
+    // hash that was this article's file at some commit, so it can't be used to read anything else
+    if (what === 'blob') {
+      const { id, sha } = await body(req);
+      if (!isId(id)) return (send(400, { error: 'not an article id' }), true);
+      if (!/^[0-9a-f]{40}$/.test(String(sha))) return (send(400, { error: 'not a hash' }), true);
+      const rel = relative(base, articlePath(id));
+      const raw = repoState(base).repo ? git(base, ['log', '--all', '--raw', '--no-abbrev', '--format=', '--', rel]) : null;
+      const seen = raw?.status === 0 && raw.stdout.split('\n').some((line) => line.split(/\s+/).slice(2, 4).includes(sha));
+      const shown = seen ? git(base, ['cat-file', 'blob', sha]) : null;
+      return (send(200, { text: shown?.status === 0 ? shown.stdout : null }), true);
+    }
+
     if (what === 'save') {
       const { id: given, text, images = [], message, baseSha = null, force = false, remove = false } = await body(req);
       if (given && !isId(given)) return (send(400, { error: 'not an article id' }), true);

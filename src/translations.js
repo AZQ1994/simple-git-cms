@@ -1,7 +1,7 @@
 // The languages of an article as the editor shows them: one row in the list for each article,
 // whichever languages it has, and the language bar above the title. The files stay one per
 // language (integrations/languages.js); this is only how they are put together on screen.
-import { splitName } from '../integrations/languages.js';
+import { splitName, translationOf, translationState } from '../integrations/languages.js';
 
 /**
  * The list's rows: one per article, with each of its languages under `versions`. `primary` is the
@@ -31,9 +31,17 @@ export function whereIs(current, languages) {
   return name ? splitName(name, languages) : null;
 }
 
-/** What a new translation starts as: the article's date and cover, and nothing to translate yet. */
-export function newTranslation(source, target, coverField) {
+/** What a new translation starts as: the article's date and cover, nothing to translate yet, and
+ * which version of which language it is a translation of. */
+export function newTranslation(source, target, coverField, languages) {
   const extra = {};
   if (coverField && source.extra?.[coverField] !== undefined) extra[coverField] = structuredClone(source.extra[coverField]);
+  const from = splitName(source.id, languages).lang;
+  if (from && source.sha) extra.translatedFrom = translationOf(from, source);
   return { id: null, target, sha: null, title: '', description: '', date: source.date, tags: [], draft: true, extra, body: '' };
+}
+
+/** Which languages of a row were translated from words that have changed since. */
+export function outdatedOf(versions) {
+  return Object.keys(versions).filter((l) => translationState(versions[l], versions) === 'outdated');
 }

@@ -3,6 +3,7 @@
 // commit. Run with `npm run test:e2e` (needs a Chrome; see test/e2e/README.md).
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -1009,6 +1010,47 @@ test('an article in two languages is one row, and a translation starts from the 
   await page.evaluate(`document.querySelector('#langs [data-lang="en"]').click()`);
   await page.until(`document.getElementById('f-title').value === 'Library closed on Monday'`, { label: 'the English again' });
   assert.deepEqual(JSON.parse(await langs()), ['on:English', 'draft:Japanese']);
+
+  // The Japanese remembers which English it was made from; changing the English makes it outdated
+  const blob = (f) => createHash('sha1').update(gh.files.get(f)).digest('hex');
+  const english = `${NOTICES_DIR}/202610120800.md`;
+  assert.match(gh.files.get(file), new RegExp(`^translatedFrom:\\n  lang: en\\n  sha: ${blob(english)}$`, 'm'));
+  await typeBody(' Reopens Tuesday.');
+  const commits = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && gh.commits.length === commits; i++) await sleep(100);
+  await sleep(300);
+  assert.deepEqual(JSON.parse(await chips()), [':en', 'draft outdated:ja'], 'the list says the Japanese is behind');
+  assert.deepEqual(JSON.parse(await langs()), ['on:English', 'draft outdated:Japanese']);
+  await page.evaluate(`document.querySelector('#langs [data-lang="ja"]').click()`);
+  await page.until(`document.getElementById('f-title').value === '月曜日は休館します'`, { label: 'the Japanese' });
+  assert.equal(await page.evaluate(`document.getElementById('translation-note').hidden`), false);
+  assert.match(await page.evaluate(`document.getElementById('translation-note-text').textContent`), /The English version has changed/);
+  // What changed: the English it was translated from, read back from git, against the English now
+  await page.evaluate(`document.getElementById('translation-diff').open = true`);
+  await page.until(`document.querySelector('#translation-diff-body .diff-line')`, { label: 'what changed in the English' });
+  const changed = JSON.parse(await page.evaluate(`JSON.stringify([...document.querySelectorAll('#translation-diff-body .diff-line')].map((l) => l.className.replace('diff-line', '').trim() + ':' + l.textContent))`));
+  assert.ok(changed.some((l) => l.startsWith('add:') && l.includes('Reopens Tuesday.')), JSON.stringify(changed));
+  assert.ok(changed.some((l) => l.startsWith('del:')), 'and the line as it was');
+  assert.ok(!changed.some((l) => l.includes('Library closed on Monday')), 'the title did not change, so it is left out');
+  // Brought up to date and marked so: saved with the English as it is now
+  await typeBody('火曜日から開館します。');
+  await page.evaluate(`document.getElementById('mark-current').click()`);
+  assert.equal(await page.evaluate(`document.getElementById('translation-note').hidden`), true);
+  await save();
+  assert.match(gh.files.get(file), new RegExp(`^  sha: ${blob(english)}$`, 'm'));
+  assert.deepEqual(JSON.parse(await chips()), [':en', 'draft:ja']);
+
+  // A new date for the English changes its file, not its words: nothing to translate
+  await page.evaluate(`document.querySelector('#langs [data-lang="en"]').click()`);
+  await page.until(`document.getElementById('f-title').value === 'Library closed on Monday'`, { label: 'the English once more' });
+  await page.evaluate(`(() => { const el = document.getElementById('f-date'); el.value = '2026-10-13'; el.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  const dated = gh.commits.length;
+  await page.evaluate(`document.getElementById('btn-publish').click()`);
+  for (let i = 0; i < 100 && gh.commits.length === dated; i++) await sleep(100);
+  await sleep(300);
+  assert.match(gh.files.get(english), /^date: 2026-10-13/m);
+  assert.deepEqual(JSON.parse(await chips()), [':en', 'draft:ja'], 'the Japanese is still current');
   await pick('news');
   await page.until(`document.querySelectorAll('#list .item').length >= 3`, { label: 'the news' });
   assert.equal(await page.evaluate(`document.querySelectorAll('#list .item-lang').length`), 0, 'a collection in one language shows none of this');
