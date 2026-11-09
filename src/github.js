@@ -4,6 +4,21 @@
 import { parseArticle, serializeArticle } from './article.js';
 import { t } from './i18n/index.js';
 
+/** An id for a new article: year, month, day, hour and minute in `timeZone`, plus 1 for as long as
+ * one of the `ids` there are (file names without .md, in any language — `<id>` or `<id>.<lang>`)
+ * already has it. The same rule on GitHub and on this machine (scripts/local-api.mjs). */
+export function freeId(timeZone, ids, now = new Date()) {
+  const taken = new Set([...ids].map((id) => String(id).split('.')[0]));
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(now)
+      .map((p) => [p.type, p.value]),
+  );
+  let id = Number(`${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}`);
+  while (taken.has(String(id))) id++;
+  return String(id);
+}
+
 export class ConflictError extends Error {
   constructor(theirs) {
     super(t('conflict.title'));
@@ -87,11 +102,11 @@ export class GitHubStore {
    * hashes only — no text, so this request stays the same size whether the articles are ten lines
    * or ten pages. The id is the file's name, which is a timestamp, so sorting by it is sorting by
    * date without having read a single body. */
-  async listFiles() {
+  async listFiles(ref = this.branch) {
     const [owner, name] = this.repo.split('/');
     const data = await this.graphql(
       `query($owner:String!,$name:String!,$expr:String!){repository(owner:$owner,name:$name){object(expression:$expr){... on Tree{entries{name oid}}}}}`,
-      { owner, name, expr: `${this.branch}:${this.contentDir}` },
+      { owner, name, expr: `${ref}:${this.contentDir}` },
     );
     const entries = data.repository?.object?.entries ?? [];
     return entries
@@ -219,17 +234,10 @@ export class GitHubStore {
     throw new Error(t('save.busyRepo'));
   }
 
-  /** An id for a new article: year, month, day, hour and minute in config.timeZone, plus 1 on a
-   * collision. */
+  /** An id for a new article (freeId), taken by no article in any language as of `ref`, so a new
+   * one never becomes another's translation. */
   async newId(ref) {
-    const parts = Object.fromEntries(
-      new Intl.DateTimeFormat('en', { timeZone: this.timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-        .formatToParts(new Date())
-        .map((p) => [p.type, p.value]),
-    );
-    let id = Number(`${parts.year}${parts.month}${parts.day}${parts.hour}${parts.minute}`);
-    while (await this.getArticle(String(id), ref)) id++;
-    return String(id);
+    return freeId(this.timeZone, (await this.listFiles(ref)).map((f) => f.id));
   }
 
   /**
