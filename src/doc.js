@@ -761,6 +761,19 @@ $('#translation-diff').addEventListener('toggle', async () => {
   );
 });
 
+/** Put the open article's language on the boxes that hold its words. The interface is in one
+ * language and the article may be in another — a Japanese article in a Chinese interface — and a
+ * font for the one draws some characters of the other wrong; with `lang` there, app.css picks a font
+ * for the article's language. Labels and buttons stay in the interface's. */
+function markLanguage(langs) {
+  const lang = whereIs(state.current, langs)?.lang;
+  const boxes = [$('#f-title'), $('#f-desc'), $('#body'), $('#tags'), ...document.querySelectorAll('#fields-grid .field-text :is(input, textarea)')];
+  for (const el of boxes) {
+    if (lang) el.lang = lang;
+    else el.removeAttribute('lang');
+  }
+}
+
 export function updateBar() {
   const a = state.current;
   const has = Boolean(a);
@@ -773,6 +786,7 @@ export function updateBar() {
   // Until the editor knows each language's address, only the first language links to the site
   const langs = has ? languagesOf(CONFIG, COLLECTION) : [];
   renderLangs(langs);
+  markLanguage(langs);
   const where = a?.id ? splitName(a.id, langs) : null;
   $('#view-live').hidden = !has || !a.id || a.draft || (where.lang !== null && where.lang !== langs[0]);
   if (!has) {

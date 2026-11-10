@@ -51,6 +51,11 @@ behind it are in the repository history.
 - **A new article never takes an id another language already has.** The id used to be checked
   against `<id>.md` only, so an article that existed only as `<id>.zh.md` could have a new article
   saved over its missing first language as if it were its translation.
+- **An article's words are drawn in a font for its own language.** The interface picks its font
+  from the interface language, so a Japanese article opened in a Chinese interface (or the other way
+  round) was drawn in the other language's font, with some characters in the wrong form. The title,
+  body, description, tags and text fields, and the title in the list, now carry the article's
+  language and take a font for it; labels and buttons stay in the interface's.
 
 ## 1.0.0 — 2026-10-27
 
