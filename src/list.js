@@ -56,6 +56,9 @@ export function renderList() {
       btn.className = 'item' + (active ? ' active' : '');
       btn.innerHTML = `<span class="item-title"></span><span class="item-meta"><span class="dot ${a.draft ? 'draft' : 'live'}"></span><span class="item-state"></span><span>${fmtDate(a.date)}</span></span>`;
       btn.querySelector('.item-title').textContent = a.title || t('list.untitled');
+      // The title is in the row's language, not the interface's: say so, so it gets that language's font
+      const lang = langs.find((l) => row.versions[l] === a);
+      if (lang && a.title) btn.querySelector('.item-title').lang = lang;
       btn.querySelector('.item-state').textContent = a.draft ? t('status.draft') : t('status.live');
       for (const text of listed(a)) btn.querySelector('.item-meta').append(Object.assign(document.createElement('span'), { className: 'item-field', textContent: text }));
       // Which languages it has; one it lacks is there too, faded, so a missing translation shows

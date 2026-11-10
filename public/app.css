@@ -32,7 +32,12 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .08);
   --shadow-pop: 0 8px 24px rgba(0, 0, 0, .25);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, .3);
-  --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', sans-serif;
+  /* One family a language; --font is the interface's (below) */
+  --font-zh: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Helvetica Neue', sans-serif;
+  --font-zh-hant: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans CJK TC', 'Helvetica Neue', sans-serif;
+  --font-ja: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Noto Sans JP', 'Helvetica Neue', sans-serif;
+  --font-latin: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font: var(--font-zh);
   color-scheme: light;
 }
 
@@ -40,12 +45,17 @@
    font, which draws some characters wrong (直 書 済) and runs wider than the layout expects — on a
    Mac -apple-system hides this, on Windows and Android it doesn't. So pick the family from the
    language the interface is actually in; setLocale() keeps <html lang> up to date. */
-html[lang='ja'] {
-  --font: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Noto Sans JP', 'Helvetica Neue', sans-serif;
-}
-html[lang='en'] {
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
+html[lang='ja'] { --font: var(--font-ja); }
+html[lang='en'] { --font: var(--font-latin); }
+
+/* The same goes for the article: its words may be in another language than the interface — a
+   Japanese article in a Chinese interface. doc.js and list.js put the article's language on the
+   boxes that hold its words (title, body, fields, the title in the list), and those take a family
+   for that language. zh-Hant comes after zh, which it would also match. */
+:not(html)[lang]:lang(ja) { font-family: var(--font-ja); }
+:not(html)[lang]:lang(zh) { font-family: var(--font-zh); }
+:not(html)[lang]:is(:lang(zh-Hant), :lang(zh-TW), :lang(zh-HK)) { font-family: var(--font-zh-hant); }
+:not(html)[lang]:lang(en) { font-family: var(--font-latin); }
 
 /* Dark. theme.js resolves "follow the system" to a value here, so there is one set of colours to
    keep rather than two — the page is driven by JavaScript anyway, so nothing renders before it
