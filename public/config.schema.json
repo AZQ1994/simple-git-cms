@@ -102,7 +102,12 @@
             "type": "string",
             "pattern": "^/",
             "default": "/{id}/",
-            "description": "The article's address on the site. {id} is substituted."
+            "description": "The article's address on the site. {id} is substituted. With languages, the first language's."
+          },
+          "urls": {
+            "type": "object",
+            "additionalProperties": { "type": "string", "pattern": "^/" },
+            "description": "With languages: the article's address in each of the other languages, e.g. { \"zh\": \"/zh/news/{id}/\" }. A language with no address has no \"View on site\"."
           },
           "imageField": {
             "type": "string",

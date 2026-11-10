@@ -288,6 +288,8 @@ export default {
   'config.collectionName': '{key} 只能用字母、数字、- 和 _：它会出现在地址栏里。',
   'config.collectionNameNeeded': '{key} 需要填写：dir 的最后一段（{name}）不能放进地址栏。请用字母、数字、- 和 _。',
   'config.duplicateName': '{key}：已经有另一个 collection 叫 {name} 了，请给其中一个换个名字。',
+  'config.urlsLanguage': '{key}：{lang} 不在文章的语言（{list}）里。',
+  'config.urlsNoLanguages': '{key} 是其他语言的网址，但文章只有一种语言（没有 languages）。',
   'config.langCode': '{key} 必须是语言代码，比如 ja、zh、zh-Hant。',
   'config.repeated': '{key} 里有重复的项。',
   'config.movedCollection': '从 1.0 起，collection 改成了列表 collections：写成 "collections": [{ … }]，里面的设置不变。',

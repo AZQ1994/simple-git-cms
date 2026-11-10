@@ -774,6 +774,14 @@ function markLanguage(langs) {
   }
 }
 
+/** The article's address on the site: `url` for the first language (or the only one), `urls` for
+ * each of the others. Null for a language with no address there. */
+function liveUrl(where, langs) {
+  const first = where.lang === null || where.lang === langs[0];
+  const path = COLLECTION.urls?.[where.lang] ?? (first ? COLLECTION.url : null);
+  return path ? CONFIG.siteUrl + path.replace('{id}', where.id) : null;
+}
+
 export function updateBar() {
   const a = state.current;
   const has = Boolean(a);
@@ -783,12 +791,12 @@ export function updateBar() {
   $('#btn-history').hidden = !has || !a.id;
   $('#btn-unpublish').hidden = !has || !a.id || a.draft;
   $('#btn-delete').hidden = !has || !a.id || !a.draft;
-  // Until the editor knows each language's address, only the first language links to the site
   const langs = has ? languagesOf(CONFIG, COLLECTION) : [];
   renderLangs(langs);
   markLanguage(langs);
   const where = a?.id ? splitName(a.id, langs) : null;
-  $('#view-live').hidden = !has || !a.id || a.draft || (where.lang !== null && where.lang !== langs[0]);
+  const liveHref = has && a.id && !a.draft ? liveUrl(where, langs) : null;
+  $('#view-live').hidden = !liveHref;
   if (!has) {
     $('#status').textContent = '';
     return;
@@ -796,7 +804,7 @@ export function updateBar() {
   const live = a.id && !a.draft;
   $('#btn-publish').textContent = live ? t('bar.update') : t('bar.publish');
   $('#btn-publish').disabled = live && !state.dirty;
-  $('#view-live').href = CONFIG.siteUrl + COLLECTION.url.replace('{id}', where?.id ?? a.id);
+  if (liveHref) $('#view-live').href = liveHref;
   const s = $('#status');
   s.className = `status ${live ? 'live' : 'draft'}`;
   const target = a.target ? splitName(a.target, langs).lang : null;

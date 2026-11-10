@@ -278,3 +278,14 @@ test('languages are a list of codes, the site’s or a collection’s own', () =
   assert.deepEqual(keys({ ...good(), languages: ['ja', 'Japanese'] }), ['languages[1]']);
   assert.deepEqual(keys({ ...good(), languages: ['ja', 'ja'] }), ['languages']);
 });
+
+test('urls: the address in each of the other languages', () => {
+  const withUrls = (urls, languages = ['ja', 'zh']) => ({ ...good(), languages, collections: [{ dir: 'news', url: '/news/{id}/', urls }] });
+  assert.deepEqual(keys(withUrls({ zh: '/zh/news/{id}/' })), []);
+  assert.deepEqual(keys(withUrls({ ko: '/ko/news/{id}/' })), ['collections[0].urls.ko'], 'a language the articles are not in');
+  assert.deepEqual(keys(withUrls({ zh: 'zh/news/{id}/' })), ['collections[0].urls.zh'], 'not starting with /');
+  assert.deepEqual(keys(withUrls({ zh: 3 })), ['collections[0].urls.zh']);
+  assert.deepEqual(keys(withUrls({ zh: '/zh/' }, ['ja', 'zh'])), [], 'no {id} is only a warning');
+  assert.deepEqual(keys({ ...good(), collections: [{ dir: 'news', urls: { zh: '/zh/news/{id}/' } }] }), ['collections[0].urls'], 'one language: nothing to give');
+  assert.deepEqual(keys(withUrls(['/zh/'])), ['collections[0].urls']);
+});

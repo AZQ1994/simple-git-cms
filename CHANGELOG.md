@@ -56,6 +56,9 @@ behind it are in the repository history.
   round) was drawn in the other language's font, with some characters in the wrong form. The title,
   body, description, tags and text fields, and the title in the list, now carry the article's
   language and take a font for it; labels and buttons stay in the interface's.
+- **"View on site" for every language** (`collections[].urls`). With `languages`, `url` is the first
+  language's address and `urls` gives the others', e.g. `{ "zh": "/zh/news/{id}/" }`; the button
+  used to be shown for the first language only. A language with no address still has none.
 
 ## 1.0.0 — 2026-10-27
 
