@@ -121,7 +121,8 @@ Put it next to the editor's `index.html`, modelled on `config.example.json`.
 | `collections[].dir` | The article directory inside the repository; one `<id>.md` per article (required) |
 | `collections[].name` | What the address bar calls it (`?c=news`): letters, digits, `-` and `_`. Defaults to the last part of `dir`; no two may be the same |
 | `collections[].label` | What the interface calls it, e.g. `News` |
-| `collections[].url` | The article's URL on the site; `{id}` is substituted |
+| `collections[].url` | The article's URL on the site; `{id}` is substituted. With `languages`, the first language's |
+| `collections[].urls` | With `languages`: the URL in each of the others, e.g. `{ "zh": "/zh/news/{id}/" }`. A language not listed has no "View on site" |
 | `collections[].imageField` | The frontmatter field the cover image goes in, e.g. `image`. Left out, there is no cover image control |
 | `collections[].preview` | This collection's preview page on your site (step 4). Leave it out and there is no Preview button |
 | `collections[].fields` | Frontmatter fields of this collection's own, each with an input in the form; see [Fields of your own](#fields-of-your-own) |
@@ -520,8 +521,9 @@ normal as one in all.
 In the editor an article is one row in the list, whichever languages it has, with a tag for each:
 faded for a language it doesn't have yet, amber for one that is a draft. Above the title are its
 languages: a click opens another, and one it lacks starts a translation, with the date and the
-cover image already filled in. Saving it makes `<id>.<lang>.md`. "View on site" is shown for the
-first language only, for now. A new article has the languages above its title too, the first one
+cover image already filled in. Saving it makes `<id>.<lang>.md`. "View on site" goes to `url` for the
+first language and to `urls` for the others (`"urls": { "zh": "/zh/news/{id}/" }`); a language
+with neither has no link. A new article has the languages above its title too, the first one
 picked: choose another before saving, and it is written in that language alone — `<id>.zh.md`, with
 no first-language file and nothing marking it as a translation.
 

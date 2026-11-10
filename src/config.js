@@ -44,6 +44,9 @@ const SPEC = {
       label: str,
       dir: { ...str, required: true },
       url: { ...str, slash: true, wants: '{id}', hint: 'config.noId' },
+      // The address of the article in each of the other languages, e.g. { "zh": "/zh/news/{id}/" };
+      // keys and values are checked below, against the collection's languages
+      urls: { free: true },
       imageField: str,
       preview: { ...str, slash: true },
       // Frontmatter fields of this collection's own, each with an input in the article form. What
@@ -248,6 +251,17 @@ export function checkConfig(raw, t) {
   if (Array.isArray(raw.collections)) {
     raw.collections.forEach((c, i) => {
       if (c && typeof c === 'object' && Array.isArray(c.fields)) checkFields(c, raw, `collections[${i}].fields`, (key, msg, params) => add(problems, key, msg, params));
+      // Each language's address: a language the collection is written in, and an address like url's
+      if (c && typeof c === 'object' && c.urls && typeof c.urls === 'object' && !Array.isArray(c.urls)) {
+        const langs = languagesOf(raw, c);
+        for (const [lang, value] of Object.entries(c.urls)) {
+          const path = `collections[${i}].urls.${lang}`;
+          if (!langs.length) add(problems, `collections[${i}].urls`, 'config.urlsNoLanguages');
+          else if (!langs.includes(lang)) add(problems, path, 'config.urlsLanguage', { lang, list: langs.join(', ') });
+          else checkField(path, value, SPEC.collections.each.url);
+          if (!langs.length) break;
+        }
+      }
     });
   }
   return { problems, warnings };
