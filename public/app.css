@@ -196,9 +196,12 @@ svg { flex: none; }
 .item-lang.missing { background: none; color: var(--faint); opacity: .55; text-decoration: line-through; }
 .list-empty { padding: 32px 12px; text-align: center; color: var(--faint); font-size: 13px; }
 .list-more { padding: 12px; text-align: center; color: var(--faint); font-size: 12.5px; }
-.side-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); }
+/* Wraps onto a second line when the controls don't fit: a narrow phone, or a language whose
+   "Sign out" is long (ログアウト), with the phone's own wider dropdown next to it */
+.side-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 12px 16px; border-top: 1px solid var(--line); }
+.side-foot > :not(.user-name) { flex: none; white-space: nowrap; }
 .avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--line); }
-.user-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-name { flex: 1 1 0; min-width: 5em; font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .local-badge { flex: none; padding: 2px 7px; border-radius: 999px; background: var(--hover); color: var(--muted); font-size: 11px; font-weight: 600; cursor: default; }
 
 /* Language menu: a quiet dropdown at the foot of the sidebar, and one on the sign-in card */

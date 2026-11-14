@@ -59,6 +59,9 @@ behind it are in the repository history.
 - **"View on site" for every language** (`collections[].urls`). With `languages`, `url` is the first
   language's address and `urls` gives the others', e.g. `{ "zh": "/zh/news/{id}/" }`; the button
   used to be shown for the first language only. A language with no address still has none.
+- **The foot of the sidebar no longer runs off a phone's screen.** With a long "Sign out" (ログアウト
+  in Japanese) and the phone's own wider language menu, the row was wider than the sidebar; it now
+  goes onto a second line when it doesn't fit.
 
 ## 1.0.0 — 2026-10-27
 
